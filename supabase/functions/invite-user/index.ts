@@ -59,16 +59,22 @@ Deno.serve(async (req) => {
       return json({ error: "Diese E-Mail ist bereits registriert — keine Einladung nötig." }, 400, cors);
     }
 
-    const { error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(email);
-    if (inviteErr) {
-      console.error("[invite-user] inviteUserByEmail failed:", JSON.stringify(inviteErr));
-      const msg = inviteErr.message && inviteErr.message !== "{}"
-        ? inviteErr.message
-        : `Einladen fehlgeschlagen (Status ${inviteErr.status ?? "unbekannt"}). Details stehen in den Function-Logs.`;
+    // Generate the invite link ourselves instead of asking Supabase to email
+    // it — sidesteps whatever internal gate ties inviteUserByEmail to the
+    // "allow public signups" toggle, and works regardless of SMTP setup.
+    const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
+      type: "invite",
+      email,
+    });
+    if (linkErr) {
+      console.error("[invite-user] generateLink failed:", JSON.stringify(linkErr));
+      const msg = linkErr.message && linkErr.message !== "{}"
+        ? linkErr.message
+        : `Einladen fehlgeschlagen (Status ${linkErr.status ?? "unbekannt"}). Details stehen in den Function-Logs.`;
       return json({ error: msg }, 400, cors);
     }
 
-    return json({ ok: true }, 200, cors);
+    return json({ ok: true, link: linkData.properties.action_link }, 200, cors);
   } catch (e) {
     console.error("[invite-user] unexpected error:", e);
     return json({ error: "Unerwarteter Fehler." }, 500, cors);

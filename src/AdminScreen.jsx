@@ -20,11 +20,13 @@ export default function AdminScreen({onClose}){
   const [inviteEmail,setInviteEmail]=useState("");
   const [inviteBusy,setInviteBusy]=useState(false);
   const [inviteMsg,setInviteMsg]=useState(null);
+  const [inviteLink,setInviteLink]=useState(null);
+  const [copied,setCopied]=useState(false);
 
   const invite=async(e)=>{
     e.preventDefault();
     if(!inviteEmail.trim())return;
-    setInviteBusy(true);setInviteMsg(null);
+    setInviteBusy(true);setInviteMsg(null);setInviteLink(null);setCopied(false);
     try{
       const {data:{session}}=await supabase.auth.getSession();
       const r=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invite-user`,{
@@ -34,12 +36,18 @@ export default function AdminScreen({onClose}){
       });
       const d=await r.json();
       if(!r.ok){setInviteMsg({type:"error",text:d.error||"Einladen fehlgeschlagen."});setInviteBusy(false);return;}
-      setInviteMsg({type:"info",text:`Einladung an ${inviteEmail.trim()} verschickt.`});
-      setInviteEmail("");
+      setInviteMsg({type:"info",text:`Link für ${inviteEmail.trim()} erzeugt — unten kopieren und selbst verschicken:`});
+      setInviteLink(d.link);
     }catch(e){
       setInviteMsg({type:"error",text:describeError(e)});
     }
     setInviteBusy(false);
+  };
+
+  const copyLink=()=>{
+    navigator.clipboard.writeText(inviteLink);
+    setCopied(true);
+    setTimeout(()=>setCopied(false),1500);
   };
 
   const search=async(e)=>{
@@ -82,7 +90,11 @@ export default function AdminScreen({onClose}){
           <input value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)} type="email" placeholder="email@beispiel.de" style={input}/>
           <button type="submit" disabled={inviteBusy} style={{...pri,flexShrink:0,opacity:inviteBusy?.6:1}}>{inviteBusy?"...":"Einladen"}</button>
         </form>
-        {inviteMsg&&<p style={{fontSize:12,color:inviteMsg.type==="error"?"#fca5a5":"#86efac",marginTop:8,marginBottom:0}}>{inviteMsg.text}</p>}
+        {inviteMsg&&<p style={{fontSize:12,color:inviteMsg.type==="error"?"#fca5a5":"#86efac",marginTop:8,marginBottom:inviteLink?6:0}}>{inviteMsg.text}</p>}
+        {inviteLink&&<div style={{display:"flex",gap:8,marginTop:4}}>
+          <input readOnly value={inviteLink} onFocus={e=>e.target.select()} style={{...input,fontSize:11,color:C.t2}}/>
+          <button onClick={copyLink} style={{...ghost,flexShrink:0,fontSize:12,padding:"7px 12px"}}>{copied?"✓ Kopiert":"Kopieren"}</button>
+        </div>}
       </div>
 
       <form onSubmit={search} style={{display:"flex",gap:8,marginBottom:20}}>
