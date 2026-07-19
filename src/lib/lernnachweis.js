@@ -198,7 +198,8 @@ export async function generateLernnachweis({ user, kind, title, score, total, to
 
   const percent = total > 0 ? Math.round((score / total) * 100) : 0;
   const zone = zoneForPercent(percent);
-  const dateStr = new Date().toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" });
+  const now = new Date();
+  const dateStr = `${now.toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}, ${now.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr`;
 
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
   const W = 297, H = 210;
