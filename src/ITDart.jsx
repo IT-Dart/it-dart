@@ -17,7 +17,8 @@ import modulePrImg from "./assets/module-pr.jpg";
 const MODULE_IMAGES={g:moduleGImg,b:moduleBImg,si:moduleSiImg,db:moduleDbImg,sk:moduleSkImg,pr:modulePrImg};
 const MODULE_IMAGE_ALT={g:"PC Komponenten",b:"Betriebssysteme",si:"IT-Sicherheit",db:"Datenbanken",sk:"Skripting",pr:"Beruf und Projekt"};
 
-const FREE_MODULE_IDS=["g","o"]; // Grundlagen, Netzwerktechnik — Rest ist Premium
+const FREE_MODULE_IDS=["g","o"]; // Grundlagen frei zugänglich, Netzwerktechnik als Vorschau — Rest ist Premium
+const FREE_TOPIC_LIMITS={o:2}; // Netzwerktechnik: nur die ersten 2 von 7 Themen sind ohne Premium sichtbar
 const FREE_QUIZ_N=5; // Modul-Quiz am Ende: Free-Nutzer sehen nur die ersten 5 Fragen
 
 const MODS=[
@@ -61,13 +62,13 @@ const O=[
   {n:7,nm:"Anwendungsschicht",sh:"Application",th:"Die Ebene die der Nutzer sieht: Browser, E-Mail, ERP. Protokolle: HTTP, SMTP, DNS.",pc:"Alles darunter geht, aber die App wirft Fehler → Anwendungs-Logs prüfen, nicht das Netz.",q1:"Woran erkennt man dass das Problem hier liegt?",q2:"Welche Protokolle laufen hier?"},
 ];
 const OQ=[
-  {q:"Keine Link-LED am Switch-Port. Welche Schicht?",o:["Schicht 3","Schicht 2","Schicht 7","Schicht 1"],c:3,e:"Die Link-LED zeigt physisches Signal – Schicht 1. Kabel, Stecker, Port prüfen."},
+  {q:"Keine Link-LED am Switch-Port. Welche Schicht?",o:["Schicht 3 – Network","Schicht 2 – Data Link","Schicht 7 – Application","Schicht 1 – Physical"],c:3,e:"Die Link-LED zeigt physisches Signal – Schicht 1. Kabel, Stecker, Port prüfen."},
   {q:"Wofür sind MAC-Adressen zuständig?",o:["IP-Routing","Verschlüsselung","Kommunikation im lokalen Netz","Sitzungsverwaltung"],c:2,e:"MAC-Adressen arbeiten auf Schicht 2 und identifizieren Geräte im lokalen Netz."},
   {q:"Ping geht, Anwendung nicht. Was prüfen?",o:["Schicht 1 – Kabel","Schicht 2 – MAC","Schicht 6 – Zertifikate","Schicht 4 – Ports"],c:3,e:"Ping nutzt ICMP ohne Ports. Anwendungen brauchen TCP/UDP-Ports auf Schicht 4."},
-  {q:"Browser zeigt TLS-Fehler. Welche Schicht?",o:["Schicht 1","Schicht 2","Schicht 3","Schicht 6"],c:3,e:"TLS gehört zu Schicht 6 (Presentation) – Verschlüsselung und gemeinsames Datenformat."},
-  {q:"App wirft Fehler, Netz funktioniert. Welche Schicht?",o:["Schicht 4","Schicht 5","Schicht 3","Schicht 7"],c:3,e:"Wenn das Netz geht aber die App Fehler meldet, ist Schicht 7 betroffen."},
-  {q:"Auf welcher OSI-Schicht arbeitet ein Switch?",o:["Schicht 1","Schicht 2","Schicht 3","Schicht 4"],c:1,e:"Ein Switch entscheidet anhand von MAC-Adressen, an welchen Port ein Frame geht – das ist Schicht 2 (Sicherungsschicht)."},
-  {q:"Auf welcher OSI-Schicht arbeitet ein Router?",o:["Schicht 2","Schicht 3","Schicht 5","Schicht 7"],c:1,e:"Router vermitteln anhand von IP-Adressen zwischen Netzen – Schicht 3 (Vermittlungsschicht)."},
+  {q:"Browser zeigt TLS-Fehler. Welche Schicht?",o:["Schicht 1 – Physical","Schicht 2 – Data Link","Schicht 3 – Network","Schicht 6 – Presentation"],c:3,e:"TLS gehört zu Schicht 6 (Presentation) – Verschlüsselung und gemeinsames Datenformat."},
+  {q:"App wirft Fehler, Netz funktioniert. Welche Schicht?",o:["Schicht 4 – Transport","Schicht 5 – Session","Schicht 3 – Network","Schicht 7 – Application"],c:3,e:"Wenn das Netz geht aber die App Fehler meldet, ist Schicht 7 betroffen."},
+  {q:"Auf welcher OSI-Schicht arbeitet ein Switch?",o:["Schicht 1 – Physical","Schicht 2 – Data Link","Schicht 3 – Network","Schicht 4 – Transport"],c:1,e:"Ein Switch entscheidet anhand von MAC-Adressen, an welchen Port ein Frame geht – das ist Schicht 2 (Sicherungsschicht)."},
+  {q:"Auf welcher OSI-Schicht arbeitet ein Router?",o:["Schicht 2 – Data Link","Schicht 3 – Network","Schicht 5 – Session","Schicht 7 – Application"],c:1,e:"Router vermitteln anhand von IP-Adressen zwischen Netzen – Schicht 3 (Vermittlungsschicht)."},
   {q:"Welcher Standardport gehört zu HTTPS?",o:["25","80","443","3389"],c:2,e:"HTTPS nutzt Port 443. Port 80 ist HTTP, 25 SMTP und 3389 RDP."},
   {q:"Was macht DHCP?",o:["Übersetzt Namen in IP-Adressen","Verteilt automatisch IP-Konfigurationen an Geräte","Verschlüsselt den Datenverkehr","Blockiert unerlaubte Pakete"],c:1,e:"DHCP vergibt IP-Adresse, Subnetzmaske, Gateway und DNS-Server automatisch – ohne manuelles Eintragen an jedem Gerät."},
   {q:"Wofür ist DNS zuständig?",o:["IP-Adressen dynamisch vergeben","Domainnamen in IP-Adressen auflösen","Pakete zwischen Netzen routen","MAC-Adressen lernen"],c:1,e:"DNS ist das Telefonbuch des Internets: Aus einem Namen wie firma.de wird die zugehörige IP-Adresse."},
@@ -963,9 +964,12 @@ const AIChat=({ctx,q1,q2,moduleId})=>{
   );
 };
 
-const Pips=({items,cur,done,go})=>(
+const Pips=({items,cur,done,go,topicLimit})=>(
   <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:14}}>
-    {items.map((it,i)=>(<button key={i} onClick={()=>go(i)} style={{width:30,height:30,borderRadius:"50%",border:`1.5px solid ${i===cur?"#38bdf8":"#2d3f5a"}`,background:i===cur?"#0f2744":done.has(it.n)?"#14532d":C.s1,color:i===cur?"#38bdf8":done.has(it.n)?"#86efac":"#475569",fontSize:12,fontWeight:600,cursor:"pointer"}}>{it.n}</button>))}
+    {items.map((it,i)=>{
+      const locked=topicLimit!=null&&it.n>topicLimit;
+      return(<button key={i} onClick={()=>go(i)} style={{width:30,height:30,borderRadius:"50%",border:`1.5px solid ${i===cur?"#38bdf8":"#2d3f5a"}`,background:i===cur?"#0f2744":done.has(it.n)?"#14532d":C.s1,color:i===cur?"#38bdf8":done.has(it.n)?"#86efac":"#475569",fontSize:locked?11:12,fontWeight:600,cursor:"pointer"}}>{locked?"🔒":it.n}</button>);
+    })}
   </div>
 );
 
@@ -1132,7 +1136,7 @@ export default function ITDart({onOpenExam,onOpenLegal}){
   if(view==="cover")return(
     <div style={wrap}><div style={{...inner,textAlign:"center",paddingTop:40,paddingBottom:40}}>
       <Logo sz={72}/>
-      <h1 style={{fontSize:28,fontWeight:700,marginTop:20,marginBottom:8}}>IT-Dart</h1>
+      <h1 style={{fontSize:28,fontWeight:700,marginTop:20,marginBottom:8}}>IT-Dart – Bleib am Dart!</h1>
       <img src={coverImg} alt="IT-Dart" style={{width:"100%",maxWidth:340,borderRadius:14,margin:"16px auto",display:"block",boxShadow:"0 8px 32px rgba(37,99,235,0.25)"}}/>
       <p style={{fontSize:14,color:C.cy,fontWeight:500,marginBottom:4}}>IT-Infrastruktur verstehen. Praxisorientiert lernen.</p><p style={{fontSize:12,color:C.mu,marginBottom:24}}>Ausgerichtet auf den Fachinformatiker für Systemintegration (FISI)</p>
       <div style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:12,padding:"20px",marginBottom:24,textAlign:"left"}}>
@@ -1165,7 +1169,7 @@ export default function ITDart({onOpenExam,onOpenLegal}){
       <div style={{display:"flex",alignItems:"center",gap:14,marginBottom:16,paddingBottom:20,borderBottom:`0.5px solid ${C.bd}`}}>
         <Logo sz={44}/>
         <div><div style={{fontSize:22,fontWeight:700,letterSpacing:"-.5px"}}>IT-Dart</div>
-        <div style={{fontSize:12,color:C.mu,marginTop:2}}>IT-Infrastruktur verstehen. Praxisorientiert lernen.</div></div>
+        <div style={{fontSize:12,color:C.cy,marginTop:2}}>Bleib am Dart!</div></div>
       </div>
       <div style={{textAlign:"right",marginBottom:16}}>
         {user?(
@@ -1178,10 +1182,11 @@ export default function ITDart({onOpenExam,onOpenLegal}){
         {MODS.map(m=>{
           const d=doneFor(m.id).size;
           const locked=m.r&&!canOpen(m);
+          const preview=!locked&&!isPremium&&FREE_TOPIC_LIMITS[m.id]!=null;
           const sub=m.r&&m.n>0?`${d} von ${m.n} gesehen`:m.s;
-          const badge=!m.r?"Bald":locked?"🔒 Premium":"Verfügbar";
-          const badgeBg=!m.r?"#1e3a5f":locked?"#3a2a0f":"#14532d";
-          const badgeCol=!m.r?"#93c5fd":locked?"#fbbf24":"#86efac";
+          const badge=!m.r?"Bald":locked?"🔒 Premium":preview?`🔓 Vorschau (${FREE_TOPIC_LIMITS[m.id]}/${m.n})`:"Verfügbar";
+          const badgeBg=!m.r?"#1e3a5f":locked?"#3a2a0f":preview?"#1e3a5f":"#14532d";
+          const badgeCol=!m.r?"#93c5fd":locked?"#fbbf24":preview?"#93c5fd":"#86efac";
           return(<button key={m.id} onClick={()=>{if(m.r)openMod(m);}} style={{display:"flex",alignItems:"center",gap:12,textAlign:"left",width:"100%",background:m.r?"#1a2535":"#141e2e",border:`0.5px solid ${m.r?"#2d3f5a":"#1e2b3e"}`,borderRadius:10,padding:"12px 14px",cursor:m.r?"pointer":"default",color:"inherit",fontFamily:"inherit"}}>
             <span style={{fontSize:22,flexShrink:0}}>{m.e}</span>
             <span style={{flex:1}} dangerouslySetInnerHTML={{__html:`<span style="display:block;font-size:14px;font-weight:600;color:${m.r?C.t:"#475569"}">${m.t}</span><span style="display:block;font-size:12px;color:${m.r?"#64748b":"#334155"};margin-top:2px">${sub}</span>`}}/>
@@ -1233,6 +1238,8 @@ export default function ITDart({onOpenExam,onOpenLegal}){
       </div></div>
     );
     const item=data.items[idx];
+    const topicLimit=isPremium?null:FREE_TOPIC_LIMITS[mod.id];
+    const topicLocked=topicLimit!=null&&item.n>topicLimit;
     return(
       <div style={wrap}><div style={inner}>
         <Hdr back={()=>setView("overview")}/>
@@ -1240,25 +1247,38 @@ export default function ITDart({onOpenExam,onOpenLegal}){
           <button onClick={()=>setPhase("intro")} title="Zur Modul-Startseite" style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",padding:0,cursor:"pointer",fontSize:14,fontWeight:600,color:C.cy,fontFamily:"inherit",textAlign:"left"}}><span style={{fontSize:13}}>↩</span><span dangerouslySetInnerHTML={{__html:data.title}}/></button>
           <span style={{fontSize:12,color:C.mu}}>Thema {item.n} / {data.items.length}</span>
         </div>
-        <Pips items={data.items} cur={idx} done={doneFor(mod.id)} go={i=>{setIdx(i);mark(mod.id,data.items[i].n);}}/>
-        <div style={{marginBottom:14}}><Scene mid={mod.id} n={item.n}/></div>
-        <div style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:10,padding:"14px 16px",marginBottom:8}}>
-          <p style={{fontSize:11,fontWeight:600,letterSpacing:".06em",textTransform:"uppercase",color:C.cy,marginBottom:6}}>Theorie</p>
-          <p style={{fontSize:15,fontWeight:600,marginBottom:6}} dangerouslySetInnerHTML={{__html:item.nm}}/>
-          <p style={{fontSize:14,color:C.t2,lineHeight:1.7}}>{item.th}</p>
-        </div>
-        <div style={{background:C.s2,border:`0.5px solid ${C.bd}`,borderRadius:10,padding:"14px 16px",marginBottom:8}}>
-          <p style={{fontSize:11,fontWeight:600,letterSpacing:".06em",textTransform:"uppercase",color:C.mu,marginBottom:6}}>{data.case} Praxisfall: {data.caseTitle}</p>
-          <p style={{fontSize:14,color:C.t2,lineHeight:1.7}}>{item.pc}</p>
-        </div>
-        {item.osi&&<OSIBezug text={item.osi}/>}
+        <Pips items={data.items} cur={idx} done={doneFor(mod.id)} topicLimit={topicLimit} go={i=>{setIdx(i);const n=data.items[i].n;if(topicLimit==null||n<=topicLimit)mark(mod.id,n);}}/>
+        {topicLocked?(
+          <div style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:10,padding:"32px 20px",textAlign:"center",marginBottom:20}}>
+            <div style={{fontSize:40,marginBottom:10}}>🔒</div>
+            <p style={{fontSize:15,fontWeight:600,marginBottom:8}}>Ab hier geht's mit Premium weiter</p>
+            <p style={{fontSize:13,color:C.t2,marginBottom:18,lineHeight:1.6}}>Die ersten {topicLimit} Themen von {data.title.replace(/&amp;/g,"&")} sind als Vorschau frei. Die restlichen {data.items.length-topicLimit} Themen sind Teil von IT-Dart Premium.</p>
+            {!user?(
+              <button onClick={()=>setView("auth")} style={{...pri,width:"100%",justifyContent:"center"}}>Anmelden / Registrieren →</button>
+            ):(
+              <p style={{fontSize:13,color:C.mu}}>Dein Konto ({user.email}) hat noch keinen Premium-Zugang.</p>
+            )}
+          </div>
+        ):(<>
+          <div style={{marginBottom:14}}><Scene mid={mod.id} n={item.n}/></div>
+          <div style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:10,padding:"14px 16px",marginBottom:8}}>
+            <p style={{fontSize:11,fontWeight:600,letterSpacing:".06em",textTransform:"uppercase",color:C.cy,marginBottom:6}}>Theorie</p>
+            <p style={{fontSize:15,fontWeight:600,marginBottom:6}} dangerouslySetInnerHTML={{__html:item.nm}}/>
+            <p style={{fontSize:14,color:C.t2,lineHeight:1.7}}>{item.th}</p>
+          </div>
+          <div style={{background:C.s2,border:`0.5px solid ${C.bd}`,borderRadius:10,padding:"14px 16px",marginBottom:8}}>
+            <p style={{fontSize:11,fontWeight:600,letterSpacing:".06em",textTransform:"uppercase",color:C.mu,marginBottom:6}}>{data.case} Praxisfall: {data.caseTitle}</p>
+            <p style={{fontSize:14,color:C.t2,lineHeight:1.7}}>{item.pc}</p>
+          </div>
+          {item.osi&&<OSIBezug text={item.osi}/>}
+        </>)}
         <div style={{display:"flex",gap:8,marginBottom:20}}>
           <button disabled={idx===0} onClick={()=>setIdx(i=>i-1)} style={{...ghost,flex:1,justifyContent:"center",opacity:idx===0?.45:1}}>← Zurück</button>
-          <button onClick={()=>{if(idx===data.items.length-1)setPhase("quiz");else{const ni=idx+1;setIdx(ni);mark(mod.id,data.items[ni].n);}}} style={{...pri,flex:1,justifyContent:"center"}}>
+          {!topicLocked&&<button onClick={()=>{if(idx===data.items.length-1)setPhase("quiz");else{const ni=idx+1;setIdx(ni);const n=data.items[ni].n;if(topicLimit==null||n<=topicLimit)mark(mod.id,n);}}} style={{...pri,flex:1,justifyContent:"center"}}>
             {idx===data.items.length-1?"🎯 Zum Quiz →":"Weiter →"}
-          </button>
+          </button>}
         </div>
-        <AIChat key={`${mod.id}-${item.n}`} ctx={`Thema "${item.nm}" aus dem ${data.title}-Modul. Theorie: ${item.th}`} q1={item.q1} q2={item.q2} moduleId={mod.id}/>
+        {!topicLocked&&<AIChat key={`${mod.id}-${item.n}`} ctx={`Thema "${item.nm}" aus dem ${data.title}-Modul. Theorie: ${item.th}`} q1={item.q1} q2={item.q2} moduleId={mod.id}/>}
       </div></div>
     );
   }

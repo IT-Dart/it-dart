@@ -13,12 +13,13 @@ const COL = {
   cyan: [56, 189, 248],
   green: [34, 197, 94],
   amber: [245, 158, 11],
+  coral: [251, 113, 133],
   white: [255, 255, 255],
 };
 
 // Redraws the IT-Dart logo (concentric rings + dart) as vector shapes —
 // it's already a target-and-dart mark, reused at large size for the
-// bullseye badge.
+// plain (non-Prüfungsvorbereitung) badge.
 function drawMark(doc, cx, cy, r, { ringOnly = false } = {}) {
   doc.setDrawColor(...COL.blue);
   doc.setFillColor(...COL.s1);
@@ -49,10 +50,133 @@ function drawMark(doc, cx, cy, r, { ringOnly = false } = {}) {
   }
 }
 
-function badgeForPercent(pct) {
-  if (pct >= 95) return { key: "bullseye", label: "Voll ins IT-Bullseye!" };
-  if (pct >= 80) return { key: "auszeichnung", label: "Starker Wurf — mit Auszeichnung" };
-  return null;
+// The five evaluation zones, in order from best to worst. Each maps to a
+// concrete ring band on the dartboard (ring 1 = innermost bullseye ... ring
+// 5 = missed the board entirely). minPct is inclusive.
+const ZONES = [
+  { minPct: 95, ring: 1, key: "bullseye", label: "Voll ins IT-Bullseye!", color: COL.amber },
+  { minPct: 90, ring: 2, key: "hervorragend", label: "Hervorragender Wurf!", color: COL.amber },
+  { minPct: 80, ring: 3, key: "gut", label: "Guter Wurf!", color: COL.cyan },
+  { minPct: 70, ring: 4, key: "besser", label: "Das geht besser! Du hast den Pfeil in der Hand.", color: COL.blue },
+  { minPct: -Infinity, ring: 5, key: "fehlwurf", label: "Fehlwurf! Abweichung im System. Analysiere das Modul erneut, um die Fehlerquelle zu isolieren.", color: COL.coral },
+];
+
+function zoneForPercent(pct) {
+  return ZONES.find((z) => pct >= z.minPct);
+}
+
+// Deterministic landing angle so the same score always lands in the same
+// spot (reproducible PDF) without every result clustering on one side.
+function seededAngleDeg(score, total) {
+  return (score * 53 + total * 17 + 40) % 360;
+}
+
+// A single, precise dart — one shaft, one tip — matching the shape of the
+// IT-Dart logo mark exactly (no back-fins, so it can never read as an
+// arrow with two points). Scales with `len`.
+function drawPreciseDart(doc, landX, landY, dirX, dirY, len) {
+  const perpX = -dirY, perpY = dirX;
+  const shaftStart = { x: landX + len * 0.42 * dirX, y: landY + len * 0.42 * dirY };
+  const shaftEnd = { x: landX + len * dirX, y: landY + len * dirY };
+
+  doc.setDrawColor(...COL.blue);
+  doc.setLineWidth(len * 0.1);
+  doc.line(shaftStart.x, shaftStart.y, shaftEnd.x, shaftEnd.y);
+
+  const tipLen = len * 0.34, tipWide = len * 0.16;
+  doc.setFillColor(...COL.blue);
+  doc.triangle(
+    landX + tipLen * dirX + perpX * tipWide, landY + tipLen * dirY + perpY * tipWide,
+    landX + tipLen * dirX - perpX * tipWide, landY + tipLen * dirY - perpY * tipWide,
+    landX, landY,
+    "F"
+  );
+
+  doc.setFillColor(...COL.white);
+  doc.circle(landX, landY, len * 0.045, "F");
+}
+
+// Draws the dartboard (four colour-coded ring bands, matching the five
+// evaluation zones — the outer two share the "orange" band, split by a
+// thin divider) plus a backboard wide enough to show a dart that missed
+// the board entirely (zone 5, <70%). The dart always lands somewhere —
+// distance from the bullseye is driven directly by the score.
+function drawDartboardTarget(doc, cx, cy, r, percent, score, total) {
+  const R1 = r * 0.16, R2 = r * 0.4, R3 = r * 0.7, R4 = r;
+  const bb = r * 1.6;
+
+  doc.setDrawColor(...COL.border);
+  doc.setFillColor(...COL.s2);
+  doc.roundedRect(cx - bb, cy - bb, bb * 2, bb * 2, 6, 6, "FD");
+
+  doc.setFillColor(...COL.blue);
+  doc.circle(cx, cy, R4, "F");
+  doc.setFillColor(...COL.cyan);
+  doc.circle(cx, cy, R3, "F");
+  doc.setFillColor(...COL.amber);
+  doc.circle(cx, cy, R2, "F");
+  doc.setDrawColor(...COL.bg);
+  doc.setLineWidth(r * 0.018);
+  doc.circle(cx, cy, R1, "S");
+
+  // Thin spokes for a precise, real-dartboard feel
+  doc.setDrawColor(...COL.bg);
+  doc.setLineWidth(r * 0.008);
+  const spokes = 16;
+  for (let i = 0; i < spokes; i++) {
+    const a = (i / spokes) * Math.PI * 2;
+    doc.line(cx + R1 * Math.cos(a), cy + R1 * Math.sin(a), cx + R4 * Math.cos(a), cy + R4 * Math.sin(a));
+  }
+
+  doc.setDrawColor(...COL.border);
+  doc.setLineWidth(r * 0.045);
+  doc.circle(cx, cy, R4, "S");
+
+  // Landing radius: find the band for this percent, then interpolate
+  // within that band by exactly how far into it the score falls.
+  const bands = [
+    { min: 95, max: 100, inner: 0, outer: R1 },
+    { min: 90, max: 95, inner: R1, outer: R2 },
+    { min: 80, max: 90, inner: R2, outer: R3 },
+    { min: 70, max: 80, inner: R3, outer: R4 },
+    { min: 0, max: 70, inner: R4 * 1.08, outer: R4 * 1.55 },
+  ];
+  const band = bands.find((b) => percent >= b.min && (percent < b.max || b.max === 100)) || bands[bands.length - 1];
+  const frac = Math.min(1, Math.max(0, (percent - band.min) / (band.max - band.min)));
+  const landR = band.outer - (band.outer - band.inner) * frac;
+
+  const angle = (seededAngleDeg(score, total) * Math.PI) / 180;
+  const dirX = Math.cos(angle), dirY = Math.sin(angle);
+  const landX = cx + landR * dirX, landY = cy + landR * dirY;
+
+  drawPreciseDart(doc, landX, landY, dirX, dirY, r * 0.5);
+}
+
+// Small vector target icon (a static version of the dartboard, no dart) —
+// used as the "star rating" substitute: filled = achieved, muted = not.
+function drawMiniTarget(doc, cx, cy, r, filled) {
+  if (filled) {
+    doc.setFillColor(...COL.blue);
+    doc.circle(cx, cy, r, "F");
+    doc.setFillColor(...COL.cyan);
+    doc.circle(cx, cy, r * 0.64, "F");
+    doc.setFillColor(...COL.amber);
+    doc.circle(cx, cy, r * 0.3, "F");
+  } else {
+    doc.setDrawColor(...COL.border);
+    doc.setFillColor(...COL.s2);
+    doc.setLineWidth(r * 0.14);
+    doc.circle(cx, cy, r, "FD");
+    doc.circle(cx, cy, r * 0.64, "S");
+    doc.circle(cx, cy, r * 0.3, "S");
+  }
+}
+
+function drawRatingRow(doc, x, y, r, filledCount, totalCount) {
+  const spacing = r * 2.6;
+  for (let i = 0; i < totalCount; i++) {
+    drawMiniTarget(doc, x + r + i * spacing, y, r, i < filledCount);
+  }
 }
 
 /**
@@ -69,7 +193,7 @@ export async function generateLernnachweis({ user, kind, title, score, total, to
   const { jsPDF } = await import("jspdf");
 
   const percent = total > 0 ? Math.round((score / total) * 100) : 0;
-  const badge = badgeForPercent(percent);
+  const zone = zoneForPercent(percent);
   const dateStr = new Date().toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" });
 
   const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
@@ -92,7 +216,7 @@ export async function generateLernnachweis({ user, kind, title, score, total, to
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(...COL.cyan);
-  doc.text("IT-Infrastruktur verstehen. Praxisorientiert lernen.", 40, 29);
+  doc.text("Bleib am Dart!", 40, 29);
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(28);
@@ -103,76 +227,93 @@ export async function generateLernnachweis({ user, kind, title, score, total, to
   doc.setLineWidth(0.4);
   doc.line(20, 62, W - 20, 62);
 
-  // Left column: details + score + topics
+  // Left column: details + rating row + score + zone caption + topics
   const leftX = 20;
   let y = 78;
 
   const row = (label, value) => {
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
+    doc.setFontSize(8);
     doc.setTextColor(...COL.text2);
     doc.text(label.toUpperCase(), leftX, y);
     doc.setFont("helvetica", "bold");
-    doc.setFontSize(12);
+    doc.setFontSize(11);
     doc.setTextColor(...COL.text);
-    doc.text(String(value), leftX, y + 6);
-    y += 16;
+    doc.text(String(value), leftX, y + 5);
+    y += 11;
   };
 
   row("Name / Konto", user?.email || "Unbekannt");
   row("Bereich", title);
   row("Datum", dateStr);
 
+  // Rating row — 5 mini targets standing in for a star rating, filled
+  // count driven by which of the 5 evaluation zones the score landed in.
+  y += 3;
+  const filledCount = 6 - zone.ring;
+  drawRatingRow(doc, leftX, y, 3.2, filledCount, 5);
+  y += 9;
+
   // Score block
-  y += 2;
   doc.setDrawColor(...COL.border);
   doc.setFillColor(...COL.s1);
-  doc.roundedRect(leftX, y, 110, 34, 3, 3, "FD");
+  doc.roundedRect(leftX, y, 110, 26, 3, 3, "FD");
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(30);
-  doc.setTextColor(percent >= 80 ? COL.amber[0] : COL.cyan[0], percent >= 80 ? COL.amber[1] : COL.cyan[1], percent >= 80 ? COL.amber[2] : COL.cyan[2]);
-  doc.text(`${percent}%`, leftX + 10, y + 22);
+  doc.setFontSize(24);
+  doc.setTextColor(...zone.color);
+  doc.text(`${percent}%`, leftX + 10, y + 17);
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
+  doc.setFontSize(10);
   doc.setTextColor(...COL.text2);
-  doc.text(`${score} von ${total} richtig`, leftX + 55, y + 22);
-  y += 44;
+  doc.text(`${score} von ${total} richtig`, leftX + 52, y + 17);
+  y += 31;
 
-  // Topic stats
+  // Zone caption — always shown, for every score range
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(...zone.color);
+  const capLines = doc.splitTextToSize(zone.label, 115);
+  doc.text(capLines, leftX, y);
+  y += capLines.length * 3.9 + 4;
+
+  // Topic stats — row height shrinks to fit however many topics there are,
+  // so it never runs into the footer, even for a full 7-category exam with
+  // a two-line caption above it.
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(...COL.text2);
   doc.text("THEMENSTATISTIK", leftX, y);
-  y += 6;
+  y += 5;
+  const maxTopicsY = H - 15;
+  const rowH = Math.max(3, Math.min(11, (maxTopicsY - y) / Math.max(1, topics.length)));
+  const barH = rowH < 5 ? 1.1 : rowH < 7 ? 1.4 : rowH < 9 ? 1.6 : 2.2;
+  const rowFont = rowH < 5 ? 6.5 : rowH < 7 ? 7.5 : rowH < 9 ? 8.5 : 10;
+  const textOff = Math.min(4, rowH * 0.5);
+  const barOff = Math.min(6, rowH * 0.78);
   topics.forEach((t) => {
     const tPct = t.total > 0 ? t.correct / t.total : 0;
     doc.setFont("helvetica", "normal");
-    doc.setFontSize(10);
+    doc.setFontSize(rowFont);
     doc.setTextColor(...COL.text);
-    doc.text(t.name, leftX, y + 4);
+    doc.text(t.name, leftX, y + textOff);
     doc.setTextColor(...COL.text2);
-    doc.text(`${t.correct}/${t.total}`, leftX + 92, y + 4, { align: "right" });
+    doc.text(`${t.correct}/${t.total}`, leftX + 92, y + textOff, { align: "right" });
     doc.setFillColor(...COL.s2);
-    doc.roundedRect(leftX, y + 6, 92, 2.2, 1, 1, "F");
+    doc.roundedRect(leftX, y + barOff, 92, barH, 1, 1, "F");
     doc.setFillColor(tPct >= 0.8 ? COL.green[0] : COL.cyan[0], tPct >= 0.8 ? COL.green[1] : COL.cyan[1], tPct >= 0.8 ? COL.green[2] : COL.cyan[2]);
-    doc.roundedRect(leftX, y + 6, Math.max(2, 92 * tPct), 2.2, 1, 1, "F");
-    y += 12;
+    doc.roundedRect(leftX, y + barOff, Math.max(2, 92 * tPct), barH, 1, 1, "F");
+    y += rowH;
   });
 
-  // Right column: badge
-  const badgeCx = 220, badgeCy = 115;
-  if (badge) {
-    drawMark(doc, badgeCx, badgeCy, 34, { ringOnly: true });
-    doc.setFillColor(...COL.amber);
-    doc.circle(badgeCx, badgeCy, 34 * 0.14, "F");
-    doc.setFont("helvetica", "bold");
-    doc.setFontSize(13);
-    doc.setTextColor(...(badge.key === "bullseye" ? COL.amber : COL.cyan));
-    const lines = doc.splitTextToSize(badge.label, 90);
-    doc.text(lines, badgeCx, badgeCy + 50, { align: "center" });
-  } else {
-    drawMark(doc, badgeCx, badgeCy, 30, { ringOnly: true });
-  }
+  // Right column: die Dartscheibe, auf der der Pfeil passend zum
+  // Ergebnis landet — für jeden Lernnachweis, nicht nur die großen
+  // Prüfungssimulationen.
+  const badgeCx = 220, badgeCy = 125;
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(...COL.text2);
+  doc.text("TREFFERBILD", badgeCx, badgeCy - 56, { align: "center" });
+  drawDartboardTarget(doc, badgeCx, badgeCy, 30, percent, score, total);
 
   // Footer
   doc.setFont("helvetica", "normal");
@@ -181,7 +322,7 @@ export async function generateLernnachweis({ user, kind, title, score, total, to
   doc.text(
     "Kein offizielles Zertifikat — Lernnachweis zur eigenen Lernkontrolle, erstellt mit IT-Dart.",
     leftX,
-    H - 14
+    H - 9
   );
 
   const fileSafeTitle = title.replace(/[^a-z0-9äöüß]+/gi, "_").slice(0, 40);
@@ -195,7 +336,7 @@ export async function generateLernnachweis({ user, kind, title, score, total, to
       score,
       total,
       percent,
-      badge: badge?.key ?? null,
+      badge: zone.key,
     }).then(() => {});
   }
 }

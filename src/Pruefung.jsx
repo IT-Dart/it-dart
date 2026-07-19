@@ -22,7 +22,7 @@ const PRUEFUNG=[
   {id:11,kat:"Grundlagen",q:"Wie viele Bit hat ein Byte?",o:["4","16","8","32"],c:2,e:"1 Byte = 8 Bit. Das ist die kleinste adressierbare Speichereinheit in modernen Computern."},
   {id:12,kat:"Grundlagen",q:"Was passiert in den ersten Sekunden nach dem Einschalten eines PCs?",o:["Der PC lädt Updates","BIOS/UEFI prüft Hardware (POST), dann lädt der Bootloader das Betriebssystem","Der Virenscanner scannt","Der PC verbindet sich mit dem Netzwerk"],c:1,e:"Beim Start: BIOS/UEFI startet → POST → Bootloader lädt → Betriebssystem-Kernel → Dienste → Desktop."},
   {id:13,kat:"Netzwerk & OSI",q:"Ein Benutzer kann keine Webseiten öffnen, Kollegen im selben Büro haben kein Problem. Was prüft der Techniker zuerst?",o:["Den Webserver im Internet","Die IP-Konfiguration des betroffenen PCs","Den Internetzugang des Unternehmens","Den DNS-Server"],c:1,e:"Da nur ein PC betroffen ist, liegt das Problem lokal. Zuerst IP-Konfiguration prüfen: Hat der PC eine IP? Stimmt Gateway und DNS?"},
-  {id:14,kat:"Netzwerk & OSI",q:"Welche OSI-Schicht ist für die physische Übertragung von Bits zuständig?",o:["Schicht 2","Schicht 3","Schicht 1 – Physical","Schicht 4"],c:2,e:"Schicht 1 (Physical) überträgt rohe Bits als elektrische Signale, Lichtsignale oder Funkwellen."},
+  {id:14,kat:"Netzwerk & OSI",q:"Welche OSI-Schicht ist für die physische Übertragung von Bits zuständig?",o:["Schicht 2 – Data Link","Schicht 3 – Network","Schicht 1 – Physical","Schicht 4 – Transport"],c:2,e:"Schicht 1 (Physical) überträgt rohe Bits als elektrische Signale, Lichtsignale oder Funkwellen."},
   {id:15,kat:"Netzwerk & OSI",q:"Was ist der Unterschied zwischen Switch und Hub?",o:["Kein Unterschied","Switch leitet gezielt an den Empfänger weiter, Hub sendet an alle Ports","Hub ist schneller","Switch arbeitet auf Schicht 3"],c:1,e:"Ein Hub sendet an alle Ports (ineffizient). Ein Switch lernt welches Gerät an welchem Port hängt und sendet gezielt."},
   {id:16,kat:"Netzwerk & OSI",q:"PC hat IP 192.168.1.50 mit Maske 255.255.255.0. Was ist die Netzwerkadresse?",o:["192.168.1.50","192.168.1.1","192.168.1.0","192.168.0.0"],c:2,e:"Bei 255.255.255.0 (/24) sind die ersten drei Oktette das Netzwerk: 192.168.1.0. Hosts: .1 bis .254."},
   {id:17,kat:"Netzwerk & OSI",q:"Was ist die Aufgabe des DNS?",o:["IP-Adressen vergeben","Domainnamen in IP-Adressen auflösen","Pakete routen","Verbindungen verschlüsseln"],c:1,e:"DNS übersetzt Domainnamen wie www.google.com in IP-Adressen — erst dann kann der Browser eine Verbindung aufbauen."},
@@ -30,12 +30,12 @@ const PRUEFUNG=[
   {id:19,kat:"Netzwerk & OSI",q:"Was ist ein VLAN?",o:["Ein verschlüsseltes Netzwerk","Logische Trennung eines physischen Netzwerks in virtuelle Netze","Schnelleres WLAN","Protokoll zur IP-Vergabe"],c:1,e:"VLANs trennen ein physisches Netzwerk logisch. Geräte im gleichen VLAN kommunizieren direkt, zwischen VLANs muss ein Router vermitteln."},
   {id:20,kat:"Netzwerk & OSI",q:"Welches Protokoll vergibt automatisch IP-Adressen?",o:["DNS","HTTP","DHCP","FTP"],c:2,e:"DHCP vergibt automatisch IP-Adressen, Subnetzmasken, Gateways und DNS-Server an Geräte."},
   {id:21,kat:"Netzwerk & OSI",q:"Was ist der Unterschied zwischen TCP und UDP?",o:["TCP ist schneller","TCP ist verbindungsorientiert und zuverlässig, UDP schneller aber unzuverlässig","UDP bestätigt jeden Empfang","TCP nur für Video"],c:1,e:"TCP: Verbindung, Bestätigung, Neuübertragung bei Verlust — zuverlässig aber langsamer. UDP: Kein Handshake — schneller, für Streaming/VoIP."},
-  {id:22,kat:"Netzwerk & OSI",q:"Auf welcher OSI-Schicht arbeitet ein Router?",o:["Schicht 1","Schicht 2","Schicht 3","Schicht 4"],c:2,e:"Router arbeiten auf Schicht 3 (Network) und leiten Pakete anhand von IP-Adressen zwischen Netzwerken weiter."},
+  {id:22,kat:"Netzwerk & OSI",q:"Auf welcher OSI-Schicht arbeitet ein Router?",o:["Schicht 1 – Physical","Schicht 2 – Data Link","Schicht 3 – Network","Schicht 4 – Transport"],c:2,e:"Router arbeiten auf Schicht 3 (Network) und leiten Pakete anhand von IP-Adressen zwischen Netzwerken weiter."},
   {id:23,kat:"Netzwerk & OSI",q:"Was bedeutet '/24' in der Adresse 192.168.1.0/24?",o:["24 Geräte im Netz","Erste 24 Bit sind Netzwerkteil — entspricht 255.255.255.0","Netzwerk hat 24 Subnetze","Router hat 24 Ports"],c:1,e:"/24 bedeutet die ersten 24 Bit sind das Netzwerk. Entspricht 255.255.255.0 — 254 nutzbare Hosts (.1 bis .254)."},
-  {id:24,kat:"Netzwerk & OSI",q:"Webseite öffnet nicht, aber Ping funktioniert. Wahrscheinlichste Ursache?",o:["Kabel defekt","Port durch Firewall blockiert (Schicht 4)","IP-Adresse falsch","DNS ausgefallen"],c:1,e:"Ping nutzt ICMP (kein Port). Webseiten brauchen Port 80/443. Ping geht, Browser nicht → Firewall blockiert den Port."},
+  {id:24,kat:"Netzwerk & OSI",q:"Webseite öffnet nicht, aber Ping funktioniert. Wahrscheinlichste Ursache?",o:["Kabel defekt","Port durch Firewall blockiert","IP-Adresse falsch","DNS ausgefallen"],c:1,e:"Ping nutzt ICMP (kein Port). Webseiten brauchen Port 80/443. Ping geht, Browser nicht → Firewall blockiert den Port (Schicht 4)."},
   {id:25,kat:"Netzwerk & OSI",q:"Was ist eine MAC-Adresse?",o:["IP-Adresse für WLAN","Eindeutige Hardware-Adresse jeder Netzwerkkarte","Verschlüsseltes Passwort","Router-Adresse"],c:1,e:"MAC-Adresse: weltweit eindeutige 48-Bit-Adresse die jeder Netzwerkkarte eingebrannt ist. Arbeitet auf Schicht 2."},
   {id:26,kat:"Netzwerk & OSI",q:"Was ist der Unterschied zwischen HTTP und HTTPS?",o:["HTTPS ist schneller","HTTPS verschlüsselt per TLS, HTTP überträgt unverschlüsselt","HTTP ist moderner","Kein Unterschied"],c:1,e:"HTTPS verschlüsselt mit TLS. HTTP überträgt im Klartext — gefährlich für Passwörter und sensible Daten."},
-  {id:27,kat:"Netzwerk & OSI",q:"Welche OSI-Schicht ist für TLS-Verschlüsselung zuständig?",o:["Schicht 4","Schicht 5","Schicht 6 – Presentation","Schicht 7"],c:2,e:"Schicht 6 (Presentation) ist für Datendarstellung und Verschlüsselung zuständig. TLS verschlüsselt auf dieser Schicht."},
+  {id:27,kat:"Netzwerk & OSI",q:"Welche OSI-Schicht ist für TLS-Verschlüsselung zuständig?",o:["Schicht 4 – Transport","Schicht 5 – Session","Schicht 6 – Presentation","Schicht 7 – Application"],c:2,e:"Schicht 6 (Presentation) ist für Datendarstellung und Verschlüsselung zuständig. TLS verschlüsselt auf dieser Schicht."},
   {id:28,kat:"Netzwerk & OSI",q:"Was ist ein Subnetz?",o:["Zweiter Router","Logisch abgeteilter Teil eines größeren IP-Netzwerks","Verschlüsselter Bereich","Netz ohne Internet"],c:1,e:"Subnetting teilt ein großes Netz in kleinere Bereiche — bessere Performance, Sicherheit und Verwaltung."},
   {id:29,kat:"Netzwerk & OSI",q:"Was ist NAT (Network Address Translation)?",o:["Datenverschlüsselung","Übersetzung privater in öffentliche IP-Adressen für den Internetzugang","DNS-Protokoll","Eine Firewall"],c:1,e:"NAT erlaubt vielen Geräten mit privaten IP-Adressen über eine öffentliche IP ins Internet zu gehen. Der Router übersetzt die Adressen."},
   {id:30,kat:"Netzwerk & OSI",q:"Wofür nutzt ein Techniker 'ipconfig /all' auf Windows?",o:["PC neu starten","Alle Netzwerkkonfigurationen anzeigen (IP, Gateway, DNS, MAC)","Kabel testen","DNS-Cache leeren"],c:1,e:"ipconfig /all zeigt alle Netzwerkinformationen: IP, Subnetzmaske, Gateway, DNS, MAC. Wichtigstes Diagnose-Tool für Netzwerkprobleme."},
@@ -127,9 +127,11 @@ export default function Pruefung({onExit}){
   const [falsch,setFalsch]=useState([]);
   const [showAuth,setShowAuth]=useState(false);
   const [nachweisBusy,setNachweisBusy]=useState(false);
+  const [lockReason,setLockReason]=useState(null); // "account" | "premium"
 
   const starten=(n)=>{
-    if(n>20&&!isPremium){setModus("locked");return;}
+    if(!user){setLockReason("account");setModus("locked");return;}
+    if(n>20&&!isPremium){setLockReason("premium");setModus("locked");return;}
     const pool=isPremium?(kat==="Alle"?PRUEFUNG:PRUEFUNG.filter(f=>f.kat===kat)):PRUEFUNG.filter(f=>FREE_KATS.includes(f.kat));
     const auswahl=shuffle(pool).slice(0,n);
     setFragen(auswahl);setIdx(0);setSel(null);setScore(0);setFalsch([]);setModus("quiz");
@@ -174,11 +176,12 @@ export default function Pruefung({onExit}){
     <div style={wrap}><div style={{...inner,textAlign:"center",paddingTop:40}}>
       <button onClick={reset} style={{background:"none",border:`0.5px solid ${C.bd}`,borderRadius:8,color:C.t2,padding:"6px 12px",fontSize:13,cursor:"pointer",marginBottom:24}}>← Zurück</button>
       <div style={{fontSize:48,marginBottom:12}}>🔒</div>
-      <h2 style={{fontSize:20,fontWeight:700,marginBottom:8,color:C.t}}>Halb- &amp; Vollprüfung sind Premium</h2>
-      {!user?(<>
-        <p style={{fontSize:14,color:C.t2,marginBottom:20,lineHeight:1.6}}>Der Schnelltest (20 Fragen aus Grundlagen &amp; Netzwerktechnik) ist frei. Für die größeren Prüfungen mit allen 100 Fragen melde dich zuerst an.</p>
+      {lockReason==="account"?(<>
+        <h2 style={{fontSize:20,fontWeight:700,marginBottom:8,color:C.t}}>Die Prüfungsvorbereitung erfordert ein Konto</h2>
+        <p style={{fontSize:14,color:C.t2,marginBottom:20,lineHeight:1.6}}>Auch der Schnelltest (20 Fragen) ist nur mit einem kostenlosen Konto nutzbar — so bleibt die Prüfungsvorbereitung für alle fair und funktioniert nicht als endlose Gratis-Fragensammlung.</p>
         <button onClick={()=>setShowAuth(true)} style={{background:C.bl,color:"#fff",border:"none",borderRadius:10,padding:"12px 18px",fontSize:14,fontWeight:500,cursor:"pointer",width:"100%",fontFamily:ff}}>Anmelden / Registrieren →</button>
       </>):(<>
+        <h2 style={{fontSize:20,fontWeight:700,marginBottom:8,color:C.t}}>Halb- &amp; Vollprüfung sind Premium</h2>
         <p style={{fontSize:14,color:C.t2,marginBottom:8,lineHeight:1.6}}>Dein Konto ({user.email}) hat noch keinen Premium-Zugang.</p>
         <p style={{fontSize:13,color:C.mu}}>Melde dich bei uns, um Premium freizuschalten.</p>
       </>)}
@@ -203,16 +206,17 @@ export default function Pruefung({onExit}){
         <div style={{textAlign:"center",paddingTop:20,paddingBottom:32}}>
           <div style={{fontSize:56,marginBottom:16}}>🎯</div>
           <h2 style={{fontSize:22,fontWeight:700,marginBottom:8,color:C.t}}>Prüfungsvorbereitung</h2>
-          <p style={{fontSize:14,color:C.t2,lineHeight:1.7,marginBottom:8}}>{isPremium?"100 Fragen aus allen Themenbereichen — zufällig gemischt, mit sofortigem Feedback und Erklärung.":"Im kostenlosen Schnelltest: 20 Fragen aus Grundlagen & Netzwerktechnik. Mit Premium: alle 100 Fragen aus allen 7 Bereichen."}</p>
+          <p style={{fontSize:14,color:C.t2,lineHeight:1.7,marginBottom:8}}>{!user?"Ein kostenloses Konto genügt für den Schnelltest (20 Fragen). Mit Premium: alle 100 Fragen aus allen 7 Bereichen.":isPremium?"100 Fragen aus allen Themenbereichen — zufällig gemischt, mit sofortigem Feedback und Erklärung.":"Im kostenlosen Schnelltest: 20 Fragen aus Grundlagen & Netzwerktechnik. Mit Premium: alle 100 Fragen aus allen 7 Bereichen."}</p>
           <p style={{fontSize:13,color:C.mu,marginBottom:32}}>Fachinformatiker für Systemintegration (FISI) · IHK-Stil</p>
           <div style={{display:"flex",gap:10,justifyContent:"center",marginBottom:32}}>
             {[{n:20,l:"Schnelltest"},{n:50,l:"Halbprüfung"},{n:100,l:"Vollprüfung"}].map(({n,l})=>{
-              const locked=n>20&&!isPremium;
+              const locked=!user||(n>20&&!isPremium);
+              const lockLabel=!user?"🔒 Konto nötig":"🔒 Premium";
               return(
                 <button key={n} onClick={()=>starten(n)} style={{flex:1,maxWidth:120,padding:"16px 8px",borderRadius:12,border:`1.5px solid ${C.bd}`,background:C.s1,color:C.t,cursor:"pointer",fontFamily:ff,boxShadow:"0 1px 3px rgba(0,0,0,0.06)"}}>
                   <div style={{fontSize:20,fontWeight:700,color:C.bl,marginBottom:4}}>{n}</div>
                   <div style={{fontSize:11,color:C.t2}}>{l}</div>
-                  {locked&&<div style={{fontSize:10,color:C.am,marginTop:4,fontWeight:600}}>🔒 Premium</div>}
+                  {locked&&<div style={{fontSize:10,color:C.am,marginTop:4,fontWeight:600}}>{lockLabel}</div>}
                 </button>
               );
             })}

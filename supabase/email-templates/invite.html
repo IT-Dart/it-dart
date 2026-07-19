@@ -1,0 +1,38 @@
+<!--
+  Supabase Dashboard → Authentication → Emails → Templates → "Invite user"
+  Subject: Deine Einladung zu IT-Dart 🎯
+-->
+<div style="background:#0f1623;padding:32px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
+  <table role="presentation" width="100%" style="max-width:480px;margin:0 auto;border-collapse:collapse;">
+    <tr>
+      <td style="background:#1a2535;border:1px solid #2d3f5a;border-radius:14px;padding:36px 32px;">
+        <table role="presentation">
+          <tr>
+            <td style="width:40px;height:40px;border-radius:50%;background:#2563eb;text-align:center;vertical-align:middle;font-size:20px;">🎯</td>
+            <td style="padding-left:12px;">
+              <div style="font-size:18px;font-weight:700;color:#f1f5f9;line-height:1.3;">IT-Dart</div>
+              <div style="font-size:11px;font-weight:500;color:#38bdf8;line-height:1.3;">Bleib am Dart!</div>
+            </td>
+          </tr>
+        </table>
+        <h1 style="font-size:20px;color:#f1f5f9;margin:28px 0 10px;">Du wurdest zu IT-Dart eingeladen</h1>
+        <p style="font-size:14px;color:#94a3b8;line-height:1.7;margin:0 0 26px;">
+          Jemand hat dich eingeladen, IT-Dart zu nutzen — die Lernplattform für angehende Fachinformatiker für Systemintegration (FISI). Klicke auf den Button, um dein Konto zu aktivieren und ein Passwort festzulegen.
+        </p>
+        <table role="presentation" width="100%">
+          <tr>
+            <td align="center" style="padding:4px 0 24px;">
+              <a href="{{ .ConfirmationURL }}" style="background:#2563eb;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:13px 28px;border-radius:10px;display:inline-block;">Konto aktivieren →</a>
+            </td>
+          </tr>
+        </table>
+        <p style="font-size:12px;color:#64748b;line-height:1.6;margin:0 0 4px;">Falls der Button nicht funktioniert, kopiere diesen Link in deinen Browser:</p>
+        <p style="font-size:12px;color:#38bdf8;word-break:break-all;margin:0 0 24px;">{{ .ConfirmationURL }}</p>
+        <p style="font-size:11px;color:#64748b;line-height:1.6;margin:0;border-top:1px solid #2d3f5a;padding-top:16px;">
+          Dieser Link ist nur einmal gültig und läuft nach kurzer Zeit ab. Wenn du diese Einladung nicht erwartet hast, kannst du diese E-Mail einfach ignorieren.
+        </p>
+      </td>
+    </tr>
+    <tr><td style="text-align:center;padding-top:18px;font-size:11px;color:#475569;">IT-Dart · Coskun Selim Bulut</td></tr>
+  </table>
+</div>
