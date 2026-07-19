@@ -22,7 +22,7 @@ export default function AdminScreen({onClose}){
     setBusy(true);setErr(null);
     const {data,error}=await supabase
       .from("profiles")
-      .select("id,email,is_premium,premium_until")
+      .select("id,email,is_premium,premium_until,ai_enabled")
       .ilike("email",`%${query.trim()}%`)
       .order("email")
       .limit(25);
@@ -42,6 +42,7 @@ export default function AdminScreen({onClose}){
   const grantMonth=(r)=>updateUser(r.id,{premium_until:new Date(Date.now()+30*24*60*60*1000).toISOString()});
   const togglePermanent=(r)=>updateUser(r.id,{is_premium:!r.is_premium});
   const revoke=(r)=>updateUser(r.id,{is_premium:false,premium_until:null});
+  const toggleAi=(r)=>updateUser(r.id,{ai_enabled:!(r.ai_enabled??true)});
 
   return(
     <div style={wrap}><div style={inner}>
@@ -66,13 +67,17 @@ export default function AdminScreen({onClose}){
         {results?.map(r=>{
           const until=fmtUntil(r.premium_until);
           const active=r.is_premium||until;
+          const aiOn=r.ai_enabled??true;
           return(
             <div key={r.id} style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:12,padding:"14px 16px"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:10}}>
                 <span style={{fontSize:14,fontWeight:600,wordBreak:"break-all"}}>{r.email}</span>
-                <span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:500,flexShrink:0,background:active?"#14532d":"#2a1a0f",color:active?"#86efac":"#fbbf24"}}>
-                  {r.is_premium?"⭐ Dauerhaft":until?`Bis ${until}`:"Free"}
-                </span>
+                <div style={{display:"flex",gap:6,flexShrink:0}}>
+                  <span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:500,background:active?"#14532d":"#2a1a0f",color:active?"#86efac":"#fbbf24"}}>
+                    {r.is_premium?"⭐ Dauerhaft":until?`Bis ${until}`:"Free"}
+                  </span>
+                  {!aiOn&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:500,background:"#450a0a",color:"#fca5a5"}}>🤖 Gesperrt</span>}
+                </div>
               </div>
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                 <button disabled={busyId===r.id} onClick={()=>togglePermanent(r)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:busyId===r.id?.6:1}}>
@@ -80,6 +85,9 @@ export default function AdminScreen({onClose}){
                 </button>
                 <button disabled={busyId===r.id} onClick={()=>grantMonth(r)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:busyId===r.id?.6:1}}>+1 Monat</button>
                 {active&&<button disabled={busyId===r.id} onClick={()=>revoke(r)} style={{...ghost,fontSize:12,padding:"7px 12px",color:"#fca5a5",borderColor:"#7f1d1d",opacity:busyId===r.id?.6:1}}>Zugang entziehen</button>}
+                <button disabled={busyId===r.id} onClick={()=>toggleAi(r)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:busyId===r.id?.6:1}}>
+                  {aiOn?"🤖 KI sperren":"🤖 KI freischalten"}
+                </button>
               </div>
             </div>
           );

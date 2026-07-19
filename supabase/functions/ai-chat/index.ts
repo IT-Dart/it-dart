@@ -48,6 +48,16 @@ Deno.serve(async (req) => {
       return json({ error: "Nicht angemeldet." }, 401, cors);
     }
 
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("is_premium, premium_until, ai_enabled")
+      .eq("id", user.id)
+      .single();
+
+    if (profile?.ai_enabled === false) {
+      return json({ error: "Der KI-Chat ist für dieses Konto deaktiviert." }, 403, cors);
+    }
+
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     const { count: usageCount } = await supabase
       .from("ai_usage")
@@ -65,12 +75,6 @@ Deno.serve(async (req) => {
     }
 
     if (!FREE_MODULE_IDS.includes(moduleId)) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("is_premium, premium_until")
-        .eq("id", user.id)
-        .single();
-
       const hasTimedPremium = profile?.premium_until && new Date(profile.premium_until) > new Date();
       const premiumActive = profile?.is_premium || hasTimedPremium;
       if (!premiumActive) {
