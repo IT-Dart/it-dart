@@ -5,6 +5,7 @@ import { supabase } from "./lib/supabaseClient";
 import { generateLernnachweis } from "./lib/lernnachweis";
 import AuthScreen from "./AuthScreen";
 import AdminScreen from "./AdminScreen";
+import DeleteAccountScreen from "./DeleteAccountScreen";
 import coverImg from "./assets/cover.jpg";
 import moduleGImg from "./assets/module-g.jpg";
 import moduleBImg from "./assets/module-b.jpg";
@@ -1111,6 +1112,7 @@ export default function ITDart({onOpenExam}){
 
   if(view==="auth")return <AuthScreen onClose={()=>setView("overview")}/>;
   if(view==="admin")return isAdmin?<AdminScreen onClose={()=>setView("overview")}/>:null;
+  if(view==="delete-account")return <DeleteAccountScreen onClose={()=>setView("overview")}/>;
 
   if(view==="locked"&&mod)return(
     <div style={wrap}><div style={{...inner,textAlign:"center",paddingTop:40}}>
@@ -1163,7 +1165,7 @@ export default function ITDart({onOpenExam}){
       </div>
       <div style={{textAlign:"right",marginBottom:16}}>
         {user?(
-          <span style={{fontSize:12,color:C.mu}}>{user.email} {isPremium?"· ⭐ Premium":"· Free"} {isAdmin&&<>· <button onClick={()=>setView("admin")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>⚙️ Admin</button></>} · <button onClick={signOut} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Abmelden</button></span>
+          <span style={{fontSize:12,color:C.mu}}>{user.email} {isPremium?"· ⭐ Premium":"· Free"} {isAdmin&&<>· <button onClick={()=>setView("admin")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>⚙️ Admin</button></>} · <button onClick={signOut} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Abmelden</button> · <button onClick={()=>setView("delete-account")} style={{background:"none",border:"none",color:C.mu,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Konto löschen</button></span>
         ):(
           <button onClick={()=>setView("auth")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Anmelden / Registrieren</button>
         )}

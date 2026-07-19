@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { C, pri, ghost, wrap, inner, ff } from "./lib/theme";
 import { supabase } from "./lib/supabaseClient";
+import { describeError } from "./lib/errorText";
 
 const input={width:"100%",background:C.s2,border:`0.5px solid ${C.bd}`,borderRadius:10,color:C.t,padding:"11px 14px",fontSize:14,outline:"none",fontFamily:"inherit"};
 
@@ -27,7 +28,7 @@ export default function AdminScreen({onClose}){
       .order("email")
       .limit(25);
     setBusy(false);
-    if(error){setErr(error.message);return;}
+    if(error){setErr(describeError(error));return;}
     setResults(data||[]);
   };
 
@@ -35,7 +36,7 @@ export default function AdminScreen({onClose}){
     setBusyId(id);
     const {error}=await supabase.from("profiles").update(patch).eq("id",id);
     setBusyId(null);
-    if(error){setErr(error.message);return;}
+    if(error){setErr(describeError(error));return;}
     setResults(rs=>rs.map(r=>r.id===id?{...r,...patch}:r));
   };
 

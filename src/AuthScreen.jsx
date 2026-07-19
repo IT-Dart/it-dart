@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { C, pri, ghost, wrap, inner, ff } from "./lib/theme";
 import { useAuth } from "./lib/AuthContext";
+import { describeError } from "./lib/errorText";
 
 const input={width:"100%",background:C.s2,border:`0.5px solid ${C.bd}`,borderRadius:10,color:C.t,padding:"11px 14px",fontSize:14,outline:"none",fontFamily:"inherit",marginBottom:10};
 
@@ -21,16 +22,26 @@ export default function AuthScreen({onClose}){
       setBusy(true);setMsg(null);
       const {error}=await resetPassword(email);
       setBusy(false);
-      if(error){setMsg({type:"error",text:error.message});return;}
+      if(error){setMsg({type:"error",text:describeError(error)});return;}
       setMsg({type:"info",text:"Falls diese E-Mail bei uns registriert ist, haben wir dir einen Link zum Zurücksetzen geschickt."});
       return;
     }
     if(!password){setMsg({type:"error",text:"Bitte E-Mail und Passwort eingeben."});return;}
     setBusy(true);setMsg(null);
-    const {error}=mode==="login"?await signIn(email,password):await signUp(email,password);
+    const {data,error}=mode==="login"?await signIn(email,password):await signUp(email,password);
     setBusy(false);
-    if(error){setMsg({type:"error",text:error.message});return;}
-    if(mode==="signup"){setMsg({type:"info",text:"Konto erstellt! Falls E-Mail-Bestätigung aktiv ist, prüfe dein Postfach — sonst bist du jetzt eingeloggt."});return;}
+    if(error){setMsg({type:"error",text:describeError(error)});return;}
+    if(mode==="signup"){
+      // Supabase returns success (no error) with an empty identities array
+      // when the email is already registered, to avoid leaking which
+      // emails exist — so we need to check for that ourselves.
+      if(data?.user&&Array.isArray(data.user.identities)&&data.user.identities.length===0){
+        setMsg({type:"error",text:"Diese E-Mail ist bereits registriert. Bitte melde dich stattdessen an oder setze dein Passwort zurück."});
+        return;
+      }
+      setMsg({type:"info",text:"Konto erstellt! Falls E-Mail-Bestätigung aktiv ist, prüfe dein Postfach — sonst bist du jetzt eingeloggt."});
+      return;
+    }
     onClose?.();
   };
 

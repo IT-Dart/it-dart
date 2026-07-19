@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { C, pri, wrap, inner } from "./lib/theme";
 import { useAuth } from "./lib/AuthContext";
+import { describeError } from "./lib/errorText";
 
 const input={width:"100%",background:C.s2,border:`0.5px solid ${C.bd}`,borderRadius:10,color:C.t,padding:"11px 14px",fontSize:14,outline:"none",fontFamily:"inherit",marginBottom:10};
 
@@ -19,7 +20,7 @@ export default function ResetPasswordScreen(){
     setBusy(true);setMsg(null);
     const {error}=await updatePassword(password);
     setBusy(false);
-    if(error){setMsg({type:"error",text:error.message});return;}
+    if(error){setMsg({type:"error",text:describeError(error)});return;}
     setDone(true);
   };
 
