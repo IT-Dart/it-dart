@@ -36,8 +36,8 @@ export default function AdminScreen({onClose}){
       });
       const d=await r.json();
       if(!r.ok){setInviteMsg({type:"error",text:d.error||"Einladen fehlgeschlagen."});setInviteBusy(false);return;}
-      setInviteMsg({type:"info",text:`Link für ${inviteEmail.trim()} erzeugt — unten kopieren und selbst verschicken:`});
-      setInviteLink(d.link);
+      setInviteMsg({type:"info",text:`Einladung an ${inviteEmail.trim()} verschickt.${d.link?" Optional zusätzlich manuell teilen:":""}`});
+      setInviteLink(d.link||null);
     }catch(e){
       setInviteMsg({type:"error",text:describeError(e)});
     }
