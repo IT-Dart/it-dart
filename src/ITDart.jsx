@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { C, pri, ghost, wrap, inner, ff, fm } from "./lib/theme";
 import { useAuth } from "./lib/AuthContext";
 import { supabase } from "./lib/supabaseClient";
+import { generateLernnachweis } from "./lib/lernnachweis";
 import AuthScreen from "./AuthScreen";
 import AdminScreen from "./AdminScreen";
 import coverImg from "./assets/cover.jpg";
@@ -881,12 +882,19 @@ const OSIOverview=()=>(
   </div>
 );
 
-const Quiz=({qs,onDone})=>{
+const Quiz=({qs,onDone,title})=>{
   const [i,setI]=useState(0);const [sel,setSel]=useState(null);const [sc,setSc]=useState(0);const [done,setDone]=useState(false);
+  const [nachweisBusy,setNachweisBusy]=useState(false);
+  const {user}=useAuth();
   const q=qs[i];const ans=sel!==null;
   const pick=idx=>{if(ans)return;setSel(idx);if(idx===q.c)setSc(s=>s+1);};
   const next=()=>{if(i===qs.length-1){setDone(true);return;}setI(x=>x+1);setSel(null);};
   const pct=Math.round((sc/qs.length)*100);
+  const downloadNachweis=async()=>{
+    setNachweisBusy(true);
+    await generateLernnachweis({user,kind:"modul",title,score:sc,total:qs.length,topics:[{name:title,correct:sc,total:qs.length}]});
+    setNachweisBusy(false);
+  };
   if(done)return(
     <div style={{textAlign:"center",padding:"10px 0"}}>
       <div style={{fontSize:48,marginBottom:12}}>{pct>=80?"🎯":pct>=60?"👍":"💪"}</div>
@@ -895,10 +903,11 @@ const Quiz=({qs,onDone})=>{
       <div style={{height:8,background:C.s2,borderRadius:4,overflow:"hidden",marginBottom:20}}>
         <div style={{height:"100%",width:`${pct}%`,background:pct>=80?C.gr:pct>=60?C.am:"#ef4444",borderRadius:4}}/>
       </div>
-      <div style={{display:"flex",gap:8,justifyContent:"center"}}>
+      <div style={{display:"flex",gap:8,justifyContent:"center",marginBottom:user&&pct>=50?12:0}}>
         <button onClick={()=>{setI(0);setSel(null);setSc(0);setDone(false);}} style={{...ghost}}>🔄 Nochmal</button>
         <button onClick={onDone} style={{...pri}}>✓ Übersicht</button>
       </div>
+      {user&&pct>=50&&<button onClick={downloadNachweis} disabled={nachweisBusy} style={{...ghost,width:"100%",justifyContent:"center",opacity:nachweisBusy?.6:1}}>{nachweisBusy?"Wird erstellt...":"📄 Lernnachweis herunterladen"}</button>}
     </div>
   );
   return(
@@ -1214,7 +1223,7 @@ export default function ITDart({onOpenExam}){
         <p style={{fontSize:11,fontWeight:600,letterSpacing:".06em",textTransform:"uppercase",color:C.cy,marginBottom:6}}>Modul {MODS.findIndex(m=>m.id===mod.id)+1} · Quiz</p>
         <h2 style={{fontSize:20,fontWeight:700,marginBottom:8}} dangerouslySetInnerHTML={{__html:`${mod.e} ${data.title}`}}/>
         {!isPremium&&data.quiz.length>FREE_QUIZ_N&&<p style={{fontSize:13,color:C.mu,marginBottom:16}}>Kostenlose Vorschau: {FREE_QUIZ_N} von {data.quiz.length} Fragen. Mit Premium: alle Fragen.</p>}
-        <Quiz qs={isPremium?data.quiz:data.quiz.slice(0,FREE_QUIZ_N)} onDone={()=>setView("overview")}/>
+        <Quiz qs={isPremium?data.quiz:data.quiz.slice(0,FREE_QUIZ_N)} onDone={()=>setView("overview")} title={data.title.replace(/&amp;/g,"&")}/>
       </div></div>
     );
     const item=data.items[idx];

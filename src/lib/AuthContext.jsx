@@ -22,7 +22,11 @@ export function AuthProvider({ children }) {
     if (!user) { setProfile(null); return; }
     let cancelled = false;
     supabase.from("profiles").select("is_premium, premium_until, is_admin, email").eq("id", user.id).single()
-      .then(({ data }) => { if (!cancelled) setProfile(data ?? { is_premium: false, premium_until: null, is_admin: false }); });
+      .then(({ data, error }) => {
+        if (cancelled) return;
+        if (error) console.error("Profil konnte nicht geladen werden:", error.message);
+        setProfile(data ?? { is_premium: false, premium_until: null, is_admin: false });
+      });
     return () => { cancelled = true; };
   }, [session?.user?.id]);
 

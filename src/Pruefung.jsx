@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useAuth } from "./lib/AuthContext";
+import { generateLernnachweis } from "./lib/lernnachweis";
 import AuthScreen from "./AuthScreen";
 
 const C={bg:"#f8fafc",s1:"#ffffff",s2:"#f1f5f9",bd:"#e2e8f0",bl:"#1d4ed8",cy:"#0ea5e9",t:"#0f172a",t2:"#475569",mu:"#94a3b8",gr:"#16a34a",am:"#d97706",co:"#dc2626"};
@@ -125,6 +126,7 @@ export default function Pruefung({onExit}){
   const [score,setScore]=useState(0);
   const [falsch,setFalsch]=useState([]);
   const [showAuth,setShowAuth]=useState(false);
+  const [nachweisBusy,setNachweisBusy]=useState(false);
 
   const starten=(n)=>{
     if(n>20&&!isPremium){setModus("locked");return;}
@@ -150,6 +152,19 @@ export default function Pruefung({onExit}){
   const q=fragen[idx];
   const ans=sel!==null;
   const pct=fragen.length>0?Math.round((score/fragen.length)*100):0;
+
+  const topicStats=useMemo(()=>{
+    const stats={};
+    fragen.forEach(f=>{stats[f.kat]=stats[f.kat]||{name:f.kat,correct:0,total:0};stats[f.kat].total++;});
+    fragen.forEach(f=>{if(!falsch.includes(f))stats[f.kat].correct++;});
+    return Object.values(stats);
+  },[fragen,falsch]);
+
+  const downloadNachweis=async()=>{
+    setNachweisBusy(true);
+    await generateLernnachweis({user,kind:"pruefung",title:`Prüfungsvorbereitung (${fragen.length} Fragen)`,score,total:fragen.length,topics:topicStats});
+    setNachweisBusy(false);
+  };
 
   const katCount=kat==="Alle"?PRUEFUNG.length:PRUEFUNG.filter(f=>f.kat===kat).length;
 
@@ -266,9 +281,12 @@ export default function Pruefung({onExit}){
           <div style={{height:10,background:C.s2,borderRadius:5,overflow:"hidden",marginBottom:24}}>
             <div style={{height:"100%",width:`${pct}%`,background:pct>=80?C.gr:pct>=60?C.am:"#ef4444",borderRadius:5,transition:"width .6s"}}/>
           </div>
-          <div style={{display:"flex",gap:8,justifyContent:"center",marginBottom:28}}>
-            <button onClick={()=>starten(fragen.length)} style={{background:C.s1,color:C.t2,border:`0.5px solid ${C.bd}`,borderRadius:10,padding:"11px 18px",fontSize:13,cursor:"pointer",fontFamily:ff}}>🔄 Nochmal</button>
-            <button onClick={reset} style={{background:C.bl,color:"#fff",border:"none",borderRadius:10,padding:"11px 18px",fontSize:13,cursor:"pointer",fontFamily:ff}}>← Neue Runde</button>
+          <div style={{marginBottom:28}}>
+            <div style={{display:"flex",gap:8,justifyContent:"center",marginBottom:user&&pct>=50?12:0}}>
+              <button onClick={()=>starten(fragen.length)} style={{background:C.s1,color:C.t2,border:`0.5px solid ${C.bd}`,borderRadius:10,padding:"11px 18px",fontSize:13,cursor:"pointer",fontFamily:ff}}>🔄 Nochmal</button>
+              <button onClick={reset} style={{background:C.bl,color:"#fff",border:"none",borderRadius:10,padding:"11px 18px",fontSize:13,cursor:"pointer",fontFamily:ff}}>← Neue Runde</button>
+            </div>
+            {user&&pct>=50&&<button onClick={downloadNachweis} disabled={nachweisBusy} style={{background:"none",color:C.bl,border:`0.5px solid ${C.bl}`,borderRadius:10,padding:"11px 18px",fontSize:13,cursor:"pointer",fontFamily:ff,opacity:nachweisBusy?.6:1,width:"100%",maxWidth:280,margin:"0 auto",display:"block"}}>{nachweisBusy?"Wird erstellt...":"📄 Lernnachweis herunterladen"}</button>}
           </div>
         </div>
 
