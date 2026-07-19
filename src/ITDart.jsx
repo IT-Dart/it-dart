@@ -1065,7 +1065,7 @@ const PRQ=[
 
 const DATA={g:{items:G,quiz:GQ,title:"Grundlagen IT &amp; Hardware",intro:"Bevor Netzwerke, Server oder Betriebssysteme Sinn ergeben, musst du verstehen was ein Computer überhaupt ist. Wir starten bei null — mit dem, was jeder IT-Techniker am ersten Tag wissen muss.",case:"💼",caseTitle:"Neuer PC im Büro — von der Lieferung bis zum ersten Login"},o:{items:O,quiz:OQ,title:"Netzwerktechnik",intro:"Das OSI-Modell ist das Grundgerüst der gesamten Netzwerktechnik. Du wirst es in jedem weiteren Modul wiedersehen — hier lernst du die 7 Schichten als solides Fundament, anhand eines echten Netzwerkausfalls.",case:"🔌",caseTitle:"Netzwerkausfall — Techniker geht alle 7 Schichten durch"},b:{items:B,quiz:BQ,title:"Betriebssysteme &amp; Server",intro:"Das Betriebssystem ist die unsichtbare Schaltzentrale jedes Computers. Ohne OS läuft keine Anwendung, kein Dienst, kein Netzwerk. Wir begleiten einen Techniker beim Einrichten eines frisch installierten Windows-Servers.",case:"🖥️",caseTitle:"Windows Server im Einsatz — vom ersten Start bis zur fertigen Konfiguration"},si:{items:SI,quiz:SIQ,title:"IT-Sicherheit",intro:"IT-Sicherheit ist kein Produkt das man kauft — es ist ein Prozess. Die meisten Angriffe nutzen keine technischen Lücken, sondern menschliche. Wir begleiten einen IT-Betrieb nach einem echten Sicherheitsvorfall.",case:"🎣",caseTitle:"Phishing-Vorfall — was passiert, wie reagiert die IT, was hätte es verhindert?"},db:{items:DB,quiz:DBQ,title:"Datenbanken &amp; Daten",intro:"Fast jede Software die wir kennen steckt dahinter eine Datenbank. Von der einfachen Kundenliste bis zur komplexen API-Anbindung — Daten sind das Herzstück moderner IT-Systeme.",case:"🏢",caseTitle:"Neue Kundenverwaltung — von der Datenbankstruktur bis zur API-Anbindung",intro:"Fast jede Software die wir kennen steckt dahinter eine Datenbank. Von der einfachen Kundenliste bis zur komplexen API-Anbindung — Daten sind das Herzstück moderner IT-Systeme."},sk:{items:SK,quiz:SKQ,title:"Skripting &amp; Automatisierung",case:"💻",caseTitle:"50 Server täglich prüfen — manuell 2 Stunden, mit Skript 2 Minuten",intro:"Wer Aufgaben automatisiert spart Zeit, vermeidet Fehler und kann sich auf das Wesentliche konzentrieren. Wir begleiten einen Techniker der ein Monitoring-System für 50 Server aufbaut."},pr:{items:PR,quiz:PRQ,title:"Beruf &amp; Projekt",case:"👥",caseTitle:"IT-Projekt von der Bedarfsanalyse bis zur Abnahme",intro:"IT ist mehr als Technik — Kommunikation, Organisation und Recht sind genauso wichtig. Wir begleiten einen Azubi durch ein komplettes IT-Projekt."}};
 
-export default function ITDart({onOpenExam}){
+export default function ITDart({onOpenExam,onOpenLegal}){
   const [view,setView]=useState("cover");
   const [mod,setMod]=useState(null);
   const [idx,setIdx]=useState(0);
@@ -1153,6 +1153,10 @@ export default function ITDart({onOpenExam}){
           <button onClick={()=>setView("auth")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Anmelden / Registrieren</button>
         )}
       </div>
+      {onOpenLegal&&<div style={{marginTop:20,textAlign:"center",display:"flex",gap:14,justifyContent:"center"}}>
+        <button onClick={()=>onOpenLegal("impressum")} style={{background:"none",border:"none",color:C.mu,cursor:"pointer",fontSize:11,textDecoration:"underline",padding:0,fontFamily:ff}}>Impressum</button>
+        <button onClick={()=>onOpenLegal("datenschutz")} style={{background:"none",border:"none",color:C.mu,cursor:"pointer",fontSize:11,textDecoration:"underline",padding:0,fontFamily:ff}}>Datenschutz</button>
+      </div>}
     </div></div>
   );
 
