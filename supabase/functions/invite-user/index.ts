@@ -59,9 +59,7 @@ Deno.serve(async (req) => {
       return json({ error: "Diese E-Mail ist bereits registriert — keine Einladung nötig." }, 400, cors);
     }
 
-    const { error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(email, {
-      redirectTo: "https://it-dart.vercel.app",
-    });
+    const { error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(email);
     if (inviteErr) {
       console.error("[invite-user] inviteUserByEmail failed:", JSON.stringify(inviteErr));
       const msg = inviteErr.message && inviteErr.message !== "{}"
