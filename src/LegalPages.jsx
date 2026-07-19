@@ -28,9 +28,6 @@ export function Impressum({onClose}){
       <h2 style={h2}>Kontakt</h2>
       <p style={p}>E-Mail: coskunselimbulut@gmail.com</p>
 
-      <h2 style={h2}>Umsatzsteuer</h2>
-      <p style={p}>Gemäß § 19 Abs. 1 UStG (Kleinunternehmerregelung) wird keine Umsatzsteuer ausgewiesen.</p>
-
       <h2 style={h2}>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
       <p style={p}>Coskun Selim Bulut (Anschrift wie oben)</p>
 
