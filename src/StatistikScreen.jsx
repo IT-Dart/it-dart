@@ -1,0 +1,100 @@
+import { useEffect, useState } from "react";
+import { C, ghost, pri, wrap, inner, ff } from "./lib/theme";
+import { useAuth } from "./lib/AuthContext";
+import { supabase } from "./lib/supabaseClient";
+import { describeError } from "./lib/errorText";
+import { generateLernnachweis } from "./lib/lernnachweis";
+
+const ZONE_INFO = {
+  bullseye: { label: "Bullseye", color: C.am },
+  hervorragend: { label: "Hervorragend", color: C.am },
+  gut: { label: "Gut", color: C.cy },
+  besser: { label: "Ausbaufähig", color: C.bl },
+  fehlwurf: { label: "Fehlwurf", color: C.co },
+};
+
+const fmtDateTime=(iso)=>iso?new Date(iso).toLocaleString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}):"—";
+
+const fmtDauer=(startedIso,finishedIso)=>{
+  if(!startedIso||!finishedIso)return "—";
+  const sec=Math.max(0,Math.round((new Date(finishedIso)-new Date(startedIso))/1000));
+  const m=Math.floor(sec/60),s=sec%60;
+  return m>0?`${m} Min ${s} Sek`:`${s} Sek`;
+};
+
+export default function StatistikScreen({onClose}){
+  const {user}=useAuth();
+  const [rows,setRows]=useState(null); // null = lädt
+  const [err,setErr]=useState(null);
+  const [busyId,setBusyId]=useState(null);
+
+  useEffect(()=>{
+    if(!user){setRows([]);return;}
+    let cancelled=false;
+    supabase.from("lernnachweise").select("*").eq("user_id",user.id).order("created_at",{ascending:false})
+      .then(({data,error})=>{
+        if(cancelled)return;
+        if(error){setErr(describeError(error));setRows([]);return;}
+        setRows(data||[]);
+      });
+    return ()=>{cancelled=true;};
+  },[user?.id]);
+
+  const nachladen=async(row)=>{
+    setBusyId(row.id);
+    await generateLernnachweis({
+      user,
+      kind:row.kind,
+      title:row.title,
+      score:row.score,
+      total:row.total,
+      topics:row.topics||[{name:row.title,correct:row.score,total:row.total}],
+      startedAt:row.started_at,
+      finishedAt:row.finished_at||row.created_at,
+      skipLog:true,
+    });
+    setBusyId(null);
+  };
+
+  return(
+    <div style={wrap}><div style={inner}>
+      <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:24,paddingBottom:16,borderBottom:`0.5px solid ${C.bd}`}}>
+        <span style={{fontSize:16,fontWeight:700}}>📊 Meine Statistik</span>
+        <button onClick={onClose} style={{...ghost,marginLeft:"auto",fontSize:13,padding:"6px 12px"}}>← Zurück</button>
+      </div>
+
+      {err&&<div style={{background:"#450a0a",border:"0.5px solid #ef4444",borderRadius:10,padding:"10px 14px",marginBottom:16}}>
+        <p style={{fontSize:13,color:"#fca5a5",margin:0}}>{err}</p>
+      </div>}
+
+      {rows===null&&<p style={{fontSize:13,color:C.mu,textAlign:"center",padding:"20px 0"}}>Wird geladen...</p>}
+      {rows?.length===0&&!err&&<p style={{fontSize:13,color:C.mu,textAlign:"center",padding:"20px 0"}}>Noch keine Lernnachweise erzeugt. Sobald du ein Modul-Quiz oder eine Prüfungsvorbereitung mit mindestens 50 % abschließt, taucht sie hier auf.</p>}
+
+      <div style={{display:"flex",flexDirection:"column",gap:10}}>
+        {rows?.map(r=>{
+          const zone=ZONE_INFO[r.badge]||{label:r.badge||"—",color:C.mu};
+          return(
+            <div key={r.id} style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:12,padding:"14px 16px"}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:10}}>
+                <div>
+                  <span style={{fontSize:14,fontWeight:600,display:"block"}}>{r.title}</span>
+                  <span style={{fontSize:11,color:C.mu}}>{r.kind==="pruefung"?"Prüfungsvorbereitung":"Modul-Quiz"} · {fmtDateTime(r.created_at)}</span>
+                </div>
+                <span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:600,background:C.s2,color:zone.color,whiteSpace:"nowrap"}}>{zone.label}</span>
+              </div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:16,marginBottom:10}}>
+                <div><div style={{fontSize:10,color:C.mu,textTransform:"uppercase",letterSpacing:".04em"}}>Ergebnis</div><div style={{fontSize:14,fontWeight:600,color:C.t}}>{r.percent}% ({r.score}/{r.total})</div></div>
+                <div><div style={{fontSize:10,color:C.mu,textTransform:"uppercase",letterSpacing:".04em"}}>Begonnen</div><div style={{fontSize:13,color:C.t2}}>{fmtDateTime(r.started_at)}</div></div>
+                <div><div style={{fontSize:10,color:C.mu,textTransform:"uppercase",letterSpacing:".04em"}}>Abgeschlossen</div><div style={{fontSize:13,color:C.t2}}>{fmtDateTime(r.finished_at)}</div></div>
+                <div><div style={{fontSize:10,color:C.mu,textTransform:"uppercase",letterSpacing:".04em"}}>Dauer</div><div style={{fontSize:13,color:C.t2}}>{fmtDauer(r.started_at,r.finished_at)}</div></div>
+              </div>
+              <button onClick={()=>nachladen(r)} disabled={busyId===r.id} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:busyId===r.id?.6:1}}>
+                {busyId===r.id?"Wird erstellt...":"📄 Lernnachweis erneut herunterladen"}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div></div>
+  );
+}

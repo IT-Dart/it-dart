@@ -6,6 +6,7 @@ import { generateLernnachweis } from "./lib/lernnachweis";
 import AuthScreen from "./AuthScreen";
 import AdminScreen from "./AdminScreen";
 import DeleteAccountScreen from "./DeleteAccountScreen";
+import StatistikScreen from "./StatistikScreen";
 import coverImg from "./assets/cover.jpg";
 import moduleGImg from "./assets/module-g.jpg";
 import moduleBImg from "./assets/module-b.jpg";
@@ -887,6 +888,7 @@ const OSIOverview=()=>(
 const Quiz=({qs,onDone,title})=>{
   const [i,setI]=useState(0);const [sel,setSel]=useState(null);const [sc,setSc]=useState(0);const [done,setDone]=useState(false);
   const [nachweisBusy,setNachweisBusy]=useState(false);
+  const [startedAt,setStartedAt]=useState(()=>new Date());
   const {user}=useAuth();
   const q=qs[i];const ans=sel!==null;
   const pick=idx=>{if(ans)return;setSel(idx);if(idx===q.c)setSc(s=>s+1);};
@@ -894,7 +896,7 @@ const Quiz=({qs,onDone,title})=>{
   const pct=Math.round((sc/qs.length)*100);
   const downloadNachweis=async()=>{
     setNachweisBusy(true);
-    await generateLernnachweis({user,kind:"modul",title,score:sc,total:qs.length,topics:[{name:title,correct:sc,total:qs.length}]});
+    await generateLernnachweis({user,kind:"modul",title,score:sc,total:qs.length,topics:[{name:title,correct:sc,total:qs.length}],startedAt,finishedAt:new Date()});
     setNachweisBusy(false);
   };
   if(done)return(
@@ -906,7 +908,7 @@ const Quiz=({qs,onDone,title})=>{
         <div style={{height:"100%",width:`${pct}%`,background:pct>=80?C.gr:pct>=60?C.am:"#ef4444",borderRadius:4}}/>
       </div>
       <div style={{display:"flex",gap:8,justifyContent:"center",marginBottom:user&&pct>=50?12:0}}>
-        <button onClick={()=>{setI(0);setSel(null);setSc(0);setDone(false);}} style={{...ghost}}>🔄 Nochmal</button>
+        <button onClick={()=>{setI(0);setSel(null);setSc(0);setDone(false);setStartedAt(new Date());}} style={{...ghost}}>🔄 Nochmal</button>
         <button onClick={onDone} style={{...pri}}>✓ Übersicht</button>
       </div>
       {user&&pct>=50&&<button onClick={downloadNachweis} disabled={nachweisBusy} style={{...ghost,width:"100%",justifyContent:"center",opacity:nachweisBusy?.6:1}}>{nachweisBusy?"Wird erstellt...":"📄 Lernnachweis herunterladen"}</button>}
@@ -1117,6 +1119,7 @@ export default function ITDart({onOpenExam,onOpenLegal}){
   if(view==="auth")return <AuthScreen onClose={()=>setView("overview")}/>;
   if(view==="admin")return isAdmin?<AdminScreen onClose={()=>setView("overview")}/>:null;
   if(view==="delete-account")return <DeleteAccountScreen onClose={()=>setView("overview")}/>;
+  if(view==="statistik")return <StatistikScreen onClose={()=>setView("overview")}/>;
 
   if(view==="locked"&&mod)return(
     <div style={wrap}><div style={{...inner,textAlign:"center",paddingTop:40}}>
@@ -1173,7 +1176,7 @@ export default function ITDart({onOpenExam,onOpenLegal}){
       </div>
       <div style={{textAlign:"right",marginBottom:16}}>
         {user?(
-          <span style={{fontSize:12,color:C.mu}}>{user.email} {isPremium?"· ⭐ Premium":"· Free"} {isAdmin&&<>· <button onClick={()=>setView("admin")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>⚙️ Admin</button></>} · <button onClick={signOut} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Abmelden</button> · <button onClick={()=>setView("delete-account")} style={{background:"none",border:"none",color:C.mu,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Konto löschen</button></span>
+          <span style={{fontSize:12,color:C.mu}}>{user.email} {isPremium?"· ⭐ Premium":"· Free"} {isAdmin&&<>· <button onClick={()=>setView("admin")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>⚙️ Admin</button></>} · <button onClick={()=>setView("statistik")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>📊 Statistik</button> · <button onClick={signOut} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Abmelden</button> · <button onClick={()=>setView("delete-account")} style={{background:"none",border:"none",color:C.mu,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Konto löschen</button></span>
         ):(
           <button onClick={()=>setView("auth")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Anmelden / Registrieren</button>
         )}

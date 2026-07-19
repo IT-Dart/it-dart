@@ -128,13 +128,14 @@ export default function Pruefung({onExit}){
   const [showAuth,setShowAuth]=useState(false);
   const [nachweisBusy,setNachweisBusy]=useState(false);
   const [lockReason,setLockReason]=useState(null); // "account" | "premium"
+  const [startedAt,setStartedAt]=useState(null);
 
   const starten=(n)=>{
     if(!user){setLockReason("account");setModus("locked");return;}
     if(n>20&&!isPremium){setLockReason("premium");setModus("locked");return;}
     const pool=isPremium?(kat==="Alle"?PRUEFUNG:PRUEFUNG.filter(f=>f.kat===kat)):PRUEFUNG.filter(f=>FREE_KATS.includes(f.kat));
     const auswahl=shuffle(pool).slice(0,n);
-    setFragen(auswahl);setIdx(0);setSel(null);setScore(0);setFalsch([]);setModus("quiz");
+    setFragen(auswahl);setIdx(0);setSel(null);setScore(0);setFalsch([]);setModus("quiz");setStartedAt(new Date());
   };
 
   const pick=i=>{
@@ -164,7 +165,7 @@ export default function Pruefung({onExit}){
 
   const downloadNachweis=async()=>{
     setNachweisBusy(true);
-    await generateLernnachweis({user,kind:"pruefung",title:`Prüfungsvorbereitung (${fragen.length} Fragen)`,score,total:fragen.length,topics:topicStats});
+    await generateLernnachweis({user,kind:"pruefung",title:`Prüfungsvorbereitung (${fragen.length} Fragen)`,score,total:fragen.length,topics:topicStats,startedAt,finishedAt:new Date()});
     setNachweisBusy(false);
   };
 
