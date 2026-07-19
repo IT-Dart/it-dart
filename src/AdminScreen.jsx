@@ -17,6 +17,30 @@ export default function AdminScreen({onClose}){
   const [busy,setBusy]=useState(false);
   const [busyId,setBusyId]=useState(null);
   const [err,setErr]=useState(null);
+  const [inviteEmail,setInviteEmail]=useState("");
+  const [inviteBusy,setInviteBusy]=useState(false);
+  const [inviteMsg,setInviteMsg]=useState(null);
+
+  const invite=async(e)=>{
+    e.preventDefault();
+    if(!inviteEmail.trim())return;
+    setInviteBusy(true);setInviteMsg(null);
+    try{
+      const {data:{session}}=await supabase.auth.getSession();
+      const r=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invite-user`,{
+        method:"POST",
+        headers:{"Content-Type":"application/json",Authorization:`Bearer ${session.access_token}`},
+        body:JSON.stringify({email:inviteEmail.trim()}),
+      });
+      const d=await r.json();
+      if(!r.ok){setInviteMsg({type:"error",text:d.error||"Einladen fehlgeschlagen."});setInviteBusy(false);return;}
+      setInviteMsg({type:"info",text:`Einladung an ${inviteEmail.trim()} verschickt.`});
+      setInviteEmail("");
+    }catch(e){
+      setInviteMsg({type:"error",text:describeError(e)});
+    }
+    setInviteBusy(false);
+  };
 
   const search=async(e)=>{
     e?.preventDefault();
@@ -50,6 +74,15 @@ export default function AdminScreen({onClose}){
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:24,paddingBottom:16,borderBottom:`0.5px solid ${C.bd}`}}>
         <span style={{fontSize:16,fontWeight:700}}>⚙️ Admin</span>
         <button onClick={onClose} style={{...ghost,marginLeft:"auto",fontSize:13,padding:"6px 12px"}}>← Zurück</button>
+      </div>
+
+      <div style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:12,padding:"14px 16px",marginBottom:24}}>
+        <p style={{fontSize:12,fontWeight:600,letterSpacing:".04em",textTransform:"uppercase",color:C.cy,marginBottom:10}}>Neuen Nutzer einladen</p>
+        <form onSubmit={invite} style={{display:"flex",gap:8}}>
+          <input value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)} type="email" placeholder="email@beispiel.de" style={input}/>
+          <button type="submit" disabled={inviteBusy} style={{...pri,flexShrink:0,opacity:inviteBusy?.6:1}}>{inviteBusy?"...":"Einladen"}</button>
+        </form>
+        {inviteMsg&&<p style={{fontSize:12,color:inviteMsg.type==="error"?"#fca5a5":"#86efac",marginTop:8,marginBottom:0}}>{inviteMsg.text}</p>}
       </div>
 
       <form onSubmit={search} style={{display:"flex",gap:8,marginBottom:20}}>
