@@ -48,13 +48,31 @@ Deno.serve(async (req) => {
       return json({ error: "Ungültige E-Mail-Adresse." }, 400, cors);
     }
 
+    // Check for an existing account first — gives a clear message instead
+    // of relying on Supabase's (sometimes empty) error for this case.
+    const { data: existing } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("email", email)
+      .maybeSingle();
+    if (existing) {
+      return json({ error: "Diese E-Mail ist bereits registriert — keine Einladung nötig." }, 400, cors);
+    }
+
     const { error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(email, {
       redirectTo: "https://it-dart.vercel.app",
     });
-    if (inviteErr) return json({ error: inviteErr.message }, 400, cors);
+    if (inviteErr) {
+      console.error("[invite-user] inviteUserByEmail failed:", JSON.stringify(inviteErr));
+      const msg = inviteErr.message && inviteErr.message !== "{}"
+        ? inviteErr.message
+        : `Einladen fehlgeschlagen (Status ${inviteErr.status ?? "unbekannt"}). Details stehen in den Function-Logs.`;
+      return json({ error: msg }, 400, cors);
+    }
 
     return json({ ok: true }, 200, cors);
   } catch (e) {
+    console.error("[invite-user] unexpected error:", e);
     return json({ error: "Unerwarteter Fehler." }, 500, cors);
   }
 });
