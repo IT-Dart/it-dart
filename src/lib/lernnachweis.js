@@ -53,11 +53,15 @@ function drawMark(doc, cx, cy, r, { ringOnly = false } = {}) {
 // The five evaluation zones, in order from best to worst. Each maps to a
 // concrete ring band on the dartboard (ring 1 = innermost bullseye ... ring
 // 5 = missed the board entirely). minPct is inclusive.
+//
+// Bounds line up with what's actually reachable: a Lernnachweis can only be
+// generated at 50%+, so "Fehlwurf" (off the board) only ever fires below
+// that floor — every real score lands somewhere ON the board.
 const ZONES = [
   { minPct: 95, ring: 1, key: "bullseye", label: "Voll ins IT-Bullseye!", color: COL.amber },
-  { minPct: 90, ring: 2, key: "hervorragend", label: "Hervorragender Wurf!", color: COL.amber },
-  { minPct: 80, ring: 3, key: "gut", label: "Guter Wurf!", color: COL.cyan },
-  { minPct: 70, ring: 4, key: "besser", label: "Das geht besser! Du hast den Pfeil in der Hand.", color: COL.blue },
+  { minPct: 85, ring: 2, key: "hervorragend", label: "Hervorragender Wurf!", color: COL.amber },
+  { minPct: 70, ring: 3, key: "gut", label: "Guter Wurf!", color: COL.cyan },
+  { minPct: 50, ring: 4, key: "besser", label: "Das geht besser! Du hast den Pfeil in der Hand.", color: COL.blue },
   { minPct: -Infinity, ring: 5, key: "fehlwurf", label: "Fehlwurf! Abweichung im System. Analysiere das Modul erneut, um die Fehlerquelle zu isolieren.", color: COL.coral },
 ];
 
@@ -91,18 +95,23 @@ function drawPreciseDart(doc, landX, landY, dirX, dirY, len) {
     landX, landY,
     "F"
   );
-
-  doc.setFillColor(...COL.white);
-  doc.circle(landX, landY, len * 0.045, "F");
 }
 
-// Draws the dartboard (four colour-coded ring bands, matching the five
-// evaluation zones — the outer two share the "orange" band, split by a
-// thin divider) plus a backboard wide enough to show a dart that missed
-// the board entirely (zone 5, <70%). The dart always lands somewhere —
-// distance from the bullseye is driven directly by the score.
-function drawDartboardTarget(doc, cx, cy, r, percent, score, total) {
-  const R1 = r * 0.16, R2 = r * 0.4, R3 = r * 0.7, R4 = r;
+// Blend two RGB triples — used to fake a soft glow without relying on PDF
+// alpha/transparency support, which is inconsistent across viewers.
+function blendRGB(a, b, t) {
+  return [0, 1, 2].map((i) => Math.round(a[i] + (b[i] - a[i]) * t));
+}
+
+// Draws the dartboard (three colour-coded ring bands, matching the five
+// evaluation zones — the top two share the "orange" bullseye band) plus a
+// backboard wide enough to show a dart that missed the board entirely
+// (zone 5, <50% — effectively unreachable since a Lernnachweis needs 50%+
+// to generate at all, but kept as a sane fallback). The dart always lands
+// somewhere — distance from the bullseye is driven directly by the score.
+// A perfect score gets a soft glow around the bullseye instead of a flat fill.
+function drawDartboardTarget(doc, cx, cy, r, percent, score, total, zone) {
+  const R2 = r * 0.4, R3 = r * 0.7, R4 = r;
   const bb = r * 1.6;
 
   doc.setDrawColor(...COL.border);
@@ -113,19 +122,26 @@ function drawDartboardTarget(doc, cx, cy, r, percent, score, total) {
   doc.circle(cx, cy, R4, "F");
   doc.setFillColor(...COL.cyan);
   doc.circle(cx, cy, R3, "F");
+
+  if (zone.ring === 1) {
+    // Soft graduated halo around the bullseye for a perfect hit — three
+    // nested circles blending from the cyan ring into full amber.
+    doc.setFillColor(...blendRGB(COL.cyan, COL.amber, 0.35));
+    doc.circle(cx, cy, R2 * 1.35, "F");
+    doc.setFillColor(...blendRGB(COL.cyan, COL.amber, 0.7));
+    doc.circle(cx, cy, R2 * 1.15, "F");
+  }
   doc.setFillColor(...COL.amber);
   doc.circle(cx, cy, R2, "F");
-  doc.setDrawColor(...COL.bg);
-  doc.setLineWidth(r * 0.018);
-  doc.circle(cx, cy, R1, "S");
 
-  // Thin spokes for a precise, real-dartboard feel
+  // Thin spokes, purely decorative (they play no part in scoring — the
+  // landing spot is calculated from the percentage, not read off the board)
   doc.setDrawColor(...COL.bg);
   doc.setLineWidth(r * 0.008);
   const spokes = 16;
   for (let i = 0; i < spokes; i++) {
     const a = (i / spokes) * Math.PI * 2;
-    doc.line(cx + R1 * Math.cos(a), cy + R1 * Math.sin(a), cx + R4 * Math.cos(a), cy + R4 * Math.sin(a));
+    doc.line(cx + R2 * 0.4 * Math.cos(a), cy + R2 * 0.4 * Math.sin(a), cx + R4 * Math.cos(a), cy + R4 * Math.sin(a));
   }
 
   doc.setDrawColor(...COL.border);
@@ -135,11 +151,11 @@ function drawDartboardTarget(doc, cx, cy, r, percent, score, total) {
   // Landing radius: find the band for this percent, then interpolate
   // within that band by exactly how far into it the score falls.
   const bands = [
-    { min: 95, max: 100, inner: 0, outer: R1 },
-    { min: 90, max: 95, inner: R1, outer: R2 },
-    { min: 80, max: 90, inner: R2, outer: R3 },
-    { min: 70, max: 80, inner: R3, outer: R4 },
-    { min: 0, max: 70, inner: R4 * 1.08, outer: R4 * 1.55 },
+    { min: 95, max: 100, inner: 0, outer: R2 * 0.6 },
+    { min: 85, max: 95, inner: R2 * 0.6, outer: R2 },
+    { min: 70, max: 85, inner: R2, outer: R3 },
+    { min: 50, max: 70, inner: R3, outer: R4 },
+    { min: 0, max: 50, inner: R4 * 1.08, outer: R4 * 1.55 },
   ];
   const band = bands.find((b) => percent >= b.min && (percent < b.max || b.max === 100)) || bands[bands.length - 1];
   const frac = Math.min(1, Math.max(0, (percent - band.min) / (band.max - band.min)));
@@ -318,7 +334,7 @@ export async function generateLernnachweis({ user, kind, title, score, total, to
   doc.setFontSize(9);
   doc.setTextColor(...COL.text2);
   doc.text("TREFFERBILD", badgeCx, badgeCy - 56, { align: "center" });
-  drawDartboardTarget(doc, badgeCx, badgeCy, 30, percent, score, total);
+  drawDartboardTarget(doc, badgeCx, badgeCy, 30, percent, score, total, zone);
 
   // Footer
   doc.setFont("helvetica", "normal");
