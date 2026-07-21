@@ -21,11 +21,11 @@ export function AuthProvider({ children }) {
     const user = session?.user;
     if (!user) { setProfile(null); return; }
     let cancelled = false;
-    supabase.from("profiles").select("is_premium, premium_until, is_admin, email").eq("id", user.id).single()
+    supabase.from("profiles").select("is_premium, premium_until, is_admin, is_trainer, email").eq("id", user.id).single()
       .then(({ data, error }) => {
         if (cancelled) return;
         if (error) console.error("Profil konnte nicht geladen werden:", error.message);
-        setProfile(data ?? { is_premium: false, premium_until: null, is_admin: false });
+        setProfile(data ?? { is_premium: false, premium_until: null, is_admin: false, is_trainer: false });
       });
     return () => { cancelled = true; };
   }, [session?.user?.id]);
@@ -39,6 +39,7 @@ export function AuthProvider({ children }) {
     isPremium: !!profile?.is_premium || hasTimedPremium,
     premiumUntil: profile?.premium_until ?? null,
     isAdmin: !!profile?.is_admin,
+    isTrainer: !!profile?.is_trainer,
     recoveryMode,
     signUp: (email, password) => supabase.auth.signUp({ email, password }),
     signIn: (email, password) => supabase.auth.signInWithPassword({ email, password }),

@@ -22,6 +22,7 @@ export default function AdminScreen({onClose}){
   const [inviteMsg,setInviteMsg]=useState(null);
   const [inviteLink,setInviteLink]=useState(null);
   const [copied,setCopied]=useState(false);
+  const [traineePanels,setTraineePanels]=useState({}); // trainerId -> { open, loading, trainees, input, err }
 
   const invite=async(e)=>{
     e.preventDefault();
@@ -55,7 +56,7 @@ export default function AdminScreen({onClose}){
     setBusy(true);setErr(null);
     const {data,error}=await supabase
       .from("profiles")
-      .select("id,email,is_premium,premium_until,ai_enabled")
+      .select("id,email,is_premium,premium_until,ai_enabled,is_trainer")
       .ilike("email",`%${query.trim()}%`)
       .order("email")
       .limit(25);
@@ -76,6 +77,42 @@ export default function AdminScreen({onClose}){
   const togglePermanent=(r)=>updateUser(r.id,{is_premium:!r.is_premium});
   const revoke=(r)=>updateUser(r.id,{is_premium:false,premium_until:null});
   const toggleAi=(r)=>updateUser(r.id,{ai_enabled:!(r.ai_enabled??true)});
+  const toggleTrainer=(r)=>updateUser(r.id,{is_trainer:!r.is_trainer});
+
+  const panelFor=(id)=>traineePanels[id]||{open:false,loading:false,trainees:null,input:"",err:null};
+  const setPanel=(id,patch)=>setTraineePanels(p=>({...p,[id]:{...panelFor(id),...patch}}));
+
+  const loadTrainees=async(trainerId)=>{
+    setPanel(trainerId,{open:true,loading:true,err:null});
+    const {data,error}=await supabase.from("trainer_trainees").select("trainee_id, profiles!trainee_id(id,email)").eq("trainer_id",trainerId);
+    if(error){setPanel(trainerId,{loading:false,err:describeError(error)});return;}
+    setPanel(trainerId,{loading:false,trainees:(data||[]).map(d=>d.profiles).filter(Boolean)});
+  };
+
+  const toggleTraineePanel=(trainerId)=>{
+    const p=panelFor(trainerId);
+    if(p.open){setPanel(trainerId,{open:false});return;}
+    loadTrainees(trainerId);
+  };
+
+  const addTrainee=async(trainerId)=>{
+    const email=panelFor(trainerId).input.trim();
+    if(!email)return;
+    setPanel(trainerId,{loading:true,err:null});
+    const {data:trainee,error:findErr}=await supabase.from("profiles").select("id,email").eq("email",email).maybeSingle();
+    if(findErr||!trainee){setPanel(trainerId,{loading:false,err:"Kein Konto mit dieser E-Mail gefunden."});return;}
+    const {error:insErr}=await supabase.from("trainer_trainees").insert({trainer_id:trainerId,trainee_id:trainee.id});
+    if(insErr){setPanel(trainerId,{loading:false,err:describeError(insErr)});return;}
+    setPanel(trainerId,{input:""});
+    loadTrainees(trainerId);
+  };
+
+  const removeTrainee=async(trainerId,traineeId)=>{
+    setPanel(trainerId,{loading:true});
+    const {error}=await supabase.from("trainer_trainees").delete().eq("trainer_id",trainerId).eq("trainee_id",traineeId);
+    if(error){setPanel(trainerId,{loading:false,err:describeError(error)});return;}
+    loadTrainees(trainerId);
+  };
 
   return(
     <div style={wrap}><div style={inner}>
@@ -114,15 +151,17 @@ export default function AdminScreen({onClose}){
           const until=fmtUntil(r.premium_until);
           const active=r.is_premium||until;
           const aiOn=r.ai_enabled??true;
+          const panel=panelFor(r.id);
           return(
             <div key={r.id} style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:12,padding:"14px 16px"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:10}}>
                 <span style={{fontSize:14,fontWeight:600,wordBreak:"break-all"}}>{r.email}</span>
-                <div style={{display:"flex",gap:6,flexShrink:0}}>
+                <div style={{display:"flex",gap:6,flexShrink:0,flexWrap:"wrap",justifyContent:"flex-end"}}>
                   <span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:500,background:active?"#14532d":"#2a1a0f",color:active?"#86efac":"#fbbf24"}}>
                     {r.is_premium?"⭐ Dauerhaft":until?`Bis ${until}`:"Free"}
                   </span>
                   {!aiOn&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:500,background:"#450a0a",color:"#fca5a5"}}>🤖 Gesperrt</span>}
+                  {r.is_trainer&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:500,background:"#1e3a5f",color:"#93c5fd"}}>🎓 Trainer</span>}
                 </div>
               </div>
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
@@ -134,7 +173,31 @@ export default function AdminScreen({onClose}){
                 <button disabled={busyId===r.id} onClick={()=>toggleAi(r)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:busyId===r.id?.6:1}}>
                   {aiOn?"🤖 KI sperren":"🤖 KI freischalten"}
                 </button>
+                <button disabled={busyId===r.id} onClick={()=>toggleTrainer(r)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:busyId===r.id?.6:1}}>
+                  {r.is_trainer?"🎓 Trainer entfernen":"🎓 Zum Trainer machen"}
+                </button>
+                {r.is_trainer&&<button onClick={()=>toggleTraineePanel(r.id)} style={{...ghost,fontSize:12,padding:"7px 12px"}}>
+                  {panel.open?"Trainees verbergen ▴":"Trainees verwalten ▾"}
+                </button>}
               </div>
+              {panel.open&&(
+                <div style={{marginTop:12,paddingTop:12,borderTop:`0.5px solid ${C.bd}`}}>
+                  <p style={{fontSize:11,fontWeight:600,letterSpacing:".04em",textTransform:"uppercase",color:C.cy,marginBottom:8}}>Zugewiesene Testende</p>
+                  {panel.loading&&<p style={{fontSize:12,color:C.mu}}>Wird geladen...</p>}
+                  {panel.err&&<p style={{fontSize:12,color:"#fca5a5",marginBottom:8}}>{panel.err}</p>}
+                  {!panel.loading&&panel.trainees?.length===0&&<p style={{fontSize:12,color:C.mu,marginBottom:8}}>Noch keine Testenden zugewiesen.</p>}
+                  {!panel.loading&&panel.trainees?.map(t=>(
+                    <div key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0"}}>
+                      <span style={{fontSize:13,color:C.t2,wordBreak:"break-all"}}>{t.email}</span>
+                      <button onClick={()=>removeTrainee(r.id,t.id)} style={{background:"none",border:"none",color:"#fca5a5",cursor:"pointer",fontSize:12,padding:0,fontFamily:ff}}>Entfernen</button>
+                    </div>
+                  ))}
+                  <div style={{display:"flex",gap:8,marginTop:8}}>
+                    <input value={panel.input} onChange={e=>setPanel(r.id,{input:e.target.value})} type="email" placeholder="testende@beispiel.de" style={{...input,fontSize:13,padding:"8px 12px"}}/>
+                    <button onClick={()=>addTrainee(r.id)} style={{...ghost,flexShrink:0,fontSize:12,padding:"7px 12px"}}>+ Hinzufügen</button>
+                  </div>
+                </div>
+              )}
             </div>
           );
         })}
