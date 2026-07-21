@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { C, pri, wrap, inner } from "./lib/theme";
 import { useAuth } from "./lib/AuthContext";
 import { describeError } from "./lib/errorText";
@@ -24,11 +24,21 @@ export default function ResetPasswordScreen(){
     setDone(true);
   };
 
+  // Statt vom User einen manuellen Reload zu verlangen (leicht zu übersehen
+  // oder falsch zu verstehen) automatisch weiterleiten, sobald das neue
+  // Passwort gesetzt ist — garantiert einen sauberen Neustart mit der
+  // bereits bestehenden, aktiven Sitzung.
+  useEffect(()=>{
+    if(!done)return;
+    const t=setTimeout(()=>window.location.reload(),1200);
+    return ()=>clearTimeout(t);
+  },[done]);
+
   if(done)return(
     <div style={wrap}><div style={{...inner,paddingTop:60,textAlign:"center"}}>
       <div style={{fontSize:48,marginBottom:12}}>✓</div>
       <h2 style={{fontSize:20,fontWeight:700,marginBottom:8}}>Passwort geändert</h2>
-      <p style={{fontSize:14,color:C.t2}}>Du bist jetzt mit deinem neuen Passwort angemeldet. Lade die Seite neu, um weiterzumachen.</p>
+      <p style={{fontSize:14,color:C.t2}}>Du bist jetzt mit deinem neuen Passwort angemeldet. Du wirst gleich automatisch weitergeleitet...</p>
     </div></div>
   );
 
