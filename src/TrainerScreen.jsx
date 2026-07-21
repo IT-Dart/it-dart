@@ -18,10 +18,15 @@ export default function TrainerScreen({onClose,onOpenUser}){
       const traineeIds=(links||[]).map(l=>l.trainee_id);
       if(traineeIds.length===0){if(!cancelled)setTrainees([]);return;}
 
-      const {data:profiles,error:profErr}=await supabase.from("profiles").select("id,email").in("id",traineeIds);
+      const [{data:profiles,error:profErr},{data:nachweise,error:nachErr}]=await Promise.all([
+        supabase.from("profiles").select("id,email").in("id",traineeIds),
+        supabase.from("lernnachweise").select("user_id").in("user_id",traineeIds),
+      ]);
       if(cancelled)return;
-      if(profErr){setErr(describeError(profErr));setTrainees([]);return;}
-      setTrainees(profiles||[]);
+      if(profErr||nachErr){setErr(describeError(profErr||nachErr));setTrainees([]);return;}
+      const counts={};
+      (nachweise||[]).forEach(n=>{counts[n.user_id]=(counts[n.user_id]||0)+1;});
+      setTrainees((profiles||[]).map(p=>({...p,count:counts[p.id]||0})));
     })();
     return ()=>{cancelled=true;};
   },[user?.id]);
@@ -43,7 +48,7 @@ export default function TrainerScreen({onClose,onOpenUser}){
       <div style={{display:"flex",flexDirection:"column",gap:8}}>
         {trainees?.map(trainee=>(
           <button key={trainee.id} onClick={()=>onOpenUser?.(trainee)} style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:12,padding:"12px 14px",cursor:"pointer",textAlign:"left",fontFamily:ff,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <span style={{fontSize:13,fontWeight:600,color:C.t,wordBreak:"break-all"}}>{trainee.email}</span>
+            <span style={{fontSize:13,fontWeight:600,color:C.t,wordBreak:"break-all"}}>{trainee.email} <span style={{fontSize:11,color:C.mu,fontWeight:400}}>· {trainee.count} Lernnachweis{trainee.count===1?"":"e"}</span></span>
             <span style={{fontSize:12,color:C.cy,flexShrink:0,marginLeft:12}}>Statistik ansehen →</span>
           </button>
         ))}
