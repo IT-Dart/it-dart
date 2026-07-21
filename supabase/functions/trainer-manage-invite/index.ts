@@ -25,8 +25,13 @@ function corsHeaders(origin: string | null) {
 }
 
 Deno.serve(async (req) => {
-  const cors = corsHeaders(req.headers.get("Origin"));
+  const origin = req.headers.get("Origin");
+  const cors = corsHeaders(origin);
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
+
+  // Same reasoning as invite-user: no window.location server-side, so the
+  // redirect target has to be set explicitly here.
+  const redirectTo = origin && ALLOWED_ORIGINS.has(origin) ? origin : "https://www.it-dart.de";
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -68,7 +73,7 @@ Deno.serve(async (req) => {
     }
 
     // action === "resend"
-    const { error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(target.email);
+    const { error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(target.email, { redirectTo });
     if (inviteErr) {
       console.error("[trainer-manage-invite] resend failed:", JSON.stringify(inviteErr));
       return json({ error: inviteErr.message || "Erneutes Senden fehlgeschlagen." }, 400, cors);

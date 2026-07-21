@@ -25,8 +25,16 @@ function corsHeaders(origin: string | null) {
 }
 
 Deno.serve(async (req) => {
-  const cors = corsHeaders(req.headers.get("Origin"));
+  const origin = req.headers.get("Origin");
+  const cors = corsHeaders(origin);
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
+
+  // Server-side calls have no window.location — the invite/magic-link
+  // redirect target must be set explicitly here, or Supabase falls back to
+  // the project's (possibly stale) Site URL. Reuse whichever allowed
+  // origin the caller is actually on, same as the client-side flows that
+  // pass window.location.origin, falling back to the canonical domain.
+  const redirectTo = origin && ALLOWED_ORIGINS.has(origin) ? origin : "https://www.it-dart.de";
 
   try {
     const authHeader = req.headers.get("Authorization");
@@ -79,7 +87,7 @@ Deno.serve(async (req) => {
     // Primary path: let Supabase create the user AND email them the invite
     // (via the configured SMTP). This used to fail because of the broken
     // notify-signup trigger, now fixed.
-    const { data: inviteData, error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(email);
+    const { data: inviteData, error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(email, { redirectTo });
     if (inviteErr) {
       console.error("[invite-user] inviteUserByEmail failed:", JSON.stringify(inviteErr));
       const msg = inviteErr.message && inviteErr.message !== "{}"
@@ -108,6 +116,7 @@ Deno.serve(async (req) => {
     const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
       type: "magiclink",
       email,
+      options: { redirectTo },
     });
     if (linkErr) {
       console.error("[invite-user] generateLink (magiclink) failed:", JSON.stringify(linkErr));
