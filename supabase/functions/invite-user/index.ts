@@ -34,7 +34,7 @@ Deno.serve(async (req) => {
   // the project's (possibly stale) Site URL. Reuse whichever allowed
   // origin the caller is actually on, same as the client-side flows that
   // pass window.location.origin, falling back to the canonical domain.
-  const redirectTo = origin && ALLOWED_ORIGINS.has(origin) ? origin : "https://www.it-dart.de";
+  const redirectTo = origin && ALLOWED_ORIGINS.has(origin) ? origin : "https://it-dart.de";
 
   try {
     const authHeader = req.headers.get("Authorization");

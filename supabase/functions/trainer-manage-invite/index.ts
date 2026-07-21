@@ -31,7 +31,7 @@ Deno.serve(async (req) => {
 
   // Same reasoning as invite-user: no window.location server-side, so the
   // redirect target has to be set explicitly here.
-  const redirectTo = origin && ALLOWED_ORIGINS.has(origin) ? origin : "https://www.it-dart.de";
+  const redirectTo = origin && ALLOWED_ORIGINS.has(origin) ? origin : "https://it-dart.de";
 
   try {
     const authHeader = req.headers.get("Authorization");
