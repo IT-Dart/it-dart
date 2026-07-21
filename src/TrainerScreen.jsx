@@ -7,13 +7,18 @@ import { describeError } from "./lib/errorText";
 export default function TrainerScreen({onClose,onOpenUser}){
   const {user}=useAuth();
   const [trainees,setTrainees]=useState(null); // null = lädt
+  const [limit,setLimit]=useState(null);
   const [err,setErr]=useState(null);
 
   useEffect(()=>{
     if(!user){setTrainees([]);return;}
     let cancelled=false;
     (async()=>{
-      const {data:links,error:linkErr}=await supabase.from("trainer_trainees").select("trainee_id").eq("trainer_id",user.id);
+      const [{data:links,error:linkErr},{data:own}]=await Promise.all([
+        supabase.from("trainer_trainees").select("trainee_id").eq("trainer_id",user.id),
+        supabase.from("profiles").select("trainee_limit").eq("id",user.id).single(),
+      ]);
+      if(!cancelled)setLimit(own?.trainee_limit??5);
       if(linkErr){if(!cancelled){setErr(describeError(linkErr));setTrainees([]);}return;}
       const traineeIds=(links||[]).map(l=>l.trainee_id);
       if(traineeIds.length===0){if(!cancelled)setTrainees([]);return;}
@@ -35,6 +40,7 @@ export default function TrainerScreen({onClose,onOpenUser}){
     <div style={wrap}><div style={inner}>
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:24,paddingBottom:16,borderBottom:`0.5px solid ${C.bd}`}}>
         <span style={{fontSize:16,fontWeight:700}}>🎓 Trainer-Ansicht</span>
+        {trainees!==null&&limit!==null&&<span style={{fontSize:12,color:C.mu}}>Testende: {trainees.length} / {limit}</span>}
         <button onClick={onClose} style={{...ghost,marginLeft:"auto",fontSize:13,padding:"6px 12px"}}>← Zurück</button>
       </div>
 

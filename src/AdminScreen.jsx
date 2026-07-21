@@ -28,8 +28,15 @@ export default function AdminScreen({onClose}){
   const [allUsers,setAllUsers]=useState(null); // alle Accounts, für die Testende-Auswahl per Dropdown
 
   const loadTrainerList=async()=>{
-    const {data}=await supabase.from("profiles").select("id,email").eq("is_trainer",true).order("email");
-    setTrainerList(data||[]);
+    const {data:trainers,error:tErr}=await supabase.from("profiles").select("id,email,trainee_limit").eq("is_trainer",true).order("email");
+    if(tErr){console.error("[AdminScreen] loadTrainerList failed:",tErr.message);setTrainerList([]);return;}
+    const ids=(trainers||[]).map(t=>t.id);
+    const counts={};
+    if(ids.length){
+      const {data:links}=await supabase.from("trainer_trainees").select("trainer_id").in("trainer_id",ids);
+      (links||[]).forEach(l=>{counts[l.trainer_id]=(counts[l.trainer_id]||0)+1;});
+    }
+    setTrainerList((trainers||[]).map(t=>({...t,count:counts[t.id]||0})));
   };
   const loadAllUsers=async()=>{
     const {data,error}=await supabase.from("profiles").select("id,email").order("email");
@@ -78,7 +85,7 @@ export default function AdminScreen({onClose}){
     setBusy(true);setErr(null);
     const {data,error}=await supabase
       .from("profiles")
-      .select("id,email,is_premium,premium_until,ai_enabled,is_trainer,confirmed_at")
+      .select("id,email,is_premium,premium_until,ai_enabled,is_trainer,confirmed_at,trainee_limit")
       .ilike("email",`%${query.trim()}%`)
       .order("email")
       .limit(25);
@@ -138,6 +145,11 @@ export default function AdminScreen({onClose}){
     setBusyId(null);
   };
 
+  // Postgres liefert für Doppelzuweisungen nur einen technischen Constraint-
+  // Fehler — hier auf eine verständliche Meldung abbilden. Das Kontingent-
+  // Limit selbst kommt schon lesbar aus dem DB-Trigger (enforce_trainee_limit).
+  const friendlyAssignError=(error)=>error?.code==="23505"?"Dieser Nutzer ist diesem Trainer bereits zugewiesen.":describeError(error);
+
   const panelFor=(id)=>traineePanels[id]||{open:false,loading:false,trainees:null,input:"",err:null};
   const setPanel=(id,patch)=>setTraineePanels(p=>({...p,[id]:{...(p[id]||{open:false,loading:false,trainees:null,input:"",err:null}),...patch}}));
 
@@ -154,14 +166,20 @@ export default function AdminScreen({onClose}){
     loadTrainees(trainerId);
   };
 
-  const addTrainee=async(trainerId)=>{
-    const traineeId=panelFor(trainerId).input;
+  const addTrainee=async(trainerId,limit)=>{
+    const panel=panelFor(trainerId);
+    const traineeId=panel.input;
     if(!traineeId)return;
+    if((panel.trainees?.length??0)>=limit){
+      setPanel(trainerId,{err:`Maximale Anzahl an Trainees erreicht (${panel.trainees.length}/${limit}). Bitte erhöhe das Kontingent, um weitere zuzuweisen.`});
+      return;
+    }
     setPanel(trainerId,{loading:true,err:null});
     const {error:insErr}=await supabase.from("trainer_trainees").insert({trainer_id:trainerId,trainee_id:traineeId});
-    if(insErr){setPanel(trainerId,{loading:false,err:describeError(insErr)});return;}
+    if(insErr){setPanel(trainerId,{loading:false,err:friendlyAssignError(insErr)});return;}
     setPanel(trainerId,{input:""});
     loadTrainees(trainerId);
+    loadTrainerList();
   };
 
   const removeTrainee=async(trainerId,traineeId)=>{
@@ -169,6 +187,7 @@ export default function AdminScreen({onClose}){
     const {error}=await supabase.from("trainer_trainees").delete().eq("trainer_id",trainerId).eq("trainee_id",traineeId);
     if(error){setPanel(trainerId,{loading:false,err:describeError(error)});return;}
     loadTrainees(trainerId);
+    loadTrainerList();
   };
 
   const assignPanelFor=(id)=>assignPanels[id]||{open:false,loading:false,trainers:null,select:"",err:null};
@@ -190,11 +209,17 @@ export default function AdminScreen({onClose}){
   const assignToTrainer=async(traineeId)=>{
     const trainerId=assignPanelFor(traineeId).select;
     if(!trainerId)return;
+    const trainer=trainerList?.find(t=>t.id===trainerId);
+    if(trainer&&trainer.count>=trainer.trainee_limit){
+      setAssignPanel(traineeId,{err:`Maximale Anzahl an Trainees erreicht (${trainer.count}/${trainer.trainee_limit}). Bitte wende dich an den Administrator, um das Kontingent zu erweitern.`});
+      return;
+    }
     setAssignPanel(traineeId,{loading:true,err:null});
     const {error}=await supabase.from("trainer_trainees").insert({trainer_id:trainerId,trainee_id:traineeId});
-    if(error){setAssignPanel(traineeId,{loading:false,err:describeError(error)});return;}
+    if(error){setAssignPanel(traineeId,{loading:false,err:friendlyAssignError(error)});return;}
     setAssignPanel(traineeId,{select:""});
     loadAssignedTrainers(traineeId);
+    loadTrainerList();
   };
 
   const unassignTrainer=async(traineeId,trainerId)=>{
@@ -202,6 +227,7 @@ export default function AdminScreen({onClose}){
     const {error}=await supabase.from("trainer_trainees").delete().eq("trainer_id",trainerId).eq("trainee_id",traineeId);
     if(error){setAssignPanel(traineeId,{loading:false,err:describeError(error)});return;}
     loadAssignedTrainers(traineeId);
+    loadTrainerList();
   };
 
   return(
@@ -243,6 +269,7 @@ export default function AdminScreen({onClose}){
           const aiOn=r.ai_enabled??true;
           const panel=panelFor(r.id);
           const assignPanel=assignPanelFor(r.id);
+          const atCapacity=panel.trainees!=null&&panel.trainees.length>=r.trainee_limit;
           return(
             <div key={r.id} style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:12,padding:"14px 16px"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:10}}>
@@ -293,9 +320,10 @@ export default function AdminScreen({onClose}){
                     <div style={{display:"flex",gap:8,marginTop:8}}>
                       <select value={assignPanel.select} onChange={e=>setAssignPanel(r.id,{select:e.target.value})} style={{...input,fontSize:13,padding:"8px 12px"}}>
                         <option value="">Trainer wählen...</option>
-                        {trainerList.filter(t=>t.id!==r.id).map(t=>(
-                          <option key={t.id} value={t.id}>{t.email}</option>
-                        ))}
+                        {trainerList.filter(t=>t.id!==r.id).map(t=>{
+                          const full=t.count>=t.trainee_limit;
+                          return <option key={t.id} value={t.id} disabled={full}>{t.email} ({t.count}/{t.trainee_limit}{full?" — voll":""})</option>;
+                        })}
                       </select>
                       <button onClick={()=>assignToTrainer(r.id)} style={{...ghost,flexShrink:0,fontSize:12,padding:"7px 12px"}}>Zuweisen</button>
                     </div>
@@ -304,7 +332,13 @@ export default function AdminScreen({onClose}){
               )}
               {panel.open&&(
                 <div style={{marginTop:12,paddingTop:12,borderTop:`0.5px solid ${C.bd}`}}>
-                  <p style={{fontSize:11,fontWeight:600,letterSpacing:".04em",textTransform:"uppercase",color:C.cy,marginBottom:8}}>Zugewiesene Testende</p>
+                  <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap",marginBottom:8}}>
+                    <p style={{fontSize:11,fontWeight:600,letterSpacing:".04em",textTransform:"uppercase",color:C.cy,margin:0}}>Testende · {panel.trainees?.length??0} / {r.trainee_limit}</p>
+                    <label style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:5,fontSize:11,color:C.mu}}>
+                      Kontingent
+                      <input type="number" min="0" defaultValue={r.trainee_limit} onBlur={e=>{const v=Math.max(0,parseInt(e.target.value,10)||0);if(v!==r.trainee_limit)updateUser(r.id,{trainee_limit:v}).then(loadTrainerList);}} style={{width:52,background:C.s2,border:`0.5px solid ${C.bd}`,borderRadius:6,color:C.t,padding:"3px 6px",fontSize:11,fontFamily:"inherit"}}/>
+                    </label>
+                  </div>
                   {panel.loading&&<p style={{fontSize:12,color:C.mu}}>Wird geladen...</p>}
                   {panel.err&&<p style={{fontSize:12,color:"#fca5a5",marginBottom:8}}>{panel.err}</p>}
                   {!panel.loading&&panel.trainees?.length===0&&<p style={{fontSize:12,color:C.mu,marginBottom:8}}>Noch keine Testenden zugewiesen.</p>}
@@ -314,8 +348,9 @@ export default function AdminScreen({onClose}){
                       <button onClick={()=>removeTrainee(r.id,t.id)} style={{background:"none",border:"none",color:"#fca5a5",cursor:"pointer",fontSize:12,padding:0,fontFamily:ff}}>Entfernen</button>
                     </div>
                   ))}
-                  {!allUsers?.filter(u=>u.id!==r.id&&!panel.trainees?.some(t=>t.id===u.id)).length&&<p style={{fontSize:12,color:C.mu,marginTop:8}}>{allUsers===null?"Nutzerliste wird geladen...":"Kein weiterer Nutzer zum Zuweisen verfügbar."}</p>}
-                  {!!allUsers?.filter(u=>u.id!==r.id&&!panel.trainees?.some(t=>t.id===u.id)).length&&(
+                  {atCapacity&&<p style={{fontSize:12,color:"#fbbf24",marginTop:8}}>Kontingent voll ({panel.trainees.length}/{r.trainee_limit}). Erhöhe die Zahl oben, um weitere Testende zuzuweisen.</p>}
+                  {!atCapacity&&!allUsers?.filter(u=>u.id!==r.id&&!panel.trainees?.some(t=>t.id===u.id)).length&&<p style={{fontSize:12,color:C.mu,marginTop:8}}>{allUsers===null?"Nutzerliste wird geladen...":"Kein weiterer Nutzer zum Zuweisen verfügbar."}</p>}
+                  {!atCapacity&&!!allUsers?.filter(u=>u.id!==r.id&&!panel.trainees?.some(t=>t.id===u.id)).length&&(
                     <div style={{display:"flex",gap:8,marginTop:8}}>
                       <select value={panel.input} onChange={e=>setPanel(r.id,{input:e.target.value})} style={{...input,fontSize:13,padding:"8px 12px"}}>
                         <option value="">Nutzer wählen...</option>
@@ -323,7 +358,7 @@ export default function AdminScreen({onClose}){
                           <option key={u.id} value={u.id}>{u.email}</option>
                         ))}
                       </select>
-                      <button onClick={()=>addTrainee(r.id)} style={{...ghost,flexShrink:0,fontSize:12,padding:"7px 12px"}}>+ Hinzufügen</button>
+                      <button disabled={atCapacity} onClick={()=>addTrainee(r.id,r.trainee_limit)} style={{...ghost,flexShrink:0,fontSize:12,padding:"7px 12px",opacity:atCapacity?.6:1}}>+ Hinzufügen</button>
                     </div>
                   )}
                 </div>
