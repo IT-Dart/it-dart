@@ -85,9 +85,9 @@ export default function AdminScreen({onClose}){
     setBusy(true);setErr(null);
     const {data,error}=await supabase
       .from("profiles")
-      .select("id,email,is_premium,premium_until,ai_enabled,is_trainer,confirmed_at,trainee_limit")
+      .select("id,email,is_premium,premium_until,ai_enabled,is_trainer,confirmed_at,trainee_limit,created_at")
       .ilike("email",`%${query.trim()}%`)
-      .order("email")
+      .order("created_at",{ascending:false})
       .limit(25);
     setBusy(false);
     if(error){setErr(describeError(error));return;}
