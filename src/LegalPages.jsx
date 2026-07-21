@@ -26,7 +26,7 @@ export function Impressum({onClose}){
       </p>
 
       <h2 style={h2}>Kontakt</h2>
-      <p style={p}>E-Mail: coskunselimbulut@gmail.com</p>
+      <p style={p}>E-Mail: kontakt@it-dart.de</p>
 
       <h2 style={h2}>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
       <p style={p}>Coskun Selim Bulut (Anschrift wie oben)</p>
@@ -44,7 +44,7 @@ export function Datenschutz({onClose}){
       <p style={p}>
         Coskun Selim Bulut<br/>
         Carl-Orff-Bogen 195, 80939 München<br/>
-        E-Mail: coskunselimbulut@gmail.com
+        E-Mail: kontakt@it-dart.de
       </p>
 
       <h2 style={h2}>2. Welche Daten wir verarbeiten</h2>
