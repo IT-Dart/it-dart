@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { C, pri, ghost, wrap, inner, ff } from "./lib/theme";
 import { supabase } from "./lib/supabaseClient";
 import { describeError } from "./lib/errorText";
@@ -23,6 +23,14 @@ export default function AdminScreen({onClose}){
   const [inviteLink,setInviteLink]=useState(null);
   const [copied,setCopied]=useState(false);
   const [traineePanels,setTraineePanels]=useState({}); // trainerId -> { open, loading, trainees, input, err }
+  const [trainerList,setTrainerList]=useState(null); // alle Accounts mit is_trainer=true, für die Zuweisen-Auswahl
+  const [assignPanels,setAssignPanels]=useState({}); // traineeId -> { open, loading, trainers, select, err }
+
+  const loadTrainerList=async()=>{
+    const {data}=await supabase.from("profiles").select("id,email").eq("is_trainer",true).order("email");
+    setTrainerList(data||[]);
+  };
+  useEffect(()=>{loadTrainerList();},[]);
 
   const invite=async(e)=>{
     e.preventDefault();
@@ -77,7 +85,26 @@ export default function AdminScreen({onClose}){
   const togglePermanent=(r)=>updateUser(r.id,{is_premium:!r.is_premium});
   const revoke=(r)=>updateUser(r.id,{is_premium:false,premium_until:null});
   const toggleAi=(r)=>updateUser(r.id,{ai_enabled:!(r.ai_enabled??true)});
-  const toggleTrainer=(r)=>updateUser(r.id,{is_trainer:!r.is_trainer});
+  const toggleTrainer=(r)=>updateUser(r.id,{is_trainer:!r.is_trainer}).then(loadTrainerList);
+
+  const deleteUser=async(r)=>{
+    if(!window.confirm(`${r.email} wirklich unwiderruflich löschen? Alle Daten (Fortschritt, Lernnachweise) gehen verloren.`))return;
+    setBusyId(r.id);setErr(null);
+    try{
+      const {data:{session}}=await supabase.auth.getSession();
+      const res=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-delete-user`,{
+        method:"POST",
+        headers:{"Content-Type":"application/json",Authorization:`Bearer ${session.access_token}`},
+        body:JSON.stringify({userId:r.id}),
+      });
+      const d=await res.json();
+      if(!res.ok){setErr(d.error||"Löschen fehlgeschlagen.");setBusyId(null);return;}
+      setResults(rs=>rs.filter(x=>x.id!==r.id));
+    }catch(e){
+      setErr(describeError(e));
+    }
+    setBusyId(null);
+  };
 
   const panelFor=(id)=>traineePanels[id]||{open:false,loading:false,trainees:null,input:"",err:null};
   const setPanel=(id,patch)=>setTraineePanels(p=>({...p,[id]:{...panelFor(id),...patch}}));
@@ -112,6 +139,39 @@ export default function AdminScreen({onClose}){
     const {error}=await supabase.from("trainer_trainees").delete().eq("trainer_id",trainerId).eq("trainee_id",traineeId);
     if(error){setPanel(trainerId,{loading:false,err:describeError(error)});return;}
     loadTrainees(trainerId);
+  };
+
+  const assignPanelFor=(id)=>assignPanels[id]||{open:false,loading:false,trainers:null,select:"",err:null};
+  const setAssignPanel=(id,patch)=>setAssignPanels(p=>({...p,[id]:{...assignPanelFor(id),...patch}}));
+
+  const loadAssignedTrainers=async(traineeId)=>{
+    setAssignPanel(traineeId,{open:true,loading:true,err:null});
+    const {data,error}=await supabase.from("trainer_trainees").select("trainer_id, profiles!trainer_id(id,email)").eq("trainee_id",traineeId);
+    if(error){setAssignPanel(traineeId,{loading:false,err:describeError(error)});return;}
+    setAssignPanel(traineeId,{loading:false,trainers:(data||[]).map(d=>d.profiles).filter(Boolean)});
+  };
+
+  const toggleAssignPanel=(traineeId)=>{
+    const p=assignPanelFor(traineeId);
+    if(p.open){setAssignPanel(traineeId,{open:false});return;}
+    loadAssignedTrainers(traineeId);
+  };
+
+  const assignToTrainer=async(traineeId)=>{
+    const trainerId=assignPanelFor(traineeId).select;
+    if(!trainerId)return;
+    setAssignPanel(traineeId,{loading:true,err:null});
+    const {error}=await supabase.from("trainer_trainees").insert({trainer_id:trainerId,trainee_id:traineeId});
+    if(error){setAssignPanel(traineeId,{loading:false,err:describeError(error)});return;}
+    setAssignPanel(traineeId,{select:""});
+    loadAssignedTrainers(traineeId);
+  };
+
+  const unassignTrainer=async(traineeId,trainerId)=>{
+    setAssignPanel(traineeId,{loading:true});
+    const {error}=await supabase.from("trainer_trainees").delete().eq("trainer_id",trainerId).eq("trainee_id",traineeId);
+    if(error){setAssignPanel(traineeId,{loading:false,err:describeError(error)});return;}
+    loadAssignedTrainers(traineeId);
   };
 
   return(
@@ -152,6 +212,7 @@ export default function AdminScreen({onClose}){
           const active=r.is_premium||until;
           const aiOn=r.ai_enabled??true;
           const panel=panelFor(r.id);
+          const assignPanel=assignPanelFor(r.id);
           return(
             <div key={r.id} style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:12,padding:"14px 16px"}}>
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:10}}>
@@ -180,7 +241,37 @@ export default function AdminScreen({onClose}){
                 {r.is_trainer&&<button onClick={()=>toggleTraineePanel(r.id)} style={{...ghost,fontSize:12,padding:"7px 12px"}}>
                   {panel.open?"Trainees verbergen ▴":"Trainees verwalten ▾"}
                 </button>}
+                <button onClick={()=>toggleAssignPanel(r.id)} style={{...ghost,fontSize:12,padding:"7px 12px"}}>
+                  {assignPanel.open?"Trainer-Zuweisung verbergen ▴":"Trainer zuweisen ▾"}
+                </button>
+                <button disabled={busyId===r.id} onClick={()=>deleteUser(r)} style={{...ghost,fontSize:12,padding:"7px 12px",color:"#fca5a5",borderColor:"#7f1d1d",opacity:busyId===r.id?.6:1}}>🗑 Löschen</button>
               </div>
+              {assignPanel.open&&(
+                <div style={{marginTop:12,paddingTop:12,borderTop:`0.5px solid ${C.bd}`}}>
+                  <p style={{fontSize:11,fontWeight:600,letterSpacing:".04em",textTransform:"uppercase",color:C.cy,marginBottom:8}}>Zugewiesener Trainer</p>
+                  {assignPanel.loading&&<p style={{fontSize:12,color:C.mu}}>Wird geladen...</p>}
+                  {assignPanel.err&&<p style={{fontSize:12,color:"#fca5a5",marginBottom:8}}>{assignPanel.err}</p>}
+                  {!assignPanel.loading&&assignPanel.trainers?.length===0&&<p style={{fontSize:12,color:C.mu,marginBottom:8}}>Noch keinem Trainer zugewiesen.</p>}
+                  {!assignPanel.loading&&assignPanel.trainers?.map(t=>(
+                    <div key={t.id} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"6px 0"}}>
+                      <span style={{fontSize:13,color:C.t2,wordBreak:"break-all"}}>{t.email}</span>
+                      <button onClick={()=>unassignTrainer(r.id,t.id)} style={{background:"none",border:"none",color:"#fca5a5",cursor:"pointer",fontSize:12,padding:0,fontFamily:ff}}>Entfernen</button>
+                    </div>
+                  ))}
+                  {!trainerList?.length&&<p style={{fontSize:12,color:C.mu,marginTop:8}}>Es gibt noch keine Trainer-Accounts. Erst oben "Zum Trainer machen" verwenden.</p>}
+                  {!!trainerList?.length&&(
+                    <div style={{display:"flex",gap:8,marginTop:8}}>
+                      <select value={assignPanel.select} onChange={e=>setAssignPanel(r.id,{select:e.target.value})} style={{...input,fontSize:13,padding:"8px 12px"}}>
+                        <option value="">Trainer wählen...</option>
+                        {trainerList.filter(t=>t.id!==r.id).map(t=>(
+                          <option key={t.id} value={t.id}>{t.email}</option>
+                        ))}
+                      </select>
+                      <button onClick={()=>assignToTrainer(r.id)} style={{...ghost,flexShrink:0,fontSize:12,padding:"7px 12px"}}>Zuweisen</button>
+                    </div>
+                  )}
+                </div>
+              )}
               {panel.open&&(
                 <div style={{marginTop:12,paddingTop:12,borderTop:`0.5px solid ${C.bd}`}}>
                   <p style={{fontSize:11,fontWeight:600,letterSpacing:".04em",textTransform:"uppercase",color:C.cy,marginBottom:8}}>Zugewiesene Testende</p>

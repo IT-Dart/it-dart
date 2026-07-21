@@ -3,10 +3,16 @@ import { supabase } from "./supabaseClient";
 
 const AuthContext = createContext(null);
 
+// Invite links redirect back with `type=invite` in the URL hash (same mechanism
+// Supabase uses for `type=recovery`, which fires PASSWORD_RECOVERY). Only invite
+// has no dedicated auth event, so it must be read from the hash before Supabase's
+// own session detection consumes and strips it.
+const inviteFromUrl = typeof window !== "undefined" && window.location.hash.includes("type=invite");
+
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(undefined); // undefined = loading, null = logged out
   const [profile, setProfile] = useState(null);
-  const [recoveryMode, setRecoveryMode] = useState(false);
+  const [recoveryMode, setRecoveryMode] = useState(inviteFromUrl);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
