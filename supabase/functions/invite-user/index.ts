@@ -1,6 +1,9 @@
-// Supabase Edge Function: lets an admin invite a new user by email.
-// Only callers with profiles.is_admin = true may use this — everyone
-// else is rejected, since inviting a user requires the service-role key.
+// Supabase Edge Function: lets an admin OR a trainer invite a new user by
+// email — inviting requires the service-role key, so this can't happen
+// directly from the client. Admins can invite anyone with no assignment.
+// Trainers can only invite up to their own trainee_limit, and the new
+// account is immediately assigned to them (this is the only way a trainer
+// gains a trainee on their own — they can never attach an existing user).
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const ALLOWED_ORIGINS = new Set([
@@ -40,10 +43,11 @@ Deno.serve(async (req) => {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("is_admin")
+      .select("is_admin, is_trainer, trainee_limit")
       .eq("id", user.id)
       .single();
-    if (!profile?.is_admin) return json({ error: "Nur für Admins." }, 403, cors);
+    if (!profile?.is_admin && !profile?.is_trainer) return json({ error: "Nur für Admins oder Trainer." }, 403, cors);
+    const asTrainer = !profile.is_admin; // Admin nimmt Vorrang, falls ein Account beides ist
 
     const { email } = await req.json();
     if (!email || typeof email !== "string" || !email.includes("@")) {
@@ -61,10 +65,21 @@ Deno.serve(async (req) => {
       return json({ error: "Diese E-Mail ist bereits registriert — keine Einladung nötig." }, 400, cors);
     }
 
+    if (asTrainer) {
+      const { count } = await supabase
+        .from("trainer_trainees")
+        .select("trainee_id", { count: "exact", head: true })
+        .eq("trainer_id", user.id);
+      const limit = profile.trainee_limit ?? 5;
+      if ((count ?? 0) >= limit) {
+        return json({ error: `Maximale Anzahl an Trainees erreicht (${count}/${limit}). Bitte wende dich an den Administrator, um dein Kontingent zu erweitern.` }, 400, cors);
+      }
+    }
+
     // Primary path: let Supabase create the user AND email them the invite
     // (via the configured SMTP). This used to fail because of the broken
     // notify-signup trigger, now fixed.
-    const { error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(email);
+    const { data: inviteData, error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(email);
     if (inviteErr) {
       console.error("[invite-user] inviteUserByEmail failed:", JSON.stringify(inviteErr));
       const msg = inviteErr.message && inviteErr.message !== "{}"
@@ -73,8 +88,22 @@ Deno.serve(async (req) => {
       return json({ error: msg }, 400, cors);
     }
 
-    // Also hand back a link the admin can share manually (e.g. WhatsApp,
-    // Discord) in addition to the automatic email, in case that's useful.
+    if (asTrainer && inviteData?.user?.id) {
+      const { error: assignErr } = await supabase
+        .from("trainer_trainees")
+        .insert({ trainer_id: user.id, trainee_id: inviteData.user.id });
+      if (assignErr) {
+        // Der Account wurde bereits angelegt — nicht rückgängig machen (das
+        // wäre für die eingeladene Person verwirrend), aber den Admin
+        // sichtbar machen, damit die Zuordnung manuell nachgeholt wird.
+        console.error("[invite-user] auto-assign to trainer failed:", JSON.stringify(assignErr));
+        return json({ ok: true, emailed: true, link: null, warning: "Einladung verschickt, aber die automatische Zuordnung zu dir ist fehlgeschlagen — bitte die Administration informieren." }, 200, cors);
+      }
+    }
+
+    // Also hand back a link the admin/trainer can share manually (e.g.
+    // WhatsApp, Discord) in addition to the automatic email, in case that's
+    // useful.
     let link: string | null = null;
     const { data: linkData, error: linkErr } = await supabase.auth.admin.generateLink({
       type: "magiclink",
