@@ -1,0 +1,36 @@
+<!--
+  Supabase Dashboard → Authentication → Emails → Templates → "Reauthentication"
+  Subject: {{ .Token }} ist dein Bestätigungscode — IT-Dart
+-->
+<div style="background:#0f1623;padding:32px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
+  <table role="presentation" width="100%" style="max-width:480px;margin:0 auto;border-collapse:collapse;">
+    <tr>
+      <td style="background:#1a2535;border:1px solid #2d3f5a;border-radius:14px;padding:36px 32px;">
+        <table role="presentation">
+          <tr>
+            <td style="width:40px;height:40px;border-radius:50%;background:#2563eb;text-align:center;vertical-align:middle;font-size:20px;">🎯</td>
+            <td style="padding-left:12px;">
+              <div style="font-size:18px;font-weight:700;color:#f1f5f9;line-height:1.3;">IT-Dart</div>
+              <div style="font-size:11px;font-weight:500;color:#38bdf8;line-height:1.3;">Bleib am Dart!</div>
+            </td>
+          </tr>
+        </table>
+        <h1 style="font-size:20px;color:#f1f5f9;margin:28px 0 10px;">Dein Bestätigungscode</h1>
+        <p style="font-size:14px;color:#94a3b8;line-height:1.7;margin:0 0 24px;">
+          Für eine sicherheitsrelevante Aktion in deinem IT-Dart-Konto benötigen wir eine zusätzliche Bestätigung. Gib den folgenden Code in der App ein:
+        </p>
+        <table role="presentation" width="100%">
+          <tr>
+            <td align="center" style="padding:4px 0 26px;">
+              <span style="display:inline-block;background:#0f1623;border:1px solid #2d3f5a;border-radius:10px;padding:14px 28px;font-size:26px;font-weight:700;letter-spacing:4px;color:#38bdf8;">{{ .Token }}</span>
+            </td>
+          </tr>
+        </table>
+        <p style="font-size:11px;color:#64748b;line-height:1.6;margin:0;border-top:1px solid #2d3f5a;padding-top:16px;">
+          Dieser Code ist nur kurze Zeit gültig. Wenn du das nicht warst, kannst du diese E-Mail einfach ignorieren.
+        </p>
+      </td>
+    </tr>
+    <tr><td style="text-align:center;padding-top:18px;font-size:11px;color:#475569;">IT-Dart · Coskun Selim Bulut</td></tr>
+  </table>
+</div>
