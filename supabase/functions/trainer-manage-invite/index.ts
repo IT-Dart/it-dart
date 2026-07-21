@@ -76,7 +76,10 @@ Deno.serve(async (req) => {
     const { error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(target.email, { redirectTo });
     if (inviteErr) {
       console.error("[trainer-manage-invite] resend failed:", JSON.stringify(inviteErr));
-      return json({ error: inviteErr.message || "Erneutes Senden fehlgeschlagen." }, 400, cors);
+      const msg = inviteErr.message && inviteErr.message !== "{}"
+        ? inviteErr.message
+        : `Erneutes Senden fehlgeschlagen (Status ${inviteErr.status ?? "unbekannt"}, Code ${inviteErr.code ?? "unbekannt"}). Details: ${JSON.stringify(inviteErr)}`;
+      return json({ error: msg }, 400, cors);
     }
     return json({ ok: true }, 200, cors);
   } catch (e) {

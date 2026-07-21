@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
       console.error("[invite-user] inviteUserByEmail failed:", JSON.stringify(inviteErr));
       const msg = inviteErr.message && inviteErr.message !== "{}"
         ? inviteErr.message
-        : `Einladen fehlgeschlagen (Status ${inviteErr.status ?? "unbekannt"}). Details stehen in den Function-Logs.`;
+        : `Einladen fehlgeschlagen (Status ${inviteErr.status ?? "unbekannt"}, Code ${inviteErr.code ?? "unbekannt"}). Details: ${JSON.stringify(inviteErr)}`;
       return json({ error: msg }, 400, cors);
     }
 
