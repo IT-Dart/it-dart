@@ -27,13 +27,24 @@ export function AuthProvider({ children }) {
     const user = session?.user;
     if (!user) { setProfile(null); return; }
     let cancelled = false;
-    supabase.from("profiles").select("is_premium, premium_until, is_admin, is_trainer, email").eq("id", user.id).single()
-      .then(({ data, error }) => {
-        if (cancelled) return;
-        if (error) console.error("Profil konnte nicht geladen werden:", error.message);
-        setProfile(data ?? { is_premium: false, premium_until: null, is_admin: false, is_trainer: false });
-      });
-    return () => { cancelled = true; };
+
+    const fetchProfile = () => {
+      supabase.from("profiles").select("is_premium, premium_until, is_admin, is_trainer, email").eq("id", user.id).single()
+        .then(({ data, error }) => {
+          if (cancelled) return;
+          if (error) console.error("Profil konnte nicht geladen werden:", error.message);
+          setProfile(data ?? { is_premium: false, premium_until: null, is_admin: false, is_trainer: false });
+        });
+    };
+
+    fetchProfile();
+    // Rollen (z.B. Trainer) kann ein Admin jederzeit in einer anderen Sitzung
+    // ändern — beim Zurückkehren zum Tab einmal neu laden, statt bis zum
+    // nächsten Login mit dem alten Stand weiterzuarbeiten.
+    const onVisible = () => { if (document.visibilityState === "visible") fetchProfile(); };
+    document.addEventListener("visibilitychange", onVisible);
+
+    return () => { cancelled = true; document.removeEventListener("visibilitychange", onVisible); };
   }, [session?.user?.id]);
 
   const hasTimedPremium = !!profile?.premium_until && new Date(profile.premium_until) > new Date();
