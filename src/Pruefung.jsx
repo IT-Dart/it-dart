@@ -128,6 +128,7 @@ const PRUEFUNG=[
 
 const KATS=["Alle",...[...new Set(PRUEFUNG.map(f=>f.kat))]];
 const FREE_KATS=["Grundlagen","Netzwerk & OSI"]; // deckt sich mit den freien Modulen 1+2
+const KAT_BREAKDOWN=KATS.slice(1).map(k=>({kat:k,n:PRUEFUNG.filter(f=>f.kat===k).length,free:FREE_KATS.includes(k)}));
 
 const shuffle=arr=>[...arr].sort(()=>Math.random()-0.5);
 
@@ -216,7 +217,7 @@ export default function Pruefung({onExit}){
         <div style={{width:32,height:32,borderRadius:"50%",background:C.bl,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>🎯</div>
         <div>
           <div style={{fontSize:16,fontWeight:700}}>IT-Dart Prüfungsvorbereitung</div>
-          <div style={{fontSize:11,color:C.mu}}>Fachinformatiker für Systemintegration · 100 Fragen</div>
+          <div style={{fontSize:11,color:C.mu}}>Fachinformatiker für Systemintegration · {PRUEFUNG.length} Fragen</div>
         </div>
         {modus&&<button onClick={reset} style={{marginLeft:"auto",background:"none",border:`0.5px solid ${C.bd}`,borderRadius:8,color:C.t2,padding:"5px 10px",fontSize:12,cursor:"pointer"}}>↩ Neu</button>}
         {onExit&&<button onClick={onExit} style={{marginLeft:modus?8:"auto",background:"none",border:`0.5px solid ${C.bd}`,borderRadius:8,color:C.t2,padding:"5px 10px",fontSize:12,cursor:"pointer"}}>← Zur App</button>}
@@ -227,10 +228,10 @@ export default function Pruefung({onExit}){
         <div style={{textAlign:"center",paddingTop:20,paddingBottom:32}}>
           <div style={{fontSize:56,marginBottom:16}}>🎯</div>
           <h2 style={{fontSize:22,fontWeight:700,marginBottom:8,color:C.t}}>Prüfungsvorbereitung</h2>
-          <p style={{fontSize:14,color:C.t2,lineHeight:1.7,marginBottom:8}}>{!user?"Ein kostenloses Konto genügt für den Schnelltest (20 Fragen). Mit Premium: alle 100 Fragen aus allen 7 Bereichen.":isPremium?"100 Fragen aus allen Themenbereichen — zufällig gemischt, mit sofortigem Feedback und Erklärung.":"Im kostenlosen Schnelltest: 20 Fragen aus Grundlagen & Netzwerktechnik. Mit Premium: alle 100 Fragen aus allen 7 Bereichen."}</p>
+          <p style={{fontSize:14,color:C.t2,lineHeight:1.7,marginBottom:8}}>{!user?`Ein kostenloses Konto genügt für den Schnelltest (20 Fragen). Mit Premium: alle ${PRUEFUNG.length} Fragen aus allen 7 Bereichen.`:isPremium?`${PRUEFUNG.length} Fragen aus allen Themenbereichen — zufällig gemischt, mit sofortigem Feedback und Erklärung.`:`Im kostenlosen Schnelltest: 20 Fragen aus Grundlagen & Netzwerktechnik. Mit Premium: alle ${PRUEFUNG.length} Fragen aus allen 7 Bereichen.`}</p>
           <p style={{fontSize:13,color:C.mu,marginBottom:32}}>Fachinformatiker für Systemintegration (FISI) · IHK-Stil</p>
           <div style={{display:"flex",gap:10,justifyContent:"center",marginBottom:32}}>
-            {[{n:20,l:"Schnelltest"},{n:50,l:"Halbprüfung"},{n:100,l:"Vollprüfung"}].map(({n,l})=>{
+            {[{n:20,l:"Schnelltest"},{n:50,l:"Halbprüfung"},{n:PRUEFUNG.length,l:"Vollprüfung"}].map(({n,l})=>{
               const locked=!user||(n>20&&!isPremium);
               const lockLabel=!user?"🔒 Konto nötig":"🔒 Premium";
               return(
@@ -242,6 +243,19 @@ export default function Pruefung({onExit}){
               );
             })}
           </div>
+
+          <div style={{textAlign:"left",background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:12,padding:"16px 16px 14px",marginBottom:24,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+            <p style={{fontSize:12,fontWeight:600,color:C.mu,textTransform:"uppercase",letterSpacing:".05em",margin:"0 0 12px"}}>Das erwartet dich · {KAT_BREAKDOWN.length} Themenbereiche</p>
+            <div style={{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(160px,1fr))",gap:8}}>
+              {KAT_BREAKDOWN.map(({kat:k,n,free})=>(
+                <div key={k} style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,background:C.s2,borderRadius:8,padding:"8px 10px"}}>
+                  <span style={{fontSize:12.5,color:C.t}}>{k}</span>
+                  <span style={{fontSize:11,color:isPremium||free?C.cy:C.am,fontWeight:600,flexShrink:0,whiteSpace:"nowrap"}}>{isPremium||free?`${n} Fragen`:"🔒 Premium"}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div style={{display:"flex",flexDirection:"column",gap:8,textAlign:"left"}}>
             {[{e:"🕐",t:"Zeit einteilen",s:"Beantworte zuerst die einfachen Fragen. Schwierige Fragen die Nummer notieren, überspringen und am Ende zurückkehren — bloß nicht vergessen!"},
               {e:"❌",t:"Ausschlussverfahren",s:"Erst offensichtlich falsche Antworten streichen, dann aus den verbleibenden wählen."},
