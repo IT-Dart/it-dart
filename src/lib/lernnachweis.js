@@ -13,6 +13,7 @@ const COL = {
   cyan: [56, 189, 248],
   green: [34, 197, 94],
   amber: [245, 158, 11],
+  red: [220, 38, 38],
   coral: [251, 113, 133],
   white: [255, 255, 255],
 };
@@ -125,24 +126,14 @@ function drawDartboardTarget(doc, cx, cy, r, percent, score, total, zone) {
 
   if (zone.ring === 1) {
     // Soft graduated halo around the bullseye for a perfect hit — three
-    // nested circles blending from the cyan ring into full amber.
-    doc.setFillColor(...blendRGB(COL.cyan, COL.amber, 0.35));
+    // nested circles blending from the cyan ring into full red.
+    doc.setFillColor(...blendRGB(COL.cyan, COL.red, 0.35));
     doc.circle(cx, cy, R2 * 1.35, "F");
-    doc.setFillColor(...blendRGB(COL.cyan, COL.amber, 0.7));
+    doc.setFillColor(...blendRGB(COL.cyan, COL.red, 0.7));
     doc.circle(cx, cy, R2 * 1.15, "F");
   }
-  doc.setFillColor(...COL.amber);
+  doc.setFillColor(...COL.red);
   doc.circle(cx, cy, R2, "F");
-
-  // Thin spokes, purely decorative (they play no part in scoring — the
-  // landing spot is calculated from the percentage, not read off the board)
-  doc.setDrawColor(...COL.bg);
-  doc.setLineWidth(r * 0.008);
-  const spokes = 16;
-  for (let i = 0; i < spokes; i++) {
-    const a = (i / spokes) * Math.PI * 2;
-    doc.line(cx + R2 * 0.4 * Math.cos(a), cy + R2 * 0.4 * Math.sin(a), cx + R4 * Math.cos(a), cy + R4 * Math.sin(a));
-  }
 
   doc.setDrawColor(...COL.border);
   doc.setLineWidth(r * 0.045);
@@ -176,7 +167,7 @@ function drawMiniTarget(doc, cx, cy, r, filled) {
     doc.circle(cx, cy, r, "F");
     doc.setFillColor(...COL.cyan);
     doc.circle(cx, cy, r * 0.64, "F");
-    doc.setFillColor(...COL.amber);
+    doc.setFillColor(...COL.red);
     doc.circle(cx, cy, r * 0.3, "F");
   } else {
     doc.setDrawColor(...COL.border);
