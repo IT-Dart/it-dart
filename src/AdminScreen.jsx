@@ -25,12 +25,17 @@ export default function AdminScreen({onClose}){
   const [traineePanels,setTraineePanels]=useState({}); // trainerId -> { open, loading, trainees, input, err }
   const [trainerList,setTrainerList]=useState(null); // alle Accounts mit is_trainer=true, für die Zuweisen-Auswahl
   const [assignPanels,setAssignPanels]=useState({}); // traineeId -> { open, loading, trainers, select, err }
+  const [allUsers,setAllUsers]=useState(null); // alle Accounts, für die Testende-Auswahl per Dropdown
 
   const loadTrainerList=async()=>{
     const {data}=await supabase.from("profiles").select("id,email").eq("is_trainer",true).order("email");
     setTrainerList(data||[]);
   };
-  useEffect(()=>{loadTrainerList();},[]);
+  const loadAllUsers=async()=>{
+    const {data}=await supabase.from("profiles").select("id,email").order("email");
+    setAllUsers(data||[]);
+  };
+  useEffect(()=>{loadTrainerList();loadAllUsers();},[]);
 
   const invite=async(e)=>{
     e.preventDefault();
@@ -149,12 +154,10 @@ export default function AdminScreen({onClose}){
   };
 
   const addTrainee=async(trainerId)=>{
-    const email=panelFor(trainerId).input.trim();
-    if(!email)return;
+    const traineeId=panelFor(trainerId).input;
+    if(!traineeId)return;
     setPanel(trainerId,{loading:true,err:null});
-    const {data:trainee,error:findErr}=await supabase.from("profiles").select("id,email").eq("email",email).maybeSingle();
-    if(findErr||!trainee){setPanel(trainerId,{loading:false,err:"Kein Konto mit dieser E-Mail gefunden."});return;}
-    const {error:insErr}=await supabase.from("trainer_trainees").insert({trainer_id:trainerId,trainee_id:trainee.id});
+    const {error:insErr}=await supabase.from("trainer_trainees").insert({trainer_id:trainerId,trainee_id:traineeId});
     if(insErr){setPanel(trainerId,{loading:false,err:describeError(insErr)});return;}
     setPanel(trainerId,{input:""});
     loadTrainees(trainerId);
@@ -311,7 +314,12 @@ export default function AdminScreen({onClose}){
                     </div>
                   ))}
                   <div style={{display:"flex",gap:8,marginTop:8}}>
-                    <input value={panel.input} onChange={e=>setPanel(r.id,{input:e.target.value})} type="email" placeholder="testende@beispiel.de" style={{...input,fontSize:13,padding:"8px 12px"}}/>
+                    <select value={panel.input} onChange={e=>setPanel(r.id,{input:e.target.value})} style={{...input,fontSize:13,padding:"8px 12px"}}>
+                      <option value="">Nutzer wählen...</option>
+                      {allUsers?.filter(u=>u.id!==r.id&&!panel.trainees?.some(t=>t.id===u.id)).map(u=>(
+                        <option key={u.id} value={u.id}>{u.email}</option>
+                      ))}
+                    </select>
                     <button onClick={()=>addTrainee(r.id)} style={{...ghost,flexShrink:0,fontSize:12,padding:"7px 12px"}}>+ Hinzufügen</button>
                   </div>
                 </div>
