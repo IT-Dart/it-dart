@@ -82,8 +82,11 @@ export default function AdminScreen({onClose}){
   };
 
   const grantMonth=(r)=>updateUser(r.id,{premium_until:new Date(Date.now()+30*24*60*60*1000).toISOString()});
-  const togglePermanent=(r)=>updateUser(r.id,{is_premium:!r.is_premium});
-  const revoke=(r)=>updateUser(r.id,{is_premium:false,premium_until:null});
+  const togglePermanent=(r)=>{
+    const patch=r.is_premium?{is_premium:false,is_trainer:false}:{is_premium:true};
+    return updateUser(r.id,patch).then(loadTrainerList);
+  };
+  const revoke=(r)=>updateUser(r.id,{is_premium:false,premium_until:null,is_trainer:false}).then(loadTrainerList);
   const toggleAi=(r)=>updateUser(r.id,{ai_enabled:!(r.ai_enabled??true)});
   const toggleTrainer=(r)=>updateUser(r.id,{is_trainer:!r.is_trainer}).then(loadTrainerList);
 
