@@ -55,7 +55,11 @@ Deno.serve(async (req) => {
       return json({ error: "Du kannst dein eigenes Konto hier nicht löschen." }, 400, cors);
     }
 
-    const { error: delErr } = await supabase.auth.admin.deleteUser(userId);
+    // shouldSoftDelete explicitly false: a soft-deleted user leaves the
+    // auth.users row in place, which means the "on delete cascade" to
+    // profiles never fires — the stale profiles row then blocks any future
+    // invite to that email with a false "already registered" error.
+    const { error: delErr } = await supabase.auth.admin.deleteUser(userId, false);
     if (delErr) return json({ error: delErr.message }, 500, cors);
 
     return json({ ok: true }, 200, cors);
