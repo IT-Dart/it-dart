@@ -58,7 +58,7 @@ export function AuthProvider({ children }) {
     isAdmin: !!profile?.is_admin,
     isTrainer: !!profile?.is_trainer,
     recoveryMode,
-    signUp: (email, password) => supabase.auth.signUp({ email, password }),
+    signUp: (email, password) => supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } }),
     signIn: (email, password) => supabase.auth.signInWithPassword({ email, password }),
     signOut: () => supabase.auth.signOut(),
     resetPassword: (email) => supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin }),

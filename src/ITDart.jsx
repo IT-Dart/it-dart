@@ -1076,8 +1076,10 @@ const PRQ=[
 
 const DATA={g:{items:G,quiz:GQ,title:"Grundlagen IT &amp; Hardware",intro:"Bevor Netzwerke, Server oder Betriebssysteme Sinn ergeben, musst du verstehen was ein Computer überhaupt ist. Wir starten bei null — mit dem, was jeder IT-Techniker am ersten Tag wissen muss.",case:"💼",caseTitle:"Neuer PC im Büro — von der Lieferung bis zum ersten Login"},o:{items:O,quiz:OQ,title:"Netzwerktechnik",intro:"Das OSI-Modell ist das Grundgerüst der gesamten Netzwerktechnik. Du wirst es in jedem weiteren Modul wiedersehen — hier lernst du die 7 Schichten als solides Fundament, anhand eines echten Netzwerkausfalls.",case:"🔌",caseTitle:"Netzwerkausfall — Techniker geht alle 7 Schichten durch"},b:{items:B,quiz:BQ,title:"Betriebssysteme &amp; Server",intro:"Das Betriebssystem ist die unsichtbare Schaltzentrale jedes Computers. Ohne OS läuft keine Anwendung, kein Dienst, kein Netzwerk. Wir begleiten einen Techniker beim Einrichten eines frisch installierten Windows-Servers.",case:"🖥️",caseTitle:"Windows Server im Einsatz — vom ersten Start bis zur fertigen Konfiguration"},si:{items:SI,quiz:SIQ,title:"IT-Sicherheit",intro:"IT-Sicherheit ist kein Produkt das man kauft — es ist ein Prozess. Die meisten Angriffe nutzen keine technischen Lücken, sondern menschliche. Wir begleiten einen IT-Betrieb nach einem echten Sicherheitsvorfall.",case:"🎣",caseTitle:"Phishing-Vorfall — was passiert, wie reagiert die IT, was hätte es verhindert?"},db:{items:DB,quiz:DBQ,title:"Datenbanken &amp; Daten",intro:"Fast jede Software die wir kennen steckt dahinter eine Datenbank. Von der einfachen Kundenliste bis zur komplexen API-Anbindung — Daten sind das Herzstück moderner IT-Systeme.",case:"🏢",caseTitle:"Neue Kundenverwaltung — von der Datenbankstruktur bis zur API-Anbindung",intro:"Fast jede Software die wir kennen steckt dahinter eine Datenbank. Von der einfachen Kundenliste bis zur komplexen API-Anbindung — Daten sind das Herzstück moderner IT-Systeme."},sk:{items:SK,quiz:SKQ,title:"Skripting &amp; Automatisierung",case:"💻",caseTitle:"50 Server täglich prüfen — manuell 2 Stunden, mit Skript 2 Minuten",intro:"Wer Aufgaben automatisiert spart Zeit, vermeidet Fehler und kann sich auf das Wesentliche konzentrieren. Wir begleiten einen Techniker der ein Monitoring-System für 50 Server aufbaut."},pr:{items:PR,quiz:PRQ,title:"Beruf &amp; Projekt",case:"👥",caseTitle:"IT-Projekt von der Bedarfsanalyse bis zur Abnahme",intro:"IT ist mehr als Technik — Kommunikation, Organisation und Recht sind genauso wichtig. Wir begleiten einen Azubi durch ein komplettes IT-Projekt."}};
 
+const registerLinkRequested=typeof window!=="undefined"&&new URLSearchParams(window.location.search).get("mode")==="register";
+
 export default function ITDart({onOpenExam,onOpenLegal}){
-  const [view,setView]=useState("cover");
+  const [view,setView]=useState(()=>registerLinkRequested?"auth":"cover");
   const [statTarget,setStatTarget]=useState(null); // Trainee {id,email}, wenn ein Trainer dessen Statistik ansieht
   const [mod,setMod]=useState(null);
   const [idx,setIdx]=useState(0);
@@ -1122,7 +1124,7 @@ export default function ITDart({onOpenExam,onOpenLegal}){
     setMod(m);setIdx(0);setPhase(doneFor(m.id).size>0?"learn":"intro");setView("mod");
   };
 
-  if(view==="auth")return <AuthScreen onClose={()=>setView("overview")}/>;
+  if(view==="auth")return <AuthScreen onClose={()=>setView("overview")} initialMode={registerLinkRequested?"register":"login"}/>;
   if(view==="admin")return isAdmin?<AdminScreen onClose={()=>setView("overview")}/>:null;
   if(view==="delete-account")return <DeleteAccountScreen onClose={()=>setView("overview")}/>;
   if(view==="statistik")return <StatistikScreen viewUser={statTarget} onClose={()=>{setView(statTarget?"trainer":"overview");setStatTarget(null);}}/>;

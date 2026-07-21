@@ -34,7 +34,15 @@ export default function AdminScreen({onClose}){
 
   const invite=async(e)=>{
     e.preventDefault();
-    if(!inviteEmail.trim())return;
+    if(!inviteEmail.trim()){
+      // Kein Ziel-E-Mail angegeben: statt einer persönlichen Einladung einen
+      // allgemeinen Registrierungslink zeigen — dort trägt die Person selbst
+      // E-Mail (mit Bestätigung) und Passwort ein.
+      setInviteMsg({type:"info",text:"Allgemeiner Registrierungslink — die Person trägt beim Öffnen selbst ihre E-Mail-Adresse ein und bestätigt sie."});
+      setInviteLink(`${window.location.origin}/?mode=register`);
+      setCopied(false);
+      return;
+    }
     setInviteBusy(true);setInviteMsg(null);setInviteLink(null);setCopied(false);
     try{
       const {data:{session}}=await supabase.auth.getSession();
