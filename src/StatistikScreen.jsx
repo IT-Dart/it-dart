@@ -22,8 +22,9 @@ const fmtDauer=(startedIso,finishedIso)=>{
   return m>0?`${m} Min ${s} Sek`:`${s} Sek`;
 };
 
-export default function StatistikScreen({onClose}){
-  const {user}=useAuth();
+export default function StatistikScreen({onClose,viewUser}){
+  const {user:ownUser}=useAuth();
+  const user=viewUser||ownUser; // Trainer sieht die Statistik eines Trainees statt seiner eigenen
   const [rows,setRows]=useState(null); // null = lädt
   const [err,setErr]=useState(null);
   const [busyId,setBusyId]=useState(null);
@@ -59,7 +60,7 @@ export default function StatistikScreen({onClose}){
   return(
     <div style={wrap}><div style={inner}>
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:24,paddingBottom:16,borderBottom:`0.5px solid ${C.bd}`}}>
-        <span style={{fontSize:16,fontWeight:700}}>📊 Meine Statistik</span>
+        <span style={{fontSize:16,fontWeight:700}}>📊 {viewUser?`Statistik von ${viewUser.email}`:"Meine Statistik"}</span>
         <button onClick={onClose} style={{...ghost,marginLeft:"auto",fontSize:13,padding:"6px 12px"}}>← Zurück</button>
       </div>
 
@@ -68,7 +69,7 @@ export default function StatistikScreen({onClose}){
       </div>}
 
       {rows===null&&<p style={{fontSize:13,color:C.mu,textAlign:"center",padding:"20px 0"}}>Wird geladen...</p>}
-      {rows?.length===0&&!err&&<p style={{fontSize:13,color:C.mu,textAlign:"center",padding:"20px 0"}}>Noch keine Lernnachweise erzeugt. Sobald du ein Modul-Quiz oder eine Prüfungsvorbereitung mit mindestens 50 % abschließt, taucht sie hier auf.</p>}
+      {rows?.length===0&&!err&&<p style={{fontSize:13,color:C.mu,textAlign:"center",padding:"20px 0"}}>{viewUser?"Noch keine Lernnachweise vorhanden.":"Noch keine Lernnachweise erzeugt. Sobald du ein Modul-Quiz oder eine Prüfungsvorbereitung abschließt, taucht sie hier auf."}</p>}
 
       <div style={{display:"flex",flexDirection:"column",gap:10}}>
         {rows?.map(r=>{

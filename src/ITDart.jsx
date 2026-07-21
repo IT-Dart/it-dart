@@ -1078,6 +1078,7 @@ const DATA={g:{items:G,quiz:GQ,title:"Grundlagen IT &amp; Hardware",intro:"Bevor
 
 export default function ITDart({onOpenExam,onOpenLegal}){
   const [view,setView]=useState("cover");
+  const [statTarget,setStatTarget]=useState(null); // Trainee {id,email}, wenn ein Trainer dessen Statistik ansieht
   const [mod,setMod]=useState(null);
   const [idx,setIdx]=useState(0);
   const [phase,setPhase]=useState("intro"); // intro|learn|quiz
@@ -1124,8 +1125,8 @@ export default function ITDart({onOpenExam,onOpenLegal}){
   if(view==="auth")return <AuthScreen onClose={()=>setView("overview")}/>;
   if(view==="admin")return isAdmin?<AdminScreen onClose={()=>setView("overview")}/>:null;
   if(view==="delete-account")return <DeleteAccountScreen onClose={()=>setView("overview")}/>;
-  if(view==="statistik")return <StatistikScreen onClose={()=>setView("overview")}/>;
-  if(view==="trainer")return isTrainer?<TrainerScreen onClose={()=>setView("overview")}/>:null;
+  if(view==="statistik")return <StatistikScreen viewUser={statTarget} onClose={()=>{setView(statTarget?"trainer":"overview");setStatTarget(null);}}/>;
+  if(view==="trainer")return isTrainer?<TrainerScreen onClose={()=>setView("overview")} onOpenUser={(u)=>{setStatTarget(u);setView("statistik");}}/>:null;
 
   if(view==="locked"&&mod)return(
     <div style={wrap}><div style={{...inner,textAlign:"center",paddingTop:40}}>

@@ -21,7 +21,7 @@ const fmtDauer=(startedIso,finishedIso)=>{
   return m>0?`${m} Min ${s} Sek`:`${s} Sek`;
 };
 
-export default function TrainerScreen({onClose}){
+export default function TrainerScreen({onClose,onOpenUser}){
   const {user}=useAuth();
   const [groups,setGroups]=useState(null); // null = lädt; [{trainee, rows}]
   const [err,setErr]=useState(null);
@@ -68,7 +68,9 @@ export default function TrainerScreen({onClose}){
       <div style={{display:"flex",flexDirection:"column",gap:20}}>
         {groups?.map(({trainee,rows})=>(
           <div key={trainee.id}>
-            <p style={{fontSize:13,fontWeight:600,color:C.t,marginBottom:8}}>{trainee.email} <span style={{fontSize:11,color:C.mu,fontWeight:400}}>· {rows.length} Lernnachweis{rows.length===1?"":"e"}</span></p>
+            <button onClick={()=>onOpenUser?.(trainee)} style={{background:"none",border:"none",padding:0,cursor:"pointer",textAlign:"left",fontFamily:ff}}>
+              <p style={{fontSize:13,fontWeight:600,color:C.cy,marginBottom:8,textDecoration:"underline"}}>{trainee.email} <span style={{fontSize:11,color:C.mu,fontWeight:400,textDecoration:"none"}}>· {rows.length} Lernnachweis{rows.length===1?"":"e"} · Statistik ansehen →</span></p>
+            </button>
             {rows.length===0&&<p style={{fontSize:12,color:C.mu,marginBottom:8}}>Noch keine Lernnachweise erzeugt.</p>}
             <div style={{display:"flex",flexDirection:"column",gap:8}}>
               {rows.map(r=>{
