@@ -110,7 +110,7 @@ export default function AdminScreen({onClose}){
   };
 
   const panelFor=(id)=>traineePanels[id]||{open:false,loading:false,trainees:null,input:"",err:null};
-  const setPanel=(id,patch)=>setTraineePanels(p=>({...p,[id]:{...panelFor(id),...patch}}));
+  const setPanel=(id,patch)=>setTraineePanels(p=>({...p,[id]:{...(p[id]||{open:false,loading:false,trainees:null,input:"",err:null}),...patch}}));
 
   const loadTrainees=async(trainerId)=>{
     setPanel(trainerId,{open:true,loading:true,err:null});
@@ -145,7 +145,7 @@ export default function AdminScreen({onClose}){
   };
 
   const assignPanelFor=(id)=>assignPanels[id]||{open:false,loading:false,trainers:null,select:"",err:null};
-  const setAssignPanel=(id,patch)=>setAssignPanels(p=>({...p,[id]:{...assignPanelFor(id),...patch}}));
+  const setAssignPanel=(id,patch)=>setAssignPanels(p=>({...p,[id]:{...(p[id]||{open:false,loading:false,trainers:null,select:"",err:null}),...patch}}));
 
   const loadAssignedTrainers=async(traineeId)=>{
     setAssignPanel(traineeId,{open:true,loading:true,err:null});
