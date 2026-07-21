@@ -32,7 +32,8 @@ export default function AdminScreen({onClose}){
     setTrainerList(data||[]);
   };
   const loadAllUsers=async()=>{
-    const {data}=await supabase.from("profiles").select("id,email").order("email");
+    const {data,error}=await supabase.from("profiles").select("id,email").order("email");
+    if(error){console.error("[AdminScreen] loadAllUsers failed:",error.message);setAllUsers([]);return;}
     setAllUsers(data||[]);
   };
   useEffect(()=>{loadTrainerList();loadAllUsers();},[]);
@@ -313,15 +314,18 @@ export default function AdminScreen({onClose}){
                       <button onClick={()=>removeTrainee(r.id,t.id)} style={{background:"none",border:"none",color:"#fca5a5",cursor:"pointer",fontSize:12,padding:0,fontFamily:ff}}>Entfernen</button>
                     </div>
                   ))}
-                  <div style={{display:"flex",gap:8,marginTop:8}}>
-                    <select value={panel.input} onChange={e=>setPanel(r.id,{input:e.target.value})} style={{...input,fontSize:13,padding:"8px 12px"}}>
-                      <option value="">Nutzer wählen...</option>
-                      {allUsers?.filter(u=>u.id!==r.id&&!panel.trainees?.some(t=>t.id===u.id)).map(u=>(
-                        <option key={u.id} value={u.id}>{u.email}</option>
-                      ))}
-                    </select>
-                    <button onClick={()=>addTrainee(r.id)} style={{...ghost,flexShrink:0,fontSize:12,padding:"7px 12px"}}>+ Hinzufügen</button>
-                  </div>
+                  {!allUsers?.filter(u=>u.id!==r.id&&!panel.trainees?.some(t=>t.id===u.id)).length&&<p style={{fontSize:12,color:C.mu,marginTop:8}}>{allUsers===null?"Nutzerliste wird geladen...":"Kein weiterer Nutzer zum Zuweisen verfügbar."}</p>}
+                  {!!allUsers?.filter(u=>u.id!==r.id&&!panel.trainees?.some(t=>t.id===u.id)).length&&(
+                    <div style={{display:"flex",gap:8,marginTop:8}}>
+                      <select value={panel.input} onChange={e=>setPanel(r.id,{input:e.target.value})} style={{...input,fontSize:13,padding:"8px 12px"}}>
+                        <option value="">Nutzer wählen...</option>
+                        {allUsers.filter(u=>u.id!==r.id&&!panel.trainees?.some(t=>t.id===u.id)).map(u=>(
+                          <option key={u.id} value={u.id}>{u.email}</option>
+                        ))}
+                      </select>
+                      <button onClick={()=>addTrainee(r.id)} style={{...ghost,flexShrink:0,fontSize:12,padding:"7px 12px"}}>+ Hinzufügen</button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
