@@ -1,6 +1,6 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "./lib/AuthContext";
-import { generateLernnachweis } from "./lib/lernnachweis";
+import { generateLernnachweis, logLernnachweis } from "./lib/lernnachweis";
 import AuthScreen from "./AuthScreen";
 
 const C={bg:"#f8fafc",s1:"#ffffff",s2:"#f1f5f9",bd:"#e2e8f0",bl:"#1d4ed8",cy:"#0ea5e9",t:"#0f172a",t2:"#475569",mu:"#94a3b8",gr:"#16a34a",am:"#d97706",co:"#dc2626"};
@@ -178,9 +178,14 @@ export default function Pruefung({onExit}){
     return Object.values(stats);
   },[fragen,falsch]);
 
+  useEffect(()=>{
+    if(modus!=="done"||!user)return;
+    logLernnachweis({user,kind:"pruefung",title:`Prüfungsvorbereitung (${fragen.length} Fragen)`,score,total:fragen.length,topics:topicStats,startedAt,finishedAt:new Date()});
+  },[modus]);
+
   const downloadNachweis=async()=>{
     setNachweisBusy(true);
-    await generateLernnachweis({user,kind:"pruefung",title:`Prüfungsvorbereitung (${fragen.length} Fragen)`,score,total:fragen.length,topics:topicStats,startedAt,finishedAt:new Date()});
+    await generateLernnachweis({user,kind:"pruefung",title:`Prüfungsvorbereitung (${fragen.length} Fragen)`,score,total:fragen.length,topics:topicStats,startedAt,finishedAt:new Date(),skipLog:true});
     setNachweisBusy(false);
   };
 

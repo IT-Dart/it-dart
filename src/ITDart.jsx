@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { C, pri, ghost, wrap, inner, ff, fm } from "./lib/theme";
 import { useAuth } from "./lib/AuthContext";
 import { supabase } from "./lib/supabaseClient";
-import { generateLernnachweis } from "./lib/lernnachweis";
+import { generateLernnachweis, logLernnachweis } from "./lib/lernnachweis";
 import AuthScreen from "./AuthScreen";
 import AdminScreen from "./AdminScreen";
 import DeleteAccountScreen from "./DeleteAccountScreen";
@@ -895,9 +895,13 @@ const Quiz=({qs,onDone,title})=>{
   const pick=idx=>{if(ans)return;setSel(idx);if(idx===q.c)setSc(s=>s+1);};
   const next=()=>{if(i===qs.length-1){setDone(true);return;}setI(x=>x+1);setSel(null);};
   const pct=Math.round((sc/qs.length)*100);
+  useEffect(()=>{
+    if(!done||!user)return;
+    logLernnachweis({user,kind:"modul",title,score:sc,total:qs.length,topics:[{name:title,correct:sc,total:qs.length}],startedAt,finishedAt:new Date()});
+  },[done]);
   const downloadNachweis=async()=>{
     setNachweisBusy(true);
-    await generateLernnachweis({user,kind:"modul",title,score:sc,total:qs.length,topics:[{name:title,correct:sc,total:qs.length}],startedAt,finishedAt:new Date()});
+    await generateLernnachweis({user,kind:"modul",title,score:sc,total:qs.length,topics:[{name:title,correct:sc,total:qs.length}],startedAt,finishedAt:new Date(),skipLog:true});
     setNachweisBusy(false);
   };
   if(done)return(

@@ -209,6 +209,29 @@ function drawRatingRow(doc, x, y, r, filledCount, totalCount) {
  * @param {boolean} [p.skipLog] - true when re-downloading a past Lernnachweis,
  *   so it isn't logged to Supabase a second time
  */
+/**
+ * Logs a completed quiz attempt to Supabase without generating a PDF —
+ * used so trainers/the Statistik view see every finished attempt, not
+ * only the ones a user chose to download a Lernnachweis PDF for.
+ */
+export function logLernnachweis({ user, kind, title, score, total, topics, startedAt, finishedAt }) {
+  if (!user) return;
+  const percent = total > 0 ? Math.round((score / total) * 100) : 0;
+  const zone = zoneForPercent(percent);
+  return supabase.from("lernnachweise").insert({
+    user_id: user.id,
+    kind,
+    title,
+    score,
+    total,
+    percent,
+    badge: zone.key,
+    topics,
+    started_at: startedAt ? new Date(startedAt).toISOString() : null,
+    finished_at: (finishedAt ? new Date(finishedAt) : new Date()).toISOString(),
+  });
+}
+
 export async function generateLernnachweis({ user, kind, title, score, total, topics, startedAt, finishedAt, skipLog = false }) {
   const { jsPDF } = await import("jspdf");
 
@@ -349,18 +372,7 @@ export async function generateLernnachweis({ user, kind, title, score, total, to
   const fileSafeTitle = title.replace(/[^a-z0-9äöüß]+/gi, "_").slice(0, 40);
   doc.save(`IT-Dart-Lernnachweis-${fileSafeTitle}.pdf`);
 
-  if (user && !skipLog) {
-    supabase.from("lernnachweise").insert({
-      user_id: user.id,
-      kind,
-      title,
-      score,
-      total,
-      percent,
-      badge: zone.key,
-      topics,
-      started_at: startedAt ? new Date(startedAt).toISOString() : null,
-      finished_at: (finishedAt ? new Date(finishedAt) : new Date()).toISOString(),
-    }).then(() => {});
+  if (!skipLog) {
+    logLernnachweis({ user, kind, title, score, total, topics, startedAt, finishedAt });
   }
 }
