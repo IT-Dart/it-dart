@@ -67,7 +67,10 @@ Deno.serve(async (req) => {
     if (target.confirmed_at) return json({ error: "Dieses Konto ist bereits aktiv — Einladungen können nur für ausstehende Konten verwaltet werden." }, 400, cors);
 
     if (action === "delete") {
-      const { error: delErr } = await supabase.auth.admin.deleteUser(userId);
+      // shouldSoftDelete explicitly false — same reasoning as
+      // admin-delete-user: a soft-deleted row never cascades to profiles,
+      // leaving a stale row that blocks re-inviting that email.
+      const { error: delErr } = await supabase.auth.admin.deleteUser(userId, false);
       if (delErr) return json({ error: delErr.message }, 500, cors);
       return json({ ok: true }, 200, cors);
     }
