@@ -7,6 +7,8 @@ const RATE_LIMIT_PER_HOUR = 20;
 
 const ALLOWED_ORIGINS = new Set([
   "https://it-dart.vercel.app",
+  "https://it-dart.de",
+  "https://www.it-dart.de",
   "http://localhost:5173",
 ]);
 

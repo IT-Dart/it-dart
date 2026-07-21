@@ -5,6 +5,8 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const ALLOWED_ORIGINS = new Set([
   "https://it-dart.vercel.app",
+  "https://it-dart.de",
+  "https://www.it-dart.de",
   "http://localhost:5173",
 ]);
 
