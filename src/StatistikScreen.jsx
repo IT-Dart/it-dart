@@ -4,6 +4,7 @@ import { useAuth } from "./lib/AuthContext";
 import { supabase } from "./lib/supabaseClient";
 import { describeError } from "./lib/errorText";
 import { generateLernnachweis } from "./lib/lernnachweis";
+import { MODS } from "./lib/modules";
 
 const ZONE_INFO = {
   bullseye: { label: "Bullseye", color: C.am },
@@ -28,6 +29,8 @@ export default function StatistikScreen({onClose,viewUser}){
   const [rows,setRows]=useState(null); // null = lädt
   const [err,setErr]=useState(null);
   const [busyId,setBusyId]=useState(null);
+  const [progress,setProgress]=useState(null); // null = lädt, sonst {modId: [Themennummern]}
+  const [progressErr,setProgressErr]=useState(null);
 
   useEffect(()=>{
     if(!user){setRows([]);return;}
@@ -37,6 +40,18 @@ export default function StatistikScreen({onClose,viewUser}){
         if(cancelled)return;
         if(error){setErr(describeError(error));setRows([]);return;}
         setRows(data||[]);
+      });
+    return ()=>{cancelled=true;};
+  },[user?.id]);
+
+  useEffect(()=>{
+    if(!user){setProgress({});return;}
+    let cancelled=false;
+    supabase.from("progress").select("data").eq("user_id",user.id).maybeSingle()
+      .then(({data,error})=>{
+        if(cancelled)return;
+        if(error){setProgressErr(describeError(error));setProgress({});return;}
+        setProgress(data?.data||{});
       });
     return ()=>{cancelled=true;};
   },[user?.id]);
@@ -67,7 +82,36 @@ export default function StatistikScreen({onClose,viewUser}){
       {err&&<div style={{background:"#450a0a",border:"0.5px solid #ef4444",borderRadius:10,padding:"10px 14px",marginBottom:16}}>
         <p style={{fontSize:13,color:"#fca5a5",margin:0}}>{err}</p>
       </div>}
+      {progressErr&&<div style={{background:"#450a0a",border:"0.5px solid #ef4444",borderRadius:10,padding:"10px 14px",marginBottom:16}}>
+        <p style={{fontSize:13,color:"#fca5a5",margin:0}}>{progressErr}</p>
+      </div>}
 
+      <div style={{marginBottom:28}}>
+        <p style={{fontSize:12,fontWeight:600,letterSpacing:".04em",textTransform:"uppercase",color:C.cy,marginBottom:10}}>Modulfortschritt</p>
+        {progress===null?(
+          <p style={{fontSize:13,color:C.mu,textAlign:"center",padding:"12px 0"}}>Wird geladen...</p>
+        ):(
+          <div style={{display:"flex",flexDirection:"column",gap:8}}>
+            {MODS.filter(m=>m.r).map(m=>{
+              const done=new Set(progress[m.id]||[]).size;
+              const pct=Math.round((done/m.n)*100);
+              return(
+                <div key={m.id} style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:12,padding:"10px 14px"}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:6}}>
+                    <span style={{fontSize:13,fontWeight:600}} dangerouslySetInnerHTML={{__html:`${m.e} ${m.t}`}}/>
+                    <span style={{fontSize:11,color:C.mu,flexShrink:0}}>{done} / {m.n}</span>
+                  </div>
+                  <div style={{height:4,background:C.s2,borderRadius:2,overflow:"hidden"}}>
+                    <div style={{height:"100%",width:`${pct}%`,background:`linear-gradient(90deg,${C.bl},${C.cy})`,borderRadius:2,transition:"width .4s"}}/>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <p style={{fontSize:12,fontWeight:600,letterSpacing:".04em",textTransform:"uppercase",color:C.cy,marginBottom:10}}>Lernnachweise</p>
       {rows===null&&<p style={{fontSize:13,color:C.mu,textAlign:"center",padding:"20px 0"}}>Wird geladen...</p>}
       {rows?.length===0&&!err&&<p style={{fontSize:13,color:C.mu,textAlign:"center",padding:"20px 0"}}>{viewUser?"Noch keine Lernnachweise vorhanden.":"Noch keine Lernnachweise erzeugt. Sobald du ein Modul-Quiz oder eine Prüfungsvorbereitung abschließt, taucht sie hier auf."}</p>}
 

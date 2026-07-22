@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "./lib/AuthContext";
 import { generateLernnachweis, logLernnachweis } from "./lib/lernnachweis";
+import { describeError } from "./lib/errorText";
 import AuthScreen from "./AuthScreen";
 
 const C={bg:"#f8fafc",s1:"#ffffff",s2:"#f1f5f9",bd:"#e2e8f0",bl:"#1d4ed8",cy:"#0ea5e9",t:"#0f172a",t2:"#475569",mu:"#94a3b8",gr:"#16a34a",am:"#d97706",co:"#dc2626"};
@@ -143,6 +144,7 @@ export default function Pruefung({onExit}){
   const [falsch,setFalsch]=useState([]);
   const [showAuth,setShowAuth]=useState(false);
   const [nachweisBusy,setNachweisBusy]=useState(false);
+  const [logErr,setLogErr]=useState(null);
   const [lockReason,setLockReason]=useState(null); // "account" | "premium"
   const [startedAt,setStartedAt]=useState(null);
 
@@ -181,7 +183,8 @@ export default function Pruefung({onExit}){
 
   useEffect(()=>{
     if(modus!=="done"||!user)return;
-    logLernnachweis({user,kind:"pruefung",title:`Prüfungsvorbereitung (${fragen.length} Fragen)`,score,total:fragen.length,topics:topicStats,startedAt,finishedAt:new Date()});
+    logLernnachweis({user,kind:"pruefung",title:`Prüfungsvorbereitung (${fragen.length} Fragen)`,score,total:fragen.length,topics:topicStats,startedAt,finishedAt:new Date()})
+      ?.then(({error})=>{if(error)setLogErr(describeError(error));});
   },[modus]);
 
   const downloadNachweis=async()=>{
@@ -320,6 +323,9 @@ export default function Pruefung({onExit}){
           <div style={{height:10,background:C.s2,borderRadius:5,overflow:"hidden",marginBottom:24}}>
             <div style={{height:"100%",width:`${pct}%`,background:pct>=80?C.gr:pct>=60?C.am:"#ef4444",borderRadius:5,transition:"width .6s"}}/>
           </div>
+          {logErr&&<div style={{background:"#fef2f2",border:"0.5px solid #ef4444",borderRadius:10,padding:"10px 14px",marginBottom:20,textAlign:"left"}}>
+            <p style={{fontSize:13,color:"#b91c1c",margin:0}}>Ergebnis konnte nicht in „Meine Statistik" gespeichert werden: {logErr}</p>
+          </div>}
           <div style={{marginBottom:28}}>
             <div style={{display:"flex",gap:8,justifyContent:"center",marginBottom:user&&pct>=50?12:0}}>
               <button onClick={()=>starten(fragen.length)} style={{background:C.s1,color:C.t2,border:`0.5px solid ${C.bd}`,borderRadius:10,padding:"11px 18px",fontSize:13,cursor:"pointer",fontFamily:ff}}>🔄 Nochmal</button>

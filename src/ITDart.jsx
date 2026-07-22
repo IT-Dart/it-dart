@@ -3,6 +3,8 @@ import { C, pri, ghost, wrap, inner, ff, fm } from "./lib/theme";
 import { useAuth } from "./lib/AuthContext";
 import { supabase } from "./lib/supabaseClient";
 import { generateLernnachweis, logLernnachweis } from "./lib/lernnachweis";
+import { describeError } from "./lib/errorText";
+import { MODS } from "./lib/modules";
 import AuthScreen from "./AuthScreen";
 import AdminScreen from "./AdminScreen";
 import DeleteAccountScreen from "./DeleteAccountScreen";
@@ -25,17 +27,6 @@ const INTERVIEW_MAX_ROUNDS=8; // muss mit INTERVIEW_MAX_ROUNDS in supabase/funct
 const CHAT_MAX_QUESTIONS=10; // pro Thema — nur clientseitig, der eigentliche Kostendeckel ist das serverseitige Stundenlimit
 const FREE_TOPIC_LIMITS={o:2}; // Netzwerktechnik: nur die ersten 2 von 7 Themen sind ohne Premium sichtbar
 const FREE_QUIZ_N=5; // Modul-Quiz am Ende: Free-Nutzer sehen nur die ersten 5 Fragen
-
-const MODS=[
-  {id:"g",e:"⚙️",t:"Grundlagen IT &amp; Hardware",s:"Komponenten, Bits/Bytes, Zahlensysteme, Speicher, Bootvorgang",r:true,n:6},
-  {id:"o",e:"🌐",t:"Netzwerktechnik",s:"OSI-Modell, IP/Subnetting, Switch/Router, DHCP/DNS, WLAN, VPN",r:true,n:7},
-  {id:"b",e:"🖥️",t:"Betriebssysteme &amp; Server",s:"Windows/Linux, Active Directory, Virtualisierung, RAID, Backup",r:true,n:6},
-  {id:"si",e:"🛡️",t:"IT-Sicherheit",s:"Schutzziele, Risiken, Angriffe, Verschlüsselung, Firewalls, DSGVO, Physische Sicherheit",r:true,n:7},
-  {id:"db",e:"🗃️",t:"Datenbanken &amp; Daten",s:"SQL, Datenbankdesign, APIs, JSON/XML, Daten systemübergreifend",r:true,n:6},
-  {id:"sk",e:"💻",t:"Skripting &amp; Automatisierung",s:"PowerShell, Bash, Skripte schreiben, Aufgaben automatisieren",r:true,n:6},
-  {id:"pr",e:"👥",t:"Beruf &amp; Projekt",s:"Unternehmensstrukturen, Kundenkommunikation, SLA, Projektmanagement",r:true,n:6},
-  {id:"bw",e:"💼",t:"Karriere &amp; Bewerbung",s:"Lebenslauf, Anschreiben, Telefon-Check, Vorstellungsgespräch mit KI-Mock-Interview",r:true,n:4},
-];
 
 const G=[
   {n:1,nm:"Was ist ein Computer?",th:"Ein Computer besteht aus wenigen Kernkomponenten: Die CPU denkt und rechnet, der RAM hält Daten kurzfristig bereit, die Festplatte speichert dauerhaft, und das Mainboard verbindet alles.",pc:"Der neue PC wird ausgepackt. Der Techniker prüft: Sitzt die CPU im Sockel? Sind die RAM-Riegel eingerastet? Sind alle Kabel gesteckt?",q1:"Was ist der Unterschied zwischen CPU und RAM?",q2:"Warum reicht RAM allein nicht zum Speichern?"},
@@ -894,6 +885,7 @@ const Quiz=({qs,onDone,title})=>{
   const [i,setI]=useState(0);const [sel,setSel]=useState(null);const [sc,setSc]=useState(0);const [done,setDone]=useState(false);
   const [nachweisBusy,setNachweisBusy]=useState(false);
   const [startedAt,setStartedAt]=useState(()=>new Date());
+  const [logErr,setLogErr]=useState(null);
   const {user}=useAuth();
   const q=qs[i];const ans=sel!==null;
   const pick=idx=>{if(ans)return;setSel(idx);if(idx===q.c)setSc(s=>s+1);};
@@ -901,7 +893,8 @@ const Quiz=({qs,onDone,title})=>{
   const pct=Math.round((sc/qs.length)*100);
   useEffect(()=>{
     if(!done||!user)return;
-    logLernnachweis({user,kind:"modul",title,score:sc,total:qs.length,topics:[{name:title,correct:sc,total:qs.length}],startedAt,finishedAt:new Date()});
+    logLernnachweis({user,kind:"modul",title,score:sc,total:qs.length,topics:[{name:title,correct:sc,total:qs.length}],startedAt,finishedAt:new Date()})
+      ?.then(({error})=>{if(error)setLogErr(describeError(error));});
   },[done]);
   const downloadNachweis=async()=>{
     setNachweisBusy(true);
@@ -916,6 +909,9 @@ const Quiz=({qs,onDone,title})=>{
       <div style={{height:8,background:C.s2,borderRadius:4,overflow:"hidden",marginBottom:20}}>
         <div style={{height:"100%",width:`${pct}%`,background:pct>=80?C.gr:pct>=60?C.am:"#ef4444",borderRadius:4}}/>
       </div>
+      {logErr&&<div style={{background:"#450a0a",border:"0.5px solid #ef4444",borderRadius:10,padding:"10px 14px",marginBottom:16,textAlign:"left"}}>
+        <p style={{fontSize:13,color:"#fca5a5",margin:0}}>Ergebnis konnte nicht in „Meine Statistik" gespeichert werden: {logErr}</p>
+      </div>}
       <div style={{display:"flex",gap:8,justifyContent:"center",marginBottom:user&&pct>=50?12:0}}>
         <button onClick={()=>{setI(0);setSel(null);setSc(0);setDone(false);setStartedAt(new Date());}} style={{...ghost}}>🔄 Nochmal</button>
         <button onClick={onDone} style={{...pri}}>✓ Übersicht</button>
