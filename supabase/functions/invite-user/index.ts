@@ -51,11 +51,16 @@ Deno.serve(async (req) => {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("is_admin, is_trainer, trainee_limit")
+      .select("is_admin, is_trainer, is_junior_admin, trainee_limit")
       .eq("id", user.id)
       .single();
-    if (!profile?.is_admin && !profile?.is_trainer) return json({ error: "Nur für Admins oder Trainer." }, 403, cors);
-    const asTrainer = !profile.is_admin; // Admin nimmt Vorrang, falls ein Account beides ist
+    if (!profile?.is_admin && !profile?.is_trainer && !profile?.is_junior_admin) {
+      return json({ error: "Nur für Admins, Junior-Admins oder Trainer." }, 403, cors);
+    }
+    // Admin und Junior-Admin laden global ohne Kontingent-Prüfung und ohne
+    // Auto-Zuordnung — nur eine reine Trainer-Rolle (kein Admin/Junior-Admin
+    // gleichzeitig) lädt in die eigene, kontingentierte Trainee-Liste.
+    const asTrainer = profile.is_trainer && !profile.is_admin && !profile.is_junior_admin;
 
     const { email } = await req.json();
     if (!email || typeof email !== "string" || !email.includes("@")) {

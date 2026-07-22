@@ -85,7 +85,7 @@ export default function AdminScreen({onClose}){
     setBusy(true);setErr(null);
     const {data,error}=await supabase
       .from("profiles")
-      .select("id,email,is_premium,premium_until,ai_enabled,is_trainer,confirmed_at,trainee_limit,created_at")
+      .select("id,email,is_premium,premium_until,ai_enabled,is_trainer,is_junior_admin,confirmed_at,trainee_limit,created_at")
       .ilike("email",`%${query.trim()}%`)
       .order("created_at",{ascending:false})
       .limit(25);
@@ -109,14 +109,14 @@ export default function AdminScreen({onClose}){
   const unassignAllTrainees=(trainerId)=>supabase.from("trainer_trainees").delete().eq("trainer_id",trainerId);
 
   const togglePermanent=async(r)=>{
-    const patch=r.is_premium?{is_premium:false,is_trainer:false}:{is_premium:true};
+    const patch=r.is_premium?{is_premium:false,is_trainer:false,is_junior_admin:false}:{is_premium:true};
     if(r.is_premium&&r.is_trainer)await unassignAllTrainees(r.id);
     await updateUser(r.id,patch);
     loadTrainerList();
   };
   const revoke=async(r)=>{
     if(r.is_trainer)await unassignAllTrainees(r.id);
-    await updateUser(r.id,{is_premium:false,premium_until:null,is_trainer:false});
+    await updateUser(r.id,{is_premium:false,premium_until:null,is_trainer:false,is_junior_admin:false});
     loadTrainerList();
   };
   const toggleAi=(r)=>updateUser(r.id,{ai_enabled:!(r.ai_enabled??true)});
@@ -125,6 +125,7 @@ export default function AdminScreen({onClose}){
     await updateUser(r.id,{is_trainer:!r.is_trainer});
     loadTrainerList();
   };
+  const toggleJuniorAdmin=(r)=>updateUser(r.id,{is_junior_admin:!r.is_junior_admin});
 
   const deleteUser=async(r)=>{
     if(!window.confirm(`${r.email} wirklich unwiderruflich löschen? Alle Daten (Fortschritt, Lernnachweise) gehen verloren.`))return;
@@ -280,6 +281,7 @@ export default function AdminScreen({onClose}){
                   </span>
                   {!aiOn&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:500,background:"#450a0a",color:"#fca5a5"}}>🤖 Gesperrt</span>}
                   {r.is_trainer&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:500,background:"#1e3a5f",color:"#93c5fd"}}>🎓 Trainer</span>}
+                  {r.is_junior_admin&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:500,background:"#312e81",color:"#c4b5fd"}}>🧑‍💼 Junior-Admin</span>}
                   {!r.confirmed_at&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:500,background:"#3a2a0f",color:"#fbbf24"}}>⏳ Einladung ausstehend</span>}
                 </div>
               </div>
@@ -294,6 +296,9 @@ export default function AdminScreen({onClose}){
                 </button>
                 <button disabled={busyId===r.id} onClick={()=>toggleTrainer(r)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:busyId===r.id?.6:1}}>
                   {r.is_trainer?"🎓 Trainer entfernen":"🎓 Zum Trainer machen"}
+                </button>
+                <button disabled={busyId===r.id} onClick={()=>toggleJuniorAdmin(r)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:busyId===r.id?.6:1}}>
+                  {r.is_junior_admin?"🧑‍💼 Junior-Admin entfernen":"🧑‍💼 Zum Junior-Admin machen"}
                 </button>
                 {r.is_trainer&&<button onClick={()=>toggleTraineePanel(r.id)} style={{...ghost,fontSize:12,padding:"7px 12px"}}>
                   {panel.open?"Trainees verbergen ▴":"Trainees verwalten ▾"}

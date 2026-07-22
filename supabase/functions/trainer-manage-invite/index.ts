@@ -1,9 +1,13 @@
-// Supabase Edge Function: lets a trainer resend or delete a still-pending
-// (unconfirmed) invite for one of their own assigned trainees. Deliberately
-// narrower than admin-delete-user: a trainer can only ever touch an account
-// that is (a) assigned to them and (b) has never confirmed its email — an
-// active trainee's account can't be deleted this way, only unassigned via
-// the normal trainer_trainees RLS delete policy.
+// Supabase Edge Function: lets a trainer, admin, or junior-admin resend or
+// delete a still-pending (unconfirmed) invite. Deliberately narrower than
+// admin-delete-user: regardless of caller, the target account must (a) not
+// have confirmed its email yet — an active account can never be deleted
+// this way, only unassigned via the normal trainer_trainees RLS delete
+// policy. A plain trainer is additionally restricted to their own assigned
+// trainees; admins/junior-admins may act on any pending account (junior-
+// admin's least-privilege boundary — no confirmed-account deletion, no
+// role/premium grants — is enforced here and in the DB migration, not by
+// which screen happens to call this function).
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 // Explicitly exempted from every in-app deletion path — see admin-delete-user
@@ -51,21 +55,28 @@ Deno.serve(async (req) => {
     const { data: { user }, error: userErr } = await supabase.auth.getUser(token);
     if (userErr || !user) return json({ error: "Nicht angemeldet." }, 401, cors);
 
-    const { data: profile } = await supabase.from("profiles").select("is_trainer").eq("id", user.id).single();
-    if (!profile?.is_trainer) return json({ error: "Nur für Trainer." }, 403, cors);
+    const { data: profile } = await supabase.from("profiles").select("is_trainer, is_admin, is_junior_admin").eq("id", user.id).single();
+    const privileged = !!(profile?.is_admin || profile?.is_junior_admin);
+    if (!profile?.is_trainer && !privileged) {
+      return json({ error: "Nur für Trainer, Admins oder Junior-Admins." }, 403, cors);
+    }
 
     const { action, userId } = await req.json();
     if (!userId || (action !== "resend" && action !== "delete")) {
       return json({ error: "Ungültige Anfrage." }, 400, cors);
     }
 
-    const { data: link } = await supabase
-      .from("trainer_trainees")
-      .select("trainee_id")
-      .eq("trainer_id", user.id)
-      .eq("trainee_id", userId)
-      .maybeSingle();
-    if (!link) return json({ error: "Dieser Nutzer ist dir nicht zugewiesen." }, 403, cors);
+    // Admins/Junior-Admins dürfen jede ausstehende Einladung verwalten; ein
+    // reiner Trainer bleibt auf die eigenen zugewiesenen Testenden begrenzt.
+    if (!privileged) {
+      const { data: link } = await supabase
+        .from("trainer_trainees")
+        .select("trainee_id")
+        .eq("trainer_id", user.id)
+        .eq("trainee_id", userId)
+        .maybeSingle();
+      if (!link) return json({ error: "Dieser Nutzer ist dir nicht zugewiesen." }, 403, cors);
+    }
 
     const { data: target } = await supabase.from("profiles").select("email, confirmed_at").eq("id", userId).single();
     if (!target) return json({ error: "Nutzer nicht gefunden." }, 404, cors);
