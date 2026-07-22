@@ -1,0 +1,38 @@
+name: Database Backup
+
+# Kostenloser Ersatz für automatische Supabase-Backups (nicht im Free-Tier
+# enthalten). Zieht täglich einen vollständigen, verschlüsselten Dump und
+# legt ihn als GitHub-Actions-Artefakt ab. retention-days sorgt gleichzeitig
+# für die im Datenschutz-Referenzdokument festgehaltene rollierende
+# Aufbewahrungsfrist — ältere Backups werden automatisch gelöscht.
+
+on:
+  schedule:
+    - cron: "0 3 * * *" # täglich 03:00 UTC
+  workflow_dispatch: {} # zum manuellen Testen im Actions-Tab
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: PostgreSQL-Client installieren
+        run: sudo apt-get update -qq && sudo apt-get install -y postgresql-client gnupg
+
+      - name: Datenbank sichern
+        env:
+          DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: pg_dump "$DATABASE_URL" --no-owner --no-privileges -F c -f backup.dump
+
+      - name: Backup verschlüsseln
+        env:
+          PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
+        run: |
+          gpg --batch --yes --symmetric --cipher-algo AES256 --passphrase "$PASSPHRASE" backup.dump
+          rm backup.dump
+
+      - name: Verschlüsseltes Backup hochladen
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ github.run_id }}
+          path: backup.dump.gpg
+          retention-days: 30
