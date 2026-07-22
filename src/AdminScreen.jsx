@@ -11,6 +11,7 @@ const fmtUntil=(iso)=>{
   const d=new Date(iso);
   return d>new Date()?d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"}):null;
 };
+const fmtDate=(iso)=>iso?new Date(iso).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"}):"unbekannt";
 
 // UI-seitige Spiegelung des Schutzes aus den Edge Functions/SQL-Funktionen —
 // die eigentliche Durchsetzung läuft serverseitig (RPC-Guards, RLS). Das hier
@@ -36,6 +37,7 @@ export default function AdminScreen({onClose}){
   const [trainerList,setTrainerList]=useState(null); // alle Accounts mit is_trainer=true, für die Zuweisen-Auswahl
   const [assignPanels,setAssignPanels]=useState({}); // traineeId -> { open, loading, trainers, select, err }
   const [allUsers,setAllUsers]=useState(null); // alle Accounts, für die Testende-Auswahl per Dropdown
+  const [usageCounts,setUsageCounts]=useState({}); // userId -> Anzahl KI-Anfragen insgesamt
 
   const flash=(text)=>{setActionMsg(text);setTimeout(()=>setActionMsg(null),3000);};
 
@@ -104,6 +106,12 @@ export default function AdminScreen({onClose}){
     setBusy(false);
     if(error){setErr(describeError(error));return;}
     setResults(data||[]);
+    if(data?.length){
+      const {data:counts}=await supabase.rpc("get_ai_usage_counts",{target_ids:data.map(r=>r.id)});
+      setUsageCounts(Object.fromEntries((counts||[]).map(c=>[c.user_id,c.request_count])));
+    }else{
+      setUsageCounts({});
+    }
   };
 
   const updateUser=async(id,patch)=>{
@@ -383,6 +391,7 @@ export default function AdminScreen({onClose}){
                   {!r.confirmed_at&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:500,background:"#3a2a0f",color:"#fbbf24"}}>⏳ Einladung ausstehend</span>}
                 </div>
               </div>
+              <p style={{fontSize:12,color:C.mu,margin:"0 0 10px"}}>Registriert am {fmtDate(r.created_at)} · {usageCounts[r.id]??0} KI-Anfragen insgesamt</p>
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                 <button disabled={grantDisabled} title={juniorOnly?"Nur Admins können Rechte vergeben.":undefined} onClick={()=>togglePermanent(r)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:grantDisabled?.4:1,cursor:grantDisabled?"not-allowed":"pointer"}}>
                   {r.is_premium?"Dauerhaft ausschalten":"Dauerhaft freischalten"}

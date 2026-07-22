@@ -6,6 +6,13 @@ import { describeError } from "./lib/errorText";
 
 const input={width:"100%",background:C.s2,border:`0.5px solid ${C.bd}`,borderRadius:10,color:C.t,padding:"11px 14px",fontSize:14,outline:"none",fontFamily:"inherit"};
 
+const fmtDate=(iso)=>iso?new Date(iso).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"}):"unbekannt";
+const fmtUntil=(iso)=>{
+  if(!iso)return null;
+  const d=new Date(iso);
+  return d>new Date()?d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"}):null;
+};
+
 const fmtRelative=(iso)=>{
   if(!iso)return "nie";
   const diffMin=Math.floor((Date.now()-new Date(iso).getTime())/60000);
@@ -41,7 +48,7 @@ export default function TrainerScreen({onClose,onOpenUser}){
     if(traineeIds.length===0){setTrainees([]);return;}
 
     const [{data:profiles,error:profErr},{data:nachweise,error:nachErr}]=await Promise.all([
-      supabase.from("profiles").select("id,email,confirmed_at,ai_enabled,interview_enabled").in("id",traineeIds),
+      supabase.from("profiles").select("id,email,confirmed_at,ai_enabled,interview_enabled,is_premium,premium_until,created_at").in("id",traineeIds),
       supabase.from("lernnachweise").select("user_id,percent,kind,title,created_at").in("user_id",traineeIds),
     ]);
     if(profErr||nachErr){setErr(describeError(profErr||nachErr));setTrainees([]);return;}
@@ -190,7 +197,8 @@ export default function TrainerScreen({onClose,onOpenUser}){
                 </button>
                 <button disabled={actionBusy===t.id} onClick={()=>removeActive(t.id)} style={{background:"none",border:"none",color:"#fca5a5",cursor:"pointer",fontSize:11,padding:0,fontFamily:ff,opacity:actionBusy===t.id?.6:1}}>Entfernen</button>
               </div>
-              <p style={{fontSize:11,color:C.mu,margin:"0 0 8px"}}>{t.attempts>0?`${t.moduleCount} Modul${t.moduleCount===1?"":"e"} · Ø ${t.avgPct}% · zuletzt aktiv ${fmtRelative(t.lastActive)}`:"Noch keine Aktivität"}</p>
+              <p style={{fontSize:11,color:C.mu,margin:"0 0 4px"}}>{t.attempts>0?`${t.moduleCount} Modul${t.moduleCount===1?"":"e"} · Ø ${t.avgPct}% · zuletzt aktiv ${fmtRelative(t.lastActive)}`:"Noch keine Aktivität"}</p>
+              <p style={{fontSize:11,color:C.mu,margin:"0 0 8px"}}>Registriert am {fmtDate(t.created_at)} · {t.is_premium?"⭐ Premium (dauerhaft)":fmtUntil(t.premium_until)?`⭐ Premium bis ${fmtUntil(t.premium_until)}`:"Free"}</p>
               <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                 <button disabled={actionBusy===t.id} onClick={()=>toggleAi(t)} style={{...ghost,fontSize:11,padding:"5px 10px",opacity:actionBusy===t.id?.6:1}}>
                   {(t.ai_enabled??true)?"🤖 KI sperren":"🤖 KI freischalten"}
