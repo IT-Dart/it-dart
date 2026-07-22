@@ -78,7 +78,7 @@ export default function TrainerScreen({onClose,onOpenUser}){
       const res=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invite-user`,{
         method:"POST",
         headers:{"Content-Type":"application/json",Authorization:`Bearer ${session.access_token}`},
-        body:JSON.stringify({email:inviteEmail.trim()}),
+        body:JSON.stringify({email:inviteEmail.trim(),asTrainer:true}),
       });
       const d=await res.json();
       if(!res.ok){setInviteMsg({type:"error",text:d.error||"Einladen fehlgeschlagen."});setInviteBusy(false);return;}

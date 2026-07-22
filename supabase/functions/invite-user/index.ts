@@ -57,15 +57,19 @@ Deno.serve(async (req) => {
     if (!profile?.is_admin && !profile?.is_trainer && !profile?.is_junior_admin) {
       return json({ error: "Nur für Admins, Junior-Admins oder Trainer." }, 403, cors);
     }
-    // Admin und Junior-Admin laden global ohne Kontingent-Prüfung und ohne
-    // Auto-Zuordnung — nur eine reine Trainer-Rolle (kein Admin/Junior-Admin
-    // gleichzeitig) lädt in die eigene, kontingentierte Trainee-Liste.
-    const asTrainer = profile.is_trainer && !profile.is_admin && !profile.is_junior_admin;
 
-    const { email } = await req.json();
+    const { email, asTrainer: requestedAsTrainer } = await req.json();
     if (!email || typeof email !== "string" || !email.includes("@")) {
       return json({ error: "Ungültige E-Mail-Adresse." }, 400, cors);
     }
+    // Ob eine Einladung global ohne Zuordnung läuft (Admin-Bereich) oder mit
+    // Kontingent-Prüfung + Auto-Zuordnung zum einladenden Trainer (Trainer-
+    // Ansicht) hängt davon ab, von welchem Bildschirm aus eingeladen wurde —
+    // nicht davon, ob das Konto zusätzlich Admin-/Junior-Admin-Rechte hat.
+    // Ein Trainer, der zusätzlich Junior-Admin ist, lädt über die eigene
+    // Trainer-Ansicht trotzdem als Trainer ein. Die Absicht kommt vom
+    // Client, die Berechtigung dafür bleibt serverseitig geprüft.
+    const asTrainer = !!requestedAsTrainer && !!profile.is_trainer;
 
     // Check for an existing account first — gives a clear message instead
     // of relying on Supabase's (sometimes empty) error for this case.
