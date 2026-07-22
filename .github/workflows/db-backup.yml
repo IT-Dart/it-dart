@@ -21,7 +21,16 @@ jobs:
       - name: Datenbank sichern
         env:
           DATABASE_URL: ${{ secrets.SUPABASE_DB_URL }}
-        run: pg_dump "$DATABASE_URL" --no-owner --no-privileges -F c -f backup.dump
+        # Explizit nur public (App-Tabellen: profiles, progress, lernnachweise,
+        # trainer_trainees, ai_usage) und auth (die eigentlichen User-Konten,
+        # nötig damit die Fremdschlüssel auf profiles.id beim Restore stimmen)
+        # — statt der pg_dump-Vorgabe "alle erreichbaren Schemas", die auch
+        # interne Supabase-Systemschemas (storage, realtime, vault, ...)
+        # mitziehen würde, was weder nötig ist noch garantiert fehlerfrei läuft.
+        run: pg_dump "$DATABASE_URL" --no-owner --no-privileges -F c --schema=public --schema=auth -f backup.dump
+
+      - name: Enthaltene Tabellen protokollieren
+        run: pg_restore --list backup.dump | grep "TABLE DATA" || true
 
       - name: Backup verschlüsseln
         env:
