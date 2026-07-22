@@ -5,6 +5,12 @@
 // just triggered by an admin on someone else's behalf.
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
+// Explicitly exempted from every in-app deletion path (self-service and
+// admin). The only way to remove this account is a direct database
+// operation (e.g. `delete from auth.users where id = ...` in the SQL
+// Editor) — never through the application itself.
+const PROTECTED_USER_ID = "33271bc9-6b8a-456f-9cf1-a5c564218b07";
+
 const ALLOWED_ORIGINS = new Set([
   "https://it-dart.vercel.app",
   "https://it-dart.de",
@@ -53,6 +59,9 @@ Deno.serve(async (req) => {
     }
     if (userId === user.id) {
       return json({ error: "Du kannst dein eigenes Konto hier nicht löschen." }, 400, cors);
+    }
+    if (userId === PROTECTED_USER_ID) {
+      return json({ error: "Dieses Konto ist gegen Löschung geschützt und kann nicht über die App entfernt werden." }, 403, cors);
     }
 
     // shouldSoftDelete explicitly false: a soft-deleted user leaves the
