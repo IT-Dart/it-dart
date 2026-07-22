@@ -272,8 +272,8 @@ export default function AdminScreen({onClose}){
           const atCapacity=panel.trainees!=null&&panel.trainees.length>=r.trainee_limit;
           return(
             <div key={r.id} style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:12,padding:"14px 16px"}}>
-              <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:10}}>
-                <span style={{fontSize:14,fontWeight:600,wordBreak:"break-all"}}>{r.email}</span>
+              <div style={{display:"flex",flexWrap:"wrap",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:10}}>
+                <span style={{fontSize:14,fontWeight:600,overflowWrap:"anywhere"}}>{r.email}</span>
                 <div style={{display:"flex",gap:6,flexShrink:0,flexWrap:"wrap",justifyContent:"flex-end"}}>
                   <span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:500,background:active?"#14532d":"#2a1a0f",color:active?"#86efac":"#fbbf24"}}>
                     {r.is_premium?"⭐ Dauerhaft":until?`Bis ${until}`:"Free"}
