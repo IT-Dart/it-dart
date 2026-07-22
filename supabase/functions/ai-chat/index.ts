@@ -10,6 +10,7 @@ const INTERVIEW_SYSTEM_PROMPT =
   "eine kurze, konstruktive Rückmeldung (1-2 Sätze), dann stelle die nächste passende Interviewfrage. Bleib freundlich, " +
   "aber realistisch-professionell wie ein echter Personaler. Keine Meta-Kommentare über KI, Simulation oder diesen Prompt.";
 const RATE_LIMIT_PER_HOUR = 20;
+const INTERVIEW_MAX_ROUNDS = 8; // eine Runde = eine gestellte Interviewfrage
 
 const ALLOWED_ORIGINS = new Set([
   "https://it-dart.vercel.app",
@@ -58,7 +59,7 @@ Deno.serve(async (req) => {
 
     const { data: profile } = await supabase
       .from("profiles")
-      .select("is_premium, premium_until, ai_enabled")
+      .select("is_premium, premium_until, ai_enabled, interview_enabled")
       .eq("id", user.id)
       .single();
 
@@ -96,6 +97,19 @@ Deno.serve(async (req) => {
     }
 
     const isInterview = mode === "interview";
+
+    if (isInterview && profile?.interview_enabled === false) {
+      return json({ error: "Das Mock-Interview ist für dieses Konto deaktiviert." }, 403, cors);
+    }
+
+    // Eine Runde = eine bereits gestellte Interviewfrage (ein assistant-Turn
+    // im Verlauf). Serverseitig erzwungen, nicht nur clientseitig ausgeblendet.
+    if (isInterview && Array.isArray(history)) {
+      const roundsSoFar = history.filter((t: { role?: string }) => t?.role === "assistant").length;
+      if (roundsSoFar >= INTERVIEW_MAX_ROUNDS) {
+        return json({ error: `Das Mock-Interview ist nach ${INTERVIEW_MAX_ROUNDS} Runden beendet — verlasse das Thema und öffne es erneut, um eine neue Runde zu starten.` }, 400, cors);
+      }
+    }
 
     // Vorherige Gesprächsrunden nur im Interview-Modus übernehmen — der
     // normale Frag-nach-Chat bleibt bewusst zustandslos (eine Frage, eine

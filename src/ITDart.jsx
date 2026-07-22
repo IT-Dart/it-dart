@@ -21,6 +21,8 @@ const MODULE_IMAGES={g:moduleGImg,b:moduleBImg,si:moduleSiImg,db:moduleDbImg,sk:
 const MODULE_IMAGE_ALT={g:"PC Komponenten",b:"Betriebssysteme",si:"IT-Sicherheit",db:"Datenbanken",sk:"Skripting",pr:"Beruf und Projekt"};
 
 const FREE_MODULE_IDS=["g","o"]; // Grundlagen frei zugänglich, Netzwerktechnik als Vorschau — Rest inkl. Karriere & Bewerbung (Mock-Interview) ist Premium
+const INTERVIEW_MAX_ROUNDS=8; // muss mit INTERVIEW_MAX_ROUNDS in supabase/functions/ai-chat/index.ts übereinstimmen
+const CHAT_MAX_QUESTIONS=10; // pro Thema — nur clientseitig, der eigentliche Kostendeckel ist das serverseitige Stundenlimit
 const FREE_TOPIC_LIMITS={o:2}; // Netzwerktechnik: nur die ersten 2 von 7 Themen sind ohne Premium sichtbar
 const FREE_QUIZ_N=5; // Modul-Quiz am Ende: Free-Nutzer sehen nur die ersten 5 Fragen
 
@@ -948,6 +950,7 @@ const AIChat=({ctx,q1,q2,moduleId,interview})=>{
   const [q,setQ]=useState("");const [a,setA]=useState("");
   const [history,setHistory]=useState([]); // nur im Interview-Modus genutzt: [{role,content}]
   const [busy,setBusy]=useState(false);
+  const [askCount,setAskCount]=useState(0); // nur im Frag-nach-Modus genutzt
 
   const call=async(question,priorHistory)=>{
     const {data:{session}}=await supabase.auth.getSession();
@@ -958,8 +961,10 @@ const AIChat=({ctx,q1,q2,moduleId,interview})=>{
     return{answer:d.answer||"Keine Antwort."};
   };
 
+  const askLimitReached=askCount>=CHAT_MAX_QUESTIONS;
   const ask=async(question)=>{
-    if(!question.trim())return;
+    if(!question.trim()||askLimitReached)return;
+    setAskCount(c=>c+1);
     setA("Wird geladen...");
     try{const res=await call(question);setA(res.error||res.answer);}
     catch(e){setA("Verbindung fehlgeschlagen.");}
@@ -970,7 +975,10 @@ const AIChat=({ctx,q1,q2,moduleId,interview})=>{
   // echter user-Turn gespeichert (sonst würde der zweite Aufruf mit einem
   // assistant-Turn beginnen und die API mit einem Fehler ablehnen) — beim
   // Rendern wird nur dieser eine, unsichtbare Auslöser-Turn ausgeblendet.
+  const interviewRounds=history.filter(m=>m.role==="assistant").length;
+  const interviewOver=interviewRounds>=INTERVIEW_MAX_ROUNDS;
   const interviewStep=async(userText)=>{
+    if(interviewOver)return;
     const turnText=userText||"Bitte beginne das Interview mit deiner ersten Frage.";
     const priorHistory=history;
     setHistory(h=>[...h,{role:"user",content:turnText}]);
@@ -984,7 +992,10 @@ const AIChat=({ctx,q1,q2,moduleId,interview})=>{
 
   if(interview)return(
     <div style={{borderTop:`0.5px solid ${C.bd}`,paddingTop:14}}>
-      <p style={{fontSize:11,fontWeight:600,letterSpacing:".06em",textTransform:"uppercase",color:C.cy,marginBottom:10}}>🎤 Mock-Interview</p>
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+        <p style={{fontSize:11,fontWeight:600,letterSpacing:".06em",textTransform:"uppercase",color:C.cy,margin:0}}>🎤 Mock-Interview</p>
+        {history.length>0&&<span style={{fontSize:11,color:C.mu}}>{Math.min(interviewRounds,INTERVIEW_MAX_ROUNDS)} / {INTERVIEW_MAX_ROUNDS} Runden</span>}
+      </div>
       {history.length===0?(
         <button onClick={()=>interviewStep(null)} disabled={busy} style={{...pri,width:"100%",justifyContent:"center",opacity:busy?.6:1}}>{busy?"...":"Interview starten"}</button>
       ):(<>
@@ -995,24 +1006,35 @@ const AIChat=({ctx,q1,q2,moduleId,interview})=>{
             </div>
           ))}
         </div>
-        <div style={{display:"flex",gap:8}}>
-          <input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!busy&&interviewStep(q)} placeholder="Deine Antwort..." disabled={busy} style={{flex:1,background:C.s2,border:`0.5px solid ${C.bd}`,borderRadius:10,color:C.t,padding:"10px 14px",fontSize:14,outline:"none",fontFamily:"inherit"}}/>
-          <button onClick={()=>interviewStep(q)} disabled={busy||!q.trim()} style={{...pri,padding:"10px 14px",flexShrink:0,opacity:busy||!q.trim()?.6:1}}>→</button>
-        </div>
+        {interviewOver?(
+          <p style={{fontSize:12,color:C.mu,margin:0}}>Diese Interview-Runde ist abgeschlossen. Verlasse das Thema und öffne es erneut, um eine neue Runde zu starten.</p>
+        ):(
+          <div style={{display:"flex",gap:8}}>
+            <input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!busy&&interviewStep(q)} placeholder="Deine Antwort..." disabled={busy} style={{flex:1,background:C.s2,border:`0.5px solid ${C.bd}`,borderRadius:10,color:C.t,padding:"10px 14px",fontSize:14,outline:"none",fontFamily:"inherit"}}/>
+            <button onClick={()=>interviewStep(q)} disabled={busy||!q.trim()} style={{...pri,padding:"10px 14px",flexShrink:0,opacity:busy||!q.trim()?.6:1}}>→</button>
+          </div>
+        )}
       </>)}
     </div>
   );
 
   return(
     <div style={{borderTop:`0.5px solid ${C.bd}`,paddingTop:14}}>
-      <p style={{fontSize:11,fontWeight:600,letterSpacing:".06em",textTransform:"uppercase",color:C.cy,marginBottom:10}}>Frag nach</p>
-      <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10}}>
-        {[q1,q2].map((qi,i)=>(<button key={i} onClick={()=>{setQ(qi);ask(qi);}} style={{...ghost,textAlign:"left",fontSize:13,padding:"8px 12px",width:"100%"}}>{qi}</button>))}
+      <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
+        <p style={{fontSize:11,fontWeight:600,letterSpacing:".06em",textTransform:"uppercase",color:C.cy,margin:0}}>Frag nach</p>
+        {askCount>0&&<span style={{fontSize:11,color:C.mu}}>{Math.min(askCount,CHAT_MAX_QUESTIONS)} / {CHAT_MAX_QUESTIONS} Fragen</span>}
       </div>
-      <div style={{display:"flex",gap:8}}>
-        <input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==="Enter"&&ask(q)} placeholder="Eigene Frage..." style={{flex:1,background:C.s2,border:`0.5px solid ${C.bd}`,borderRadius:10,color:C.t,padding:"10px 14px",fontSize:14,outline:"none",fontFamily:"inherit"}}/>
-        <button onClick={()=>ask(q)} style={{...pri,padding:"10px 14px",flexShrink:0}}>→</button>
-      </div>
+      {askLimitReached?(
+        <p style={{fontSize:12,color:C.mu,margin:0}}>Maximale Anzahl an Fragen für dieses Thema erreicht. Verlasse das Thema und öffne es erneut, um weiter zu fragen.</p>
+      ):(<>
+        <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10}}>
+          {[q1,q2].map((qi,i)=>(<button key={i} onClick={()=>{setQ(qi);ask(qi);}} style={{...ghost,textAlign:"left",fontSize:13,padding:"8px 12px",width:"100%"}}>{qi}</button>))}
+        </div>
+        <div style={{display:"flex",gap:8}}>
+          <input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==="Enter"&&ask(q)} placeholder="Eigene Frage..." style={{flex:1,background:C.s2,border:`0.5px solid ${C.bd}`,borderRadius:10,color:C.t,padding:"10px 14px",fontSize:14,outline:"none",fontFamily:"inherit"}}/>
+          <button onClick={()=>ask(q)} style={{...pri,padding:"10px 14px",flexShrink:0}}>→</button>
+        </div>
+      </>)}
       {a&&<div style={{marginTop:10,background:"#0f2744",border:`0.5px solid ${C.bl}`,borderRadius:10,padding:12}}><p style={{fontSize:14,color:"#93c5fd",lineHeight:1.6,margin:0}}>{a}</p></div>}
     </div>
   );

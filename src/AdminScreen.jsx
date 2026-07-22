@@ -97,7 +97,7 @@ export default function AdminScreen({onClose}){
     setBusy(true);setErr(null);
     const {data,error}=await supabase
       .from("profiles")
-      .select("id,email,is_premium,premium_until,ai_enabled,is_trainer,is_junior_admin,confirmed_at,trainee_limit,created_at")
+      .select("id,email,is_premium,premium_until,ai_enabled,interview_enabled,is_trainer,is_junior_admin,confirmed_at,trainee_limit,created_at")
       .ilike("email",`%${query.trim()}%`)
       .order("created_at",{ascending:false})
       .limit(25);
@@ -142,6 +142,18 @@ export default function AdminScreen({onClose}){
       return;
     }
     updateUser(r.id,{ai_enabled:next});
+  };
+  const toggleInterview=async(r)=>{
+    const next=!(r.interview_enabled??true);
+    if(juniorOnly){
+      setBusyId(r.id);
+      const {error}=await supabase.rpc("set_interview_enabled",{target_id:r.id,enabled:next});
+      setBusyId(null);
+      if(error){setErr(describeError(error));return;}
+      setResults(rs=>rs.map(x=>x.id===r.id?{...x,interview_enabled:next}:x));
+      return;
+    }
+    updateUser(r.id,{interview_enabled:next});
   };
   const toggleTrainer=async(r)=>{
     if(r.is_trainer)await unassignAllTrainees(r.id);
@@ -344,6 +356,7 @@ export default function AdminScreen({onClose}){
           const until=fmtUntil(r.premium_until);
           const active=r.is_premium||until;
           const aiOn=r.ai_enabled??true;
+          const interviewOn=r.interview_enabled??true;
           const panel=panelFor(r.id);
           const assignPanel=assignPanelFor(r.id);
           const atCapacity=panel.trainees!=null&&panel.trainees.length>=r.trainee_limit;
@@ -364,6 +377,7 @@ export default function AdminScreen({onClose}){
                     {r.is_premium?"⭐ Dauerhaft":until?`Bis ${until}`:"Free"}
                   </span>
                   {!aiOn&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:500,background:"#450a0a",color:"#fca5a5"}}>🤖 Gesperrt</span>}
+                  {!interviewOn&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:500,background:"#450a0a",color:"#fca5a5"}}>🎤 Gesperrt</span>}
                   {r.is_trainer&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:500,background:"#1e3a5f",color:"#93c5fd"}}>🎓 Trainer</span>}
                   {r.is_junior_admin&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:500,background:"#312e81",color:"#c4b5fd"}}>🧑‍💼 Junior-Admin</span>}
                   {!r.confirmed_at&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:500,background:"#3a2a0f",color:"#fbbf24"}}>⏳ Einladung ausstehend</span>}
@@ -377,6 +391,9 @@ export default function AdminScreen({onClose}){
                 {active&&<button disabled={grantDisabled} title={juniorOnly?"Nur Admins können Rechte entziehen.":undefined} onClick={()=>revoke(r)} style={{...ghost,fontSize:12,padding:"7px 12px",color:"#fca5a5",borderColor:"#7f1d1d",opacity:grantDisabled?.4:1,cursor:grantDisabled?"not-allowed":"pointer"}}>Zugang entziehen</button>}
                 <button disabled={rowDisabled} title={locked?"Dieses Konto ist geschützt.":undefined} onClick={()=>toggleAi(r)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:rowDisabled?.5:1,cursor:rowDisabled?"not-allowed":"pointer"}}>
                   {aiOn?"🤖 KI sperren":"🤖 KI freischalten"}
+                </button>
+                <button disabled={rowDisabled} title={locked?"Dieses Konto ist geschützt.":undefined} onClick={()=>toggleInterview(r)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:rowDisabled?.5:1,cursor:rowDisabled?"not-allowed":"pointer"}}>
+                  {interviewOn?"🎤 Mock-Interview sperren":"🎤 Mock-Interview freischalten"}
                 </button>
                 <button disabled={grantDisabled} title={juniorOnly?"Nur Admins können Rechte vergeben.":undefined} onClick={()=>toggleTrainer(r)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:grantDisabled?.4:1,cursor:grantDisabled?"not-allowed":"pointer"}}>
                   {r.is_trainer?"🎓 Trainer entfernen":"🎓 Zum Trainer machen"}

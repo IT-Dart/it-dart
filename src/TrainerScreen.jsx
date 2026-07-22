@@ -41,7 +41,7 @@ export default function TrainerScreen({onClose,onOpenUser}){
     if(traineeIds.length===0){setTrainees([]);return;}
 
     const [{data:profiles,error:profErr},{data:nachweise,error:nachErr}]=await Promise.all([
-      supabase.from("profiles").select("id,email,confirmed_at").in("id",traineeIds),
+      supabase.from("profiles").select("id,email,confirmed_at,ai_enabled,interview_enabled").in("id",traineeIds),
       supabase.from("lernnachweise").select("user_id,percent,kind,title,created_at").in("user_id",traineeIds),
     ]);
     if(profErr||nachErr){setErr(describeError(profErr||nachErr));setTrainees([]);return;}
@@ -112,6 +112,26 @@ export default function TrainerScreen({onClose,onOpenUser}){
     load();
   };
 
+  // Trainer haben keine generelle Schreibberechtigung auf profiles — beide
+  // Umschalter laufen über dieselben eng gefassten RPCs wie für Admin/
+  // Junior-Admin, serverseitig zusätzlich auf die eigenen Trainees begrenzt.
+  const toggleAi=async(t)=>{
+    const next=!(t.ai_enabled??true);
+    setActionBusy(t.id);
+    const {error}=await supabase.rpc("set_ai_enabled",{target_id:t.id,enabled:next});
+    setActionBusy(null);
+    if(error){setErr(describeError(error));return;}
+    setTrainees(ts=>ts.map(x=>x.id===t.id?{...x,ai_enabled:next}:x));
+  };
+  const toggleInterview=async(t)=>{
+    const next=!(t.interview_enabled??true);
+    setActionBusy(t.id);
+    const {error}=await supabase.rpc("set_interview_enabled",{target_id:t.id,enabled:next});
+    setActionBusy(null);
+    if(error){setErr(describeError(error));return;}
+    setTrainees(ts=>ts.map(x=>x.id===t.id?{...x,interview_enabled:next}:x));
+  };
+
   const pending=trainees?.filter(t=>!t.confirmed_at)||[];
   const active=trainees?.filter(t=>t.confirmed_at)||[];
   const atCapacity=trainees!==null&&limit!==null&&trainees.length>=limit;
@@ -170,7 +190,15 @@ export default function TrainerScreen({onClose,onOpenUser}){
                 </button>
                 <button disabled={actionBusy===t.id} onClick={()=>removeActive(t.id)} style={{background:"none",border:"none",color:"#fca5a5",cursor:"pointer",fontSize:11,padding:0,fontFamily:ff,opacity:actionBusy===t.id?.6:1}}>Entfernen</button>
               </div>
-              <p style={{fontSize:11,color:C.mu,margin:0}}>{t.attempts>0?`${t.moduleCount} Modul${t.moduleCount===1?"":"e"} · Ø ${t.avgPct}% · zuletzt aktiv ${fmtRelative(t.lastActive)}`:"Noch keine Aktivität"}</p>
+              <p style={{fontSize:11,color:C.mu,margin:"0 0 8px"}}>{t.attempts>0?`${t.moduleCount} Modul${t.moduleCount===1?"":"e"} · Ø ${t.avgPct}% · zuletzt aktiv ${fmtRelative(t.lastActive)}`:"Noch keine Aktivität"}</p>
+              <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                <button disabled={actionBusy===t.id} onClick={()=>toggleAi(t)} style={{...ghost,fontSize:11,padding:"5px 10px",opacity:actionBusy===t.id?.6:1}}>
+                  {(t.ai_enabled??true)?"🤖 KI sperren":"🤖 KI freischalten"}
+                </button>
+                <button disabled={actionBusy===t.id} onClick={()=>toggleInterview(t)} style={{...ghost,fontSize:11,padding:"5px 10px",opacity:actionBusy===t.id?.6:1}}>
+                  {(t.interview_enabled??true)?"🎤 Mock-Interview sperren":"🎤 Mock-Interview freischalten"}
+                </button>
+              </div>
             </div>
           ))}
         </div>
