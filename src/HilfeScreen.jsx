@@ -80,13 +80,15 @@ export default function HilfeScreen({onClose}){
     return()=>{cancelled=true;};
   },[plainTrainee]);
 
+  // Bewusst auf das Nötigste beschränkt: nur die eigenen Kontodaten des
+  // Nutzers, die er ohnehin schon kennt — kein Browser-/Geräte-Fingerprint
+  // (User-Agent) und keine URL, die für diese Single-Page-App ohnehin nie
+  // aussagekräftig wäre.
   const diagText=user?[
     `E-Mail: ${user.email}`,
     `Konto-ID: ${user.id}`,
     `Registriert seit: ${fmtDate(user.created_at)}`,
     `Zeitpunkt der Anfrage: ${new Date().toLocaleString("de-DE")}`,
-    `Browser/Gerät: ${navigator.userAgent}`,
-    `Seite: ${window.location.href}`,
   ].join("\n"):null;
 
   const copyDiag=()=>{
@@ -189,6 +191,7 @@ export default function HilfeScreen({onClose}){
             <a href={mailtoHref} style={{...pri,fontSize:13,padding:"9px 16px",textDecoration:"none"}}>✉️ E-Mail an Support</a>
             <button onClick={copyDiag} style={{...ghost,fontSize:13,padding:"9px 16px"}}>{copied?"✓ Kopiert":"Infos kopieren"}</button>
           </div>
+          <p style={{fontSize:11,color:C.mu,marginTop:8,marginBottom:0,lineHeight:1.5}}>Diese Angaben werden nicht automatisch übermittelt — sie landen nur bei uns, wenn du oben aktiv auf „E-Mail an Support" klickst oder sie kopierst und selbst verschickst.</p>
         </>}
         {!user&&<a href="mailto:kontakt@it-dart.de?subject=IT-Dart%20Support-Anfrage" style={{...pri,fontSize:13,padding:"9px 16px",textDecoration:"none",display:"inline-flex"}}>✉️ E-Mail an Support</a>}
       </div>
