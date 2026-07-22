@@ -2,7 +2,7 @@
 // The Anthropic API key never reaches the browser — it only lives here as a secret.
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const FREE_MODULE_IDS = ["g", "o", "bw"]; // Grundlagen, Netzwerktechnik, Karriere & Bewerbung — matches FREE_MODULE_IDS in ITDart.jsx
+const FREE_MODULE_IDS = ["g", "o"]; // Grundlagen, Netzwerktechnik — matches FREE_MODULE_IDS in ITDart.jsx (Karriere & Bewerbung/Mock-Interview ist Premium)
 
 const INTERVIEW_SYSTEM_PROMPT =
   "Du führst ein realistisches Vorstellungsgespräch für eine Fachinformatiker-Ausbildung (Systemintegration) auf Deutsch. " +
