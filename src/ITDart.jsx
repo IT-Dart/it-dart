@@ -887,7 +887,7 @@ const Quiz=({qs,onDone,title})=>{
   const [startedAt,setStartedAt]=useState(()=>new Date());
   const [logErr,setLogErr]=useState(null);
   const [dlErr,setDlErr]=useState(null);
-  const {user}=useAuth();
+  const {user,isPremium}=useAuth();
   const q=qs[i];const ans=sel!==null;
   const pick=idx=>{if(ans)return;setSel(idx);if(idx===q.c)setSc(s=>s+1);};
   const next=()=>{if(i===qs.length-1){setDone(true);return;}setI(x=>x+1);setSel(null);};
@@ -931,7 +931,7 @@ const Quiz=({qs,onDone,title})=>{
         <button onClick={()=>{setI(0);setSel(null);setSc(0);setDone(false);setStartedAt(new Date());}} style={{...ghost}}>🔄 Nochmal</button>
         <button onClick={onDone} style={{...pri}}>✓ Übersicht</button>
       </div>
-      {user&&pct>=50&&<button onClick={downloadNachweis} disabled={nachweisBusy} style={{...ghost,width:"100%",justifyContent:"center",opacity:nachweisBusy?.6:1}}>{nachweisBusy?"Wird erstellt...":"📄 Lernnachweis herunterladen"}</button>}
+      {user&&pct>=50&&(isPremium?<button onClick={downloadNachweis} disabled={nachweisBusy} style={{...ghost,width:"100%",justifyContent:"center",opacity:nachweisBusy?.6:1}}>{nachweisBusy?"Wird erstellt...":"📄 Lernnachweis herunterladen"}</button>:<p style={{fontSize:12,color:C.mu,margin:0}}>🔒 Lernnachweis-Download ist ein Premium-Feature.</p>)}
     </div>
   );
   return(

@@ -24,8 +24,13 @@ const fmtDauer=(startedIso,finishedIso)=>{
 };
 
 export default function StatistikScreen({onClose,viewUser}){
-  const {user:ownUser}=useAuth();
+  const {user:ownUser,isPremium:ownIsPremium}=useAuth();
   const user=viewUser||ownUser; // Trainer sieht die Statistik eines Trainees statt seiner eigenen
+  // viewUser (Trainee-Profil) trägt is_premium/premium_until roh mit sich, ownUser (Auth-User) nicht —
+  // dort ist isPremium bereits fertig aus dem Profil berechnet vom AuthContext verfügbar.
+  const isPremium=viewUser
+    ?(!!viewUser.is_premium||(!!viewUser.premium_until&&new Date(viewUser.premium_until)>new Date()))
+    :ownIsPremium;
   const [rows,setRows]=useState(null); // null = lädt
   const [err,setErr]=useState(null);
   const [busyId,setBusyId]=useState(null);
@@ -143,9 +148,13 @@ export default function StatistikScreen({onClose,viewUser}){
                 <div><div style={{fontSize:10,color:C.mu,textTransform:"uppercase",letterSpacing:".04em"}}>Abgeschlossen</div><div style={{fontSize:13,color:C.t2}}>{fmtDateTime(r.finished_at)}</div></div>
                 <div><div style={{fontSize:10,color:C.mu,textTransform:"uppercase",letterSpacing:".04em"}}>Dauer</div><div style={{fontSize:13,color:C.t2}}>{fmtDauer(r.started_at,r.finished_at)}</div></div>
               </div>
-              <button onClick={()=>nachladen(r)} disabled={busyId===r.id} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:busyId===r.id?.6:1}}>
-                {busyId===r.id?"Wird erstellt...":"📄 Lernnachweis erneut herunterladen"}
-              </button>
+              {isPremium?(
+                <button onClick={()=>nachladen(r)} disabled={busyId===r.id} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:busyId===r.id?.6:1}}>
+                  {busyId===r.id?"Wird erstellt...":"📄 Lernnachweis erneut herunterladen"}
+                </button>
+              ):(
+                <p style={{fontSize:12,color:C.mu,margin:0}}>🔒 Lernnachweis-Download ist ein Premium-Feature.</p>
+              )}
             </div>
           );
         })}

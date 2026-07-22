@@ -344,7 +344,7 @@ export default function Pruefung({onExit}){
               <button onClick={()=>starten(fragen.length)} style={{background:C.s1,color:C.t2,border:`0.5px solid ${C.bd}`,borderRadius:10,padding:"11px 18px",fontSize:13,cursor:"pointer",fontFamily:ff}}>🔄 Nochmal</button>
               <button onClick={reset} style={{background:C.bl,color:"#fff",border:"none",borderRadius:10,padding:"11px 18px",fontSize:13,cursor:"pointer",fontFamily:ff}}>← Neue Runde</button>
             </div>
-            {user&&pct>=50&&<button onClick={downloadNachweis} disabled={nachweisBusy} style={{background:"none",color:C.bl,border:`0.5px solid ${C.bl}`,borderRadius:10,padding:"11px 18px",fontSize:13,cursor:"pointer",fontFamily:ff,opacity:nachweisBusy?.6:1,width:"100%",maxWidth:280,margin:"0 auto",display:"block"}}>{nachweisBusy?"Wird erstellt...":"📄 Lernnachweis herunterladen"}</button>}
+            {user&&pct>=50&&(isPremium?<button onClick={downloadNachweis} disabled={nachweisBusy} style={{background:"none",color:C.bl,border:`0.5px solid ${C.bl}`,borderRadius:10,padding:"11px 18px",fontSize:13,cursor:"pointer",fontFamily:ff,opacity:nachweisBusy?.6:1,width:"100%",maxWidth:280,margin:"0 auto",display:"block"}}>{nachweisBusy?"Wird erstellt...":"📄 Lernnachweis herunterladen"}</button>:<p style={{fontSize:12,color:C.mu,margin:0,textAlign:"center"}}>🔒 Lernnachweis-Download ist ein Premium-Feature.</p>)}
           </div>
         </div>
 
