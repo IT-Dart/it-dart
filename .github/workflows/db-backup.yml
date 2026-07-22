@@ -15,8 +15,18 @@ jobs:
   backup:
     runs-on: ubuntu-latest
     steps:
-      - name: PostgreSQL-Client installieren
-        run: sudo apt-get update -qq && sudo apt-get install -y postgresql-client gnupg
+      - name: PostgreSQL-17-Client installieren
+        # Ubuntus eigenes Repo liefert nur Version 16, der Supabase-Server
+        # läuft aber auf Postgres 17 — pg_dump verweigert den Dump, wenn seine
+        # eigene Version älter als die des Servers ist. Daher gezielt v17 über
+        # das offizielle PostgreSQL-APT-Repository (PGDG) installieren.
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y curl ca-certificates gnupg
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /usr/share/keyrings/postgresql-keyring.gpg
+          echo "deb [signed-by=/usr/share/keyrings/postgresql-keyring.gpg] http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" | sudo tee /etc/apt/sources.list.d/pgdg.list
+          sudo apt-get update -qq
+          sudo apt-get install -y postgresql-client-17
 
       - name: Datenbank sichern
         env:
