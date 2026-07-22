@@ -37,10 +37,14 @@ jobs:
         # — statt der pg_dump-Vorgabe "alle erreichbaren Schemas", die auch
         # interne Supabase-Systemschemas (storage, realtime, vault, ...)
         # mitziehen würde, was weder nötig ist noch garantiert fehlerfrei läuft.
-        run: pg_dump "$DATABASE_URL" --no-owner --no-privileges -F c --schema=public --schema=auth -f backup.dump
+        # Versionierten Pfad statt des unversionierten "pg_dump"-Befehls
+        # verwenden — der Runner hat nebenbei bereits Postgres-16-Tools an
+        # Bord, und das unversionierte Kommando zeigt trotz zusätzlich
+        # installiertem v17 weiterhin auf die alte 16er-Version.
+        run: /usr/lib/postgresql/17/bin/pg_dump "$DATABASE_URL" --no-owner --no-privileges -F c --schema=public --schema=auth -f backup.dump
 
       - name: Enthaltene Tabellen protokollieren
-        run: pg_restore --list backup.dump | grep "TABLE DATA" || true
+        run: /usr/lib/postgresql/17/bin/pg_restore --list backup.dump | grep "TABLE DATA" || true
 
       - name: Backup verschlüsseln
         env:
