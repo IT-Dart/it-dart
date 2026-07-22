@@ -82,13 +82,13 @@ export default function HilfeScreen({onClose}){
 
   // Bewusst auf das Nötigste beschränkt: nur die eigenen Kontodaten des
   // Nutzers, die er ohnehin schon kennt — kein Browser-/Geräte-Fingerprint
-  // (User-Agent) und keine URL, die für diese Single-Page-App ohnehin nie
-  // aussagekräftig wäre.
+  // (User-Agent), keine URL (bei dieser Single-Page-App ohnehin nie
+  // aussagekräftig) und kein Zeitstempel (ergibt sich schon aus dem
+  // E-Mail-Eingang).
   const diagText=user?[
     `E-Mail: ${user.email}`,
     `Konto-ID: ${user.id}`,
     `Registriert seit: ${fmtDate(user.created_at)}`,
-    `Zeitpunkt der Anfrage: ${new Date().toLocaleString("de-DE")}`,
   ].join("\n"):null;
 
   const copyDiag=()=>{
