@@ -181,6 +181,9 @@ export default function Pruefung({onExit}){
     return Object.values(stats);
   },[fragen,falsch]);
 
+  // jsPDF (~400 KB) lädt sonst erst beim Klick auf "Herunterladen" — hier
+  // schon im Hintergrund anstoßen, sobald das Ergebnis steht.
+  useEffect(()=>{if(modus==="done")import("jspdf");},[modus]);
   useEffect(()=>{
     if(modus!=="done"||!user)return;
     logLernnachweis({user,kind:"pruefung",title:`Prüfungsvorbereitung (${fragen.length} Fragen)`,score,total:fragen.length,topics:topicStats,startedAt,finishedAt:new Date()})

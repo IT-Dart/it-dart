@@ -891,6 +891,11 @@ const Quiz=({qs,onDone,title})=>{
   const pick=idx=>{if(ans)return;setSel(idx);if(idx===q.c)setSc(s=>s+1);};
   const next=()=>{if(i===qs.length-1){setDone(true);return;}setI(x=>x+1);setSel(null);};
   const pct=Math.round((sc/qs.length)*100);
+  // jsPDF (~400 KB) lädt sonst erst beim Klick auf "Herunterladen" — hier
+  // schon im Hintergrund anstoßen, sobald das Ergebnis steht, damit der
+  // eigentliche Download-Klick aus dem (dann bereits warmen) Modul-Cache
+  // bedient wird statt spürbar zu verzögern.
+  useEffect(()=>{if(done)import("jspdf");},[done]);
   useEffect(()=>{
     if(!done||!user)return;
     logLernnachweis({user,kind:"modul",title,score:sc,total:qs.length,topics:[{name:title,correct:sc,total:qs.length}],startedAt,finishedAt:new Date()})

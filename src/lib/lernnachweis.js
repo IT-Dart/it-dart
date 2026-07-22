@@ -16,6 +16,7 @@ const COL = {
   red: [220, 38, 38],
   coral: [251, 113, 133],
   white: [255, 255, 255],
+  dart: [1, 1, 112], // #010170 — Farbe des Darts im Trefferbild
 };
 
 // Redraws the IT-Dart logo (concentric rings + dart) as vector shapes —
@@ -84,12 +85,12 @@ function drawPreciseDart(doc, landX, landY, dirX, dirY, len) {
   const shaftStart = { x: landX + len * 0.42 * dirX, y: landY + len * 0.42 * dirY };
   const shaftEnd = { x: landX + len * dirX, y: landY + len * dirY };
 
-  doc.setDrawColor(...COL.blue);
+  doc.setDrawColor(...COL.dart);
   doc.setLineWidth(len * 0.1);
   doc.line(shaftStart.x, shaftStart.y, shaftEnd.x, shaftEnd.y);
 
   const tipLen = len * 0.34, tipWide = len * 0.16;
-  doc.setFillColor(...COL.blue);
+  doc.setFillColor(...COL.dart);
   doc.triangle(
     landX + tipLen * dirX + perpX * tipWide, landY + tipLen * dirY + perpY * tipWide,
     landX + tipLen * dirX - perpX * tipWide, landY + tipLen * dirY - perpY * tipWide,
