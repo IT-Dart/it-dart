@@ -5,7 +5,6 @@ import { supabase } from "./lib/supabaseClient";
 import { generateLernnachweis, logLernnachweis } from "./lib/lernnachweis";
 import AuthScreen from "./AuthScreen";
 import AdminScreen from "./AdminScreen";
-import JuniorAdminScreen from "./JuniorAdminScreen";
 import DeleteAccountScreen from "./DeleteAccountScreen";
 import StatistikScreen from "./StatistikScreen";
 import TrainerScreen from "./TrainerScreen";
@@ -1126,8 +1125,7 @@ export default function ITDart({onOpenExam,onOpenLegal}){
   };
 
   if(view==="auth")return <AuthScreen onClose={()=>setView("overview")} initialMode={registerLinkRequested?"register":"login"}/>;
-  if(view==="admin")return isAdmin?<AdminScreen onClose={()=>setView("overview")}/>:null;
-  if(view==="junior-admin")return isJuniorAdmin?<JuniorAdminScreen onClose={()=>setView("overview")}/>:null;
+  if(view==="admin"||view==="junior-admin")return (isAdmin||isJuniorAdmin)?<AdminScreen onClose={()=>setView("overview")}/>:null;
   if(view==="delete-account")return <DeleteAccountScreen onClose={()=>setView("overview")}/>;
   if(view==="statistik")return <StatistikScreen viewUser={statTarget} onClose={()=>{setView(statTarget?"trainer":"overview");setStatTarget(null);}}/>;
   if(view==="trainer")return isTrainer?<TrainerScreen onClose={()=>setView("overview")} onOpenUser={(u)=>{setStatTarget(u);setView("statistik");}}/>:null;
@@ -1187,7 +1185,7 @@ export default function ITDart({onOpenExam,onOpenLegal}){
       </div>
       <div style={{textAlign:"right",marginBottom:16}}>
         {user?(
-          <span style={{fontSize:12,color:C.mu}}>{user.email} {isPremium?"· ⭐ Premium":"· Free"} {isAdmin&&<>· <button onClick={()=>setView("admin")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>⚙️ Admin</button></>} {isJuniorAdmin&&<>· <button onClick={()=>setView("junior-admin")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>🧑‍💼 Junior-Admin</button></>} {isTrainer&&<>· <button onClick={()=>setView("trainer")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>🎓 Trainer-Ansicht</button></>} · <button onClick={()=>setView("statistik")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>📊 Statistik</button> · <button onClick={signOut} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Abmelden</button> · <button onClick={()=>setView("delete-account")} style={{background:"none",border:"none",color:C.mu,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Konto löschen</button></span>
+          <span style={{fontSize:12,color:C.mu}}>{user.email} {isPremium?"· ⭐ Premium":"· Free"} {isAdmin&&<>· <button onClick={()=>setView("admin")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>⚙️ Admin</button></>} {!isAdmin&&isJuniorAdmin&&<>· <button onClick={()=>setView("junior-admin")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>🧑‍💼 Junior-Admin</button></>} {isTrainer&&<>· <button onClick={()=>setView("trainer")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>🎓 Trainer-Ansicht</button></>} · <button onClick={()=>setView("statistik")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>📊 Statistik</button> · <button onClick={signOut} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Abmelden</button> · <button onClick={()=>setView("delete-account")} style={{background:"none",border:"none",color:C.mu,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Konto löschen</button></span>
         ):(
           <button onClick={()=>setView("auth")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Anmelden / Registrieren</button>
         )}

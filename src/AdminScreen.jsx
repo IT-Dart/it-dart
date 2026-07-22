@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { C, pri, ghost, wrap, inner, ff } from "./lib/theme";
 import { supabase } from "./lib/supabaseClient";
 import { describeError } from "./lib/errorText";
+import { useAuth } from "./lib/AuthContext";
 
 const input={width:"100%",background:C.s2,border:`0.5px solid ${C.bd}`,borderRadius:10,color:C.t,padding:"11px 14px",fontSize:14,outline:"none",fontFamily:"inherit"};
 
@@ -11,12 +12,21 @@ const fmtUntil=(iso)=>{
   return d>new Date()?d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"}):null;
 };
 
+// UI-seitige Spiegelung des Schutzes aus den Edge Functions/SQL-Funktionen —
+// die eigentliche Durchsetzung läuft serverseitig (RPC-Guards, RLS). Das hier
+// sorgt nur dafür, dass ein Junior-Admin für dieses Konto gar keinen
+// anklickbaren Button sieht.
+const PROTECTED_UID="33271bc9-6b8a-456f-9cf1-a5c564218b07";
+
 export default function AdminScreen({onClose}){
+  const {isAdmin,isJuniorAdmin}=useAuth();
+  const juniorOnly=isJuniorAdmin&&!isAdmin;
   const [query,setQuery]=useState("");
   const [results,setResults]=useState(null); // null = noch nicht gesucht
   const [busy,setBusy]=useState(false);
   const [busyId,setBusyId]=useState(null);
   const [err,setErr]=useState(null);
+  const [actionMsg,setActionMsg]=useState(null);
   const [inviteEmail,setInviteEmail]=useState("");
   const [inviteBusy,setInviteBusy]=useState(false);
   const [inviteMsg,setInviteMsg]=useState(null);
@@ -26,6 +36,8 @@ export default function AdminScreen({onClose}){
   const [trainerList,setTrainerList]=useState(null); // alle Accounts mit is_trainer=true, für die Zuweisen-Auswahl
   const [assignPanels,setAssignPanels]=useState({}); // traineeId -> { open, loading, trainers, select, err }
   const [allUsers,setAllUsers]=useState(null); // alle Accounts, für die Testende-Auswahl per Dropdown
+
+  const flash=(text)=>{setActionMsg(text);setTimeout(()=>setActionMsg(null),3000);};
 
   const loadTrainerList=async()=>{
     const {data:trainers,error:tErr}=await supabase.from("profiles").select("id,email,trainee_limit").eq("is_trainer",true).order("email");
@@ -119,7 +131,18 @@ export default function AdminScreen({onClose}){
     await updateUser(r.id,{is_premium:false,premium_until:null,is_trainer:false,is_junior_admin:false});
     loadTrainerList();
   };
-  const toggleAi=(r)=>updateUser(r.id,{ai_enabled:!(r.ai_enabled??true)});
+  const toggleAi=async(r)=>{
+    const next=!(r.ai_enabled??true);
+    if(juniorOnly){
+      setBusyId(r.id);
+      const {error}=await supabase.rpc("set_ai_enabled",{target_id:r.id,enabled:next});
+      setBusyId(null);
+      if(error){setErr(describeError(error));return;}
+      setResults(rs=>rs.map(x=>x.id===r.id?{...x,ai_enabled:next}:x));
+      return;
+    }
+    updateUser(r.id,{ai_enabled:next});
+  };
   const toggleTrainer=async(r)=>{
     if(r.is_trainer)await unassignAllTrainees(r.id);
     await updateUser(r.id,{is_trainer:!r.is_trainer});
@@ -128,6 +151,28 @@ export default function AdminScreen({onClose}){
   const toggleJuniorAdmin=(r)=>updateUser(r.id,{is_junior_admin:!r.is_junior_admin});
 
   const deleteUser=async(r)=>{
+    if(juniorOnly){
+      // Junior-Admins dürfen nur ausstehende (nie bestätigte) Einladungen
+      // entfernen — nie ein aktives Konto. Läuft deshalb über die engere
+      // trainer-manage-invite-Funktion statt admin-delete-user.
+      if(!window.confirm(`Ausstehende Einladung für ${r.email} wirklich löschen?`))return;
+      setBusyId(r.id);setErr(null);
+      try{
+        const {data:{session}}=await supabase.auth.getSession();
+        const res=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trainer-manage-invite`,{
+          method:"POST",
+          headers:{"Content-Type":"application/json",Authorization:`Bearer ${session.access_token}`},
+          body:JSON.stringify({action:"delete",userId:r.id}),
+        });
+        const d=await res.json();
+        if(!res.ok){setErr(d.error||"Löschen fehlgeschlagen.");setBusyId(null);return;}
+        setResults(rs=>rs.filter(x=>x.id!==r.id));
+      }catch(e){
+        setErr(describeError(e));
+      }
+      setBusyId(null);
+      return;
+    }
     if(!window.confirm(`${r.email} wirklich unwiderruflich löschen? Alle Daten (Fortschritt, Lernnachweise) gehen verloren.`))return;
     setBusyId(r.id);setErr(null);
     try{
@@ -146,10 +191,34 @@ export default function AdminScreen({onClose}){
     setBusyId(null);
   };
 
+  const resendInvite=async(r)=>{
+    setBusyId(r.id);setErr(null);
+    try{
+      const {data:{session}}=await supabase.auth.getSession();
+      const res=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trainer-manage-invite`,{
+        method:"POST",
+        headers:{"Content-Type":"application/json",Authorization:`Bearer ${session.access_token}`},
+        body:JSON.stringify({action:"resend",userId:r.id}),
+      });
+      const d=await res.json();
+      if(!res.ok){setErr(d.error||"Erneutes Senden fehlgeschlagen.");setBusyId(null);return;}
+      flash(`Einladung an ${r.email} erneut verschickt.`);
+      // Resend legt das Konto unter einer neuen ID neu an — Liste neu laden.
+      search();
+    }catch(e){
+      setErr(describeError(e));
+    }
+    setBusyId(null);
+  };
+
   // Postgres liefert für Doppelzuweisungen nur einen technischen Constraint-
   // Fehler — hier auf eine verständliche Meldung abbilden. Das Kontingent-
   // Limit selbst kommt schon lesbar aus dem DB-Trigger (enforce_trainee_limit).
-  const friendlyAssignError=(error)=>error?.code==="23505"?"Dieser Nutzer ist diesem Trainer bereits zugewiesen.":describeError(error);
+  const friendlyAssignError=(error)=>{
+    if(error?.code==="23505")return "Dieser Nutzer ist diesem Trainer bereits zugewiesen.";
+    if(error?.code==="42501")return "Diese Zuordnung ist nicht erlaubt — mindestens eines der Konten ist geschützt oder deine Berechtigung reicht dafür nicht aus.";
+    return describeError(error);
+  };
 
   const panelFor=(id)=>traineePanels[id]||{open:false,loading:false,trainees:null,input:"",err:null};
   const setPanel=(id,patch)=>setTraineePanels(p=>({...p,[id]:{...(p[id]||{open:false,loading:false,trainees:null,input:"",err:null}),...patch}}));
@@ -234,9 +303,13 @@ export default function AdminScreen({onClose}){
   return(
     <div style={wrap}><div style={inner}>
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:24,paddingBottom:16,borderBottom:`0.5px solid ${C.bd}`}}>
-        <span style={{fontSize:16,fontWeight:700}}>⚙️ Admin</span>
+        <span style={{fontSize:16,fontWeight:700}}>{isAdmin?"⚙️ Admin":"🧑‍💼 Junior-Admin"}</span>
         <button onClick={onClose} style={{...ghost,marginLeft:"auto",fontSize:13,padding:"6px 12px"}}>← Zurück</button>
       </div>
+
+      {juniorOnly&&<div style={{background:"#1e3a5f",border:"0.5px solid #2563eb",borderRadius:12,padding:"14px 16px",marginBottom:20}}>
+        <p style={{fontSize:13,color:"#93c5fd",margin:0}}>Eingeschränkter Zugang: Nutzer einsehen, einladen, KI-Zugriff und Trainer-Zuordnungen/Kontingente verwalten, ausstehende Einladungen erneut senden oder löschen. Ausgegraute Funktionen (Rechtevergabe, Löschen aktiver Konten) sind Admins vorbehalten.</p>
+      </div>}
 
       <div style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:12,padding:"14px 16px",marginBottom:24}}>
         <p style={{fontSize:12,fontWeight:600,letterSpacing:".04em",textTransform:"uppercase",color:C.cy,marginBottom:10}}>Neuen Nutzer einladen</p>
@@ -259,6 +332,9 @@ export default function AdminScreen({onClose}){
       {err&&<div style={{background:"#450a0a",border:"0.5px solid #ef4444",borderRadius:10,padding:"10px 14px",marginBottom:16}}>
         <p style={{fontSize:13,color:"#fca5a5",margin:0}}>{err}</p>
       </div>}
+      {actionMsg&&<div style={{background:"#052e16",border:"0.5px solid #22c55e",borderRadius:10,padding:"10px 14px",marginBottom:16}}>
+        <p style={{fontSize:13,color:"#86efac",margin:0}}>{actionMsg}</p>
+      </div>}
 
       {results===null&&<p style={{fontSize:13,color:C.mu,textAlign:"center",padding:"20px 0"}}>E-Mail (oder Teil davon) eingeben und suchen.</p>}
       {results?.length===0&&<p style={{fontSize:13,color:C.mu,textAlign:"center",padding:"20px 0"}}>Keine Treffer.</p>}
@@ -271,6 +347,14 @@ export default function AdminScreen({onClose}){
           const panel=panelFor(r.id);
           const assignPanel=assignPanelFor(r.id);
           const atCapacity=panel.trainees!=null&&panel.trainees.length>=r.trainee_limit;
+          // Rechtevergabe (Premium/Trainer/Junior-Admin) und das Löschen aktiver
+          // Konten sind für Junior-Admins grundsätzlich gesperrt — unabhängig
+          // von der Zeile. Für das geschützte Hauptkonto ist zusätzlich jede
+          // einzelne Aktion gesperrt, auch die sonst erlaubten.
+          const locked=juniorOnly&&r.id===PROTECTED_UID;
+          const grantDisabled=busyId===r.id||juniorOnly;
+          const rowDisabled=busyId===r.id||locked;
+          const canDeleteThis=isAdmin||(!r.confirmed_at&&!locked);
           return(
             <div key={r.id} style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:12,padding:"14px 16px"}}>
               <div style={{display:"flex",flexWrap:"wrap",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:10}}>
@@ -286,27 +370,28 @@ export default function AdminScreen({onClose}){
                 </div>
               </div>
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                <button disabled={busyId===r.id} onClick={()=>togglePermanent(r)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:busyId===r.id?.6:1}}>
+                <button disabled={grantDisabled} title={juniorOnly?"Nur Admins können Rechte vergeben.":undefined} onClick={()=>togglePermanent(r)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:grantDisabled?.4:1,cursor:grantDisabled?"not-allowed":"pointer"}}>
                   {r.is_premium?"Dauerhaft ausschalten":"Dauerhaft freischalten"}
                 </button>
-                <button disabled={busyId===r.id} onClick={()=>grantMonth(r)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:busyId===r.id?.6:1}}>+1 Monat</button>
-                {active&&<button disabled={busyId===r.id} onClick={()=>revoke(r)} style={{...ghost,fontSize:12,padding:"7px 12px",color:"#fca5a5",borderColor:"#7f1d1d",opacity:busyId===r.id?.6:1}}>Zugang entziehen</button>}
-                <button disabled={busyId===r.id} onClick={()=>toggleAi(r)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:busyId===r.id?.6:1}}>
+                <button disabled={grantDisabled} title={juniorOnly?"Nur Admins können Rechte vergeben.":undefined} onClick={()=>grantMonth(r)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:grantDisabled?.4:1,cursor:grantDisabled?"not-allowed":"pointer"}}>+1 Monat</button>
+                {active&&<button disabled={grantDisabled} title={juniorOnly?"Nur Admins können Rechte entziehen.":undefined} onClick={()=>revoke(r)} style={{...ghost,fontSize:12,padding:"7px 12px",color:"#fca5a5",borderColor:"#7f1d1d",opacity:grantDisabled?.4:1,cursor:grantDisabled?"not-allowed":"pointer"}}>Zugang entziehen</button>}
+                <button disabled={rowDisabled} title={locked?"Dieses Konto ist geschützt.":undefined} onClick={()=>toggleAi(r)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:rowDisabled?.5:1,cursor:rowDisabled?"not-allowed":"pointer"}}>
                   {aiOn?"🤖 KI sperren":"🤖 KI freischalten"}
                 </button>
-                <button disabled={busyId===r.id} onClick={()=>toggleTrainer(r)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:busyId===r.id?.6:1}}>
+                <button disabled={grantDisabled} title={juniorOnly?"Nur Admins können Rechte vergeben.":undefined} onClick={()=>toggleTrainer(r)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:grantDisabled?.4:1,cursor:grantDisabled?"not-allowed":"pointer"}}>
                   {r.is_trainer?"🎓 Trainer entfernen":"🎓 Zum Trainer machen"}
                 </button>
-                <button disabled={busyId===r.id} onClick={()=>toggleJuniorAdmin(r)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:busyId===r.id?.6:1}}>
+                <button disabled={grantDisabled} title={juniorOnly?"Nur Admins können Rechte vergeben.":undefined} onClick={()=>toggleJuniorAdmin(r)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:grantDisabled?.4:1,cursor:grantDisabled?"not-allowed":"pointer"}}>
                   {r.is_junior_admin?"🧑‍💼 Junior-Admin entfernen":"🧑‍💼 Zum Junior-Admin machen"}
                 </button>
-                {r.is_trainer&&<button onClick={()=>toggleTraineePanel(r.id)} style={{...ghost,fontSize:12,padding:"7px 12px"}}>
+                {r.is_trainer&&<button disabled={rowDisabled} title={locked?"Dieses Konto ist geschützt.":undefined} onClick={()=>toggleTraineePanel(r.id)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:rowDisabled?.5:1,cursor:rowDisabled?"not-allowed":"pointer"}}>
                   {panel.open?"Trainees verbergen ▴":"Trainees verwalten ▾"}
                 </button>}
-                <button onClick={()=>toggleAssignPanel(r.id)} style={{...ghost,fontSize:12,padding:"7px 12px"}}>
+                <button disabled={rowDisabled} title={locked?"Dieses Konto ist geschützt.":undefined} onClick={()=>toggleAssignPanel(r.id)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:rowDisabled?.5:1,cursor:rowDisabled?"not-allowed":"pointer"}}>
                   {assignPanel.open?"Trainer-Zuweisung verbergen ▴":"Trainer zuweisen ▾"}
                 </button>
-                <button disabled={busyId===r.id} onClick={()=>deleteUser(r)} style={{...ghost,fontSize:12,padding:"7px 12px",color:"#fca5a5",borderColor:"#7f1d1d",opacity:busyId===r.id?.6:1}}>🗑 Löschen</button>
+                {!r.confirmed_at&&<button disabled={rowDisabled} title={locked?"Dieses Konto ist geschützt.":undefined} onClick={()=>resendInvite(r)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:rowDisabled?.5:1,cursor:rowDisabled?"not-allowed":"pointer"}}>🔁 Erneut senden</button>}
+                <button disabled={busyId===r.id||!canDeleteThis} title={!canDeleteThis?(locked?"Dieses Konto ist geschützt.":"Junior-Admins können nur ausstehende Einladungen löschen."):undefined} onClick={()=>deleteUser(r)} style={{...ghost,fontSize:12,padding:"7px 12px",color:"#fca5a5",borderColor:"#7f1d1d",opacity:(busyId===r.id||!canDeleteThis)?.4:1,cursor:(busyId===r.id||!canDeleteThis)?"not-allowed":"pointer"}}>🗑 Löschen</button>
               </div>
               {assignPanel.open&&(
                 <div style={{marginTop:12,paddingTop:12,borderTop:`0.5px solid ${C.bd}`}}>
@@ -341,7 +426,19 @@ export default function AdminScreen({onClose}){
                     <p style={{fontSize:11,fontWeight:600,letterSpacing:".04em",textTransform:"uppercase",color:C.cy,margin:0}}>Testende · {panel.trainees?.length??0} / {r.trainee_limit}</p>
                     <label style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:5,fontSize:11,color:C.mu}}>
                       Kontingent
-                      <input type="number" min="0" defaultValue={r.trainee_limit} onBlur={e=>{const v=Math.max(0,parseInt(e.target.value,10)||0);if(v!==r.trainee_limit)updateUser(r.id,{trainee_limit:v}).then(loadTrainerList);}} style={{width:52,background:C.s2,border:`0.5px solid ${C.bd}`,borderRadius:6,color:C.t,padding:"3px 6px",fontSize:11,fontFamily:"inherit"}}/>
+                      <input type="number" min="0" defaultValue={r.trainee_limit} onBlur={e=>{
+                        const v=Math.max(0,parseInt(e.target.value,10)||0);
+                        if(v===r.trainee_limit)return;
+                        if(juniorOnly){
+                          supabase.rpc("update_trainee_limit",{target_id:r.id,new_limit:v}).then(({error})=>{
+                            if(error){setErr(describeError(error));return;}
+                            setResults(rs=>rs.map(x=>x.id===r.id?{...x,trainee_limit:v}:x));
+                            loadTrainerList();
+                          });
+                          return;
+                        }
+                        updateUser(r.id,{trainee_limit:v}).then(loadTrainerList);
+                      }} style={{width:52,background:C.s2,border:`0.5px solid ${C.bd}`,borderRadius:6,color:C.t,padding:"3px 6px",fontSize:11,fontFamily:"inherit"}}/>
                     </label>
                   </div>
                   {panel.loading&&<p style={{fontSize:12,color:C.mu}}>Wird geladen...</p>}

@@ -95,7 +95,22 @@ Deno.serve(async (req) => {
     }
 
     // action === "resend"
-    const { error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(target.email, { redirectTo });
+    // inviteUserByEmail() on an email that already has an (unconfirmed)
+    // account is unreliable — GoTrue can return no error yet never actually
+    // dispatch a new mail. The path we know works reliably (verified this
+    // session) is a fresh invite to an email with no existing account, so
+    // "resend" deletes the stale unconfirmed user and re-invites from
+    // scratch. That mints a new user id, so any trainer_trainees links are
+    // captured first and re-created against the new id afterwards.
+    const { data: existingLinks } = await supabase
+      .from("trainer_trainees")
+      .select("trainer_id")
+      .eq("trainee_id", userId);
+
+    const { error: delErr } = await supabase.auth.admin.deleteUser(userId, false);
+    if (delErr) return json({ error: delErr.message }, 500, cors);
+
+    const { data: inviteData, error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(target.email, { redirectTo });
     if (inviteErr) {
       console.error("[trainer-manage-invite] resend failed:", JSON.stringify(inviteErr));
       const msg = inviteErr.message && inviteErr.message !== "{}"
@@ -103,6 +118,13 @@ Deno.serve(async (req) => {
         : `Erneutes Senden fehlgeschlagen (Status ${inviteErr.status ?? "unbekannt"}, Code ${inviteErr.code ?? "unbekannt"}). Details: ${JSON.stringify(inviteErr)}`;
       return json({ error: msg }, 400, cors);
     }
+
+    const newUserId = inviteData?.user?.id;
+    if (newUserId && existingLinks?.length) {
+      const rows = existingLinks.map((l) => ({ trainer_id: l.trainer_id, trainee_id: newUserId }));
+      await supabase.from("trainer_trainees").insert(rows);
+    }
+
     return json({ ok: true }, 200, cors);
   } catch (e) {
     console.error("[trainer-manage-invite] unexpected error:", e);
