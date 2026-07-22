@@ -113,7 +113,7 @@ function blendRGB(a, b, t) {
 // somewhere — distance from the bullseye is driven directly by the score.
 // A perfect score gets a soft glow around the bullseye instead of a flat fill.
 function drawDartboardTarget(doc, cx, cy, r, percent, score, total, zone) {
-  const R2 = r * 0.4, R3 = r * 0.7, R4 = r;
+  const R2 = r * 0.4, R2b = r * 0.55, R3 = r * 0.7, R4 = r;
   const bb = r * 1.6;
 
   doc.setDrawColor(...COL.border);
@@ -124,13 +124,15 @@ function drawDartboardTarget(doc, cx, cy, r, percent, score, total, zone) {
   doc.circle(cx, cy, R4, "F");
   doc.setFillColor(...COL.cyan);
   doc.circle(cx, cy, R3, "F");
+  doc.setFillColor(...COL.amber);
+  doc.circle(cx, cy, R2b, "F");
 
   if (zone.ring === 1) {
     // Soft graduated halo around the bullseye for a perfect hit — three
-    // nested circles blending from the cyan ring into full red.
-    doc.setFillColor(...blendRGB(COL.cyan, COL.red, 0.35));
+    // nested circles blending from the amber ring into full red.
+    doc.setFillColor(...blendRGB(COL.amber, COL.red, 0.35));
     doc.circle(cx, cy, R2 * 1.35, "F");
-    doc.setFillColor(...blendRGB(COL.cyan, COL.red, 0.7));
+    doc.setFillColor(...blendRGB(COL.amber, COL.red, 0.7));
     doc.circle(cx, cy, R2 * 1.15, "F");
   }
   doc.setFillColor(...COL.red);
@@ -157,7 +159,7 @@ function drawDartboardTarget(doc, cx, cy, r, percent, score, total, zone) {
   const dirX = Math.cos(angle), dirY = Math.sin(angle);
   const landX = cx + landR * dirX, landY = cy + landR * dirY;
 
-  drawPreciseDart(doc, landX, landY, dirX, dirY, r * 0.5);
+  drawPreciseDart(doc, landX, landY, dirX, dirY, r * 0.75); // 150% der bisherigen Größe (war r * 0.5)
 }
 
 // Small vector target icon (a static version of the dartboard, no dart) —
