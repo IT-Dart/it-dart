@@ -29,6 +29,7 @@ export default function StatistikScreen({onClose,viewUser}){
   const [rows,setRows]=useState(null); // null = lädt
   const [err,setErr]=useState(null);
   const [busyId,setBusyId]=useState(null);
+  const [dlErr,setDlErr]=useState(null);
   const [progress,setProgress]=useState(null); // null = lädt, sonst {modId: [Themennummern]}
   const [progressErr,setProgressErr]=useState(null);
 
@@ -58,18 +59,24 @@ export default function StatistikScreen({onClose,viewUser}){
 
   const nachladen=async(row)=>{
     setBusyId(row.id);
-    await generateLernnachweis({
-      user,
-      kind:row.kind,
-      title:row.title,
-      score:row.score,
-      total:row.total,
-      topics:row.topics||[{name:row.title,correct:row.score,total:row.total}],
-      startedAt:row.started_at,
-      finishedAt:row.finished_at||row.created_at,
-      skipLog:true,
-    });
-    setBusyId(null);
+    setDlErr(null);
+    try{
+      await generateLernnachweis({
+        user,
+        kind:row.kind,
+        title:row.title,
+        score:row.score,
+        total:row.total,
+        topics:row.topics||[{name:row.title,correct:row.score,total:row.total}],
+        startedAt:row.started_at,
+        finishedAt:row.finished_at||row.created_at,
+        skipLog:true,
+      });
+    }catch(e){
+      setDlErr(describeError(e));
+    }finally{
+      setBusyId(null);
+    }
   };
 
   return(
@@ -84,6 +91,9 @@ export default function StatistikScreen({onClose,viewUser}){
       </div>}
       {progressErr&&<div style={{background:"#450a0a",border:"0.5px solid #ef4444",borderRadius:10,padding:"10px 14px",marginBottom:16}}>
         <p style={{fontSize:13,color:"#fca5a5",margin:0}}>{progressErr}</p>
+      </div>}
+      {dlErr&&<div style={{background:"#450a0a",border:"0.5px solid #ef4444",borderRadius:10,padding:"10px 14px",marginBottom:16}}>
+        <p style={{fontSize:13,color:"#fca5a5",margin:0}}>Lernnachweis konnte nicht erstellt werden: {dlErr}</p>
       </div>}
 
       <div style={{marginBottom:28}}>

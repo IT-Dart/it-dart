@@ -145,6 +145,7 @@ export default function Pruefung({onExit}){
   const [showAuth,setShowAuth]=useState(false);
   const [nachweisBusy,setNachweisBusy]=useState(false);
   const [logErr,setLogErr]=useState(null);
+  const [dlErr,setDlErr]=useState(null);
   const [lockReason,setLockReason]=useState(null); // "account" | "premium"
   const [startedAt,setStartedAt]=useState(null);
 
@@ -192,8 +193,14 @@ export default function Pruefung({onExit}){
 
   const downloadNachweis=async()=>{
     setNachweisBusy(true);
-    await generateLernnachweis({user,kind:"pruefung",title:`Prüfungsvorbereitung (${fragen.length} Fragen)`,score,total:fragen.length,topics:topicStats,startedAt,finishedAt:new Date(),skipLog:true});
-    setNachweisBusy(false);
+    setDlErr(null);
+    try{
+      await generateLernnachweis({user,kind:"pruefung",title:`Prüfungsvorbereitung (${fragen.length} Fragen)`,score,total:fragen.length,topics:topicStats,startedAt,finishedAt:new Date(),skipLog:true});
+    }catch(e){
+      setDlErr(describeError(e));
+    }finally{
+      setNachweisBusy(false);
+    }
   };
 
   const katCount=kat==="Alle"?PRUEFUNG.length:PRUEFUNG.filter(f=>f.kat===kat).length;
@@ -328,6 +335,9 @@ export default function Pruefung({onExit}){
           </div>
           {logErr&&<div style={{background:"#fef2f2",border:"0.5px solid #ef4444",borderRadius:10,padding:"10px 14px",marginBottom:20,textAlign:"left"}}>
             <p style={{fontSize:13,color:"#b91c1c",margin:0}}>Ergebnis konnte nicht in „Meine Statistik" gespeichert werden: {logErr}</p>
+          </div>}
+          {dlErr&&<div style={{background:"#fef2f2",border:"0.5px solid #ef4444",borderRadius:10,padding:"10px 14px",marginBottom:20,textAlign:"left"}}>
+            <p style={{fontSize:13,color:"#b91c1c",margin:0}}>Lernnachweis konnte nicht erstellt werden: {dlErr}</p>
           </div>}
           <div style={{marginBottom:28}}>
             <div style={{display:"flex",gap:8,justifyContent:"center",marginBottom:user&&pct>=50?12:0}}>

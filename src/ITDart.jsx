@@ -886,6 +886,7 @@ const Quiz=({qs,onDone,title})=>{
   const [nachweisBusy,setNachweisBusy]=useState(false);
   const [startedAt,setStartedAt]=useState(()=>new Date());
   const [logErr,setLogErr]=useState(null);
+  const [dlErr,setDlErr]=useState(null);
   const {user}=useAuth();
   const q=qs[i];const ans=sel!==null;
   const pick=idx=>{if(ans)return;setSel(idx);if(idx===q.c)setSc(s=>s+1);};
@@ -903,8 +904,14 @@ const Quiz=({qs,onDone,title})=>{
   },[done]);
   const downloadNachweis=async()=>{
     setNachweisBusy(true);
-    await generateLernnachweis({user,kind:"modul",title,score:sc,total:qs.length,topics:[{name:title,correct:sc,total:qs.length}],startedAt,finishedAt:new Date(),skipLog:true});
-    setNachweisBusy(false);
+    setDlErr(null);
+    try{
+      await generateLernnachweis({user,kind:"modul",title,score:sc,total:qs.length,topics:[{name:title,correct:sc,total:qs.length}],startedAt,finishedAt:new Date(),skipLog:true});
+    }catch(e){
+      setDlErr(describeError(e));
+    }finally{
+      setNachweisBusy(false);
+    }
   };
   if(done)return(
     <div style={{textAlign:"center",padding:"10px 0"}}>
@@ -916,6 +923,9 @@ const Quiz=({qs,onDone,title})=>{
       </div>
       {logErr&&<div style={{background:"#450a0a",border:"0.5px solid #ef4444",borderRadius:10,padding:"10px 14px",marginBottom:16,textAlign:"left"}}>
         <p style={{fontSize:13,color:"#fca5a5",margin:0}}>Ergebnis konnte nicht in „Meine Statistik" gespeichert werden: {logErr}</p>
+      </div>}
+      {dlErr&&<div style={{background:"#450a0a",border:"0.5px solid #ef4444",borderRadius:10,padding:"10px 14px",marginBottom:16,textAlign:"left"}}>
+        <p style={{fontSize:13,color:"#fca5a5",margin:0}}>Lernnachweis konnte nicht erstellt werden: {dlErr}</p>
       </div>}
       <div style={{display:"flex",gap:8,justifyContent:"center",marginBottom:user&&pct>=50?12:0}}>
         <button onClick={()=>{setI(0);setSel(null);setSc(0);setDone(false);setStartedAt(new Date());}} style={{...ghost}}>🔄 Nochmal</button>

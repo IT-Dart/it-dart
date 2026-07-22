@@ -228,6 +228,7 @@ export function logLernnachweis({ user, kind, title, score, total, topics, start
 
 export async function generateLernnachweis({ user, kind, title, score, total, topics, startedAt, finishedAt, skipLog = false }) {
   const { jsPDF } = await import("jspdf");
+  const topicsArr = Array.isArray(topics) ? topics : [];
 
   const percent = total > 0 ? Math.round((score / total) * 100) : 0;
   const zone = zoneForPercent(percent);
@@ -323,12 +324,12 @@ export async function generateLernnachweis({ user, kind, title, score, total, to
   doc.text("THEMENSTATISTIK", leftX, y);
   y += 5;
   const maxTopicsY = H - 15;
-  const rowH = Math.max(3, Math.min(11, (maxTopicsY - y) / Math.max(1, topics.length)));
+  const rowH = Math.max(3, Math.min(11, (maxTopicsY - y) / Math.max(1, topicsArr.length)));
   const barH = rowH < 5 ? 1.1 : rowH < 7 ? 1.4 : rowH < 9 ? 1.6 : 2.2;
   const rowFont = rowH < 5 ? 6.5 : rowH < 7 ? 7.5 : rowH < 9 ? 8.5 : 10;
   const textOff = Math.min(4, rowH * 0.5);
   const barOff = Math.min(6, rowH * 0.78);
-  topics.forEach((t) => {
+  topicsArr.forEach((t) => {
     const tPct = t.total > 0 ? t.correct / t.total : 0;
     doc.setFont("helvetica", "normal");
     doc.setFontSize(rowFont);
