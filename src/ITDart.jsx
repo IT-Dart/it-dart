@@ -20,7 +20,7 @@ import modulePrImg from "./assets/module-pr.jpg";
 const MODULE_IMAGES={g:moduleGImg,b:moduleBImg,si:moduleSiImg,db:moduleDbImg,sk:moduleSkImg,pr:modulePrImg};
 const MODULE_IMAGE_ALT={g:"PC Komponenten",b:"Betriebssysteme",si:"IT-Sicherheit",db:"Datenbanken",sk:"Skripting",pr:"Beruf und Projekt"};
 
-const FREE_MODULE_IDS=["g","o"]; // Grundlagen frei zugänglich, Netzwerktechnik als Vorschau — Rest ist Premium
+const FREE_MODULE_IDS=["g","o","bw"]; // Grundlagen frei zugänglich, Netzwerktechnik als Vorschau, Karriere & Bewerbung komplett frei — Rest ist Premium
 const FREE_TOPIC_LIMITS={o:2}; // Netzwerktechnik: nur die ersten 2 von 7 Themen sind ohne Premium sichtbar
 const FREE_QUIZ_N=5; // Modul-Quiz am Ende: Free-Nutzer sehen nur die ersten 5 Fragen
 
@@ -32,6 +32,7 @@ const MODS=[
   {id:"db",e:"🗃️",t:"Datenbanken &amp; Daten",s:"SQL, Datenbankdesign, APIs, JSON/XML, Daten systemübergreifend",r:true,n:6},
   {id:"sk",e:"💻",t:"Skripting &amp; Automatisierung",s:"PowerShell, Bash, Skripte schreiben, Aufgaben automatisieren",r:true,n:6},
   {id:"pr",e:"👥",t:"Beruf &amp; Projekt",s:"Unternehmensstrukturen, Kundenkommunikation, SLA, Projektmanagement",r:true,n:6},
+  {id:"bw",e:"💼",t:"Karriere &amp; Bewerbung",s:"Lebenslauf, Anschreiben, Telefon-Check, Vorstellungsgespräch mit KI-Mock-Interview",r:true,n:4},
 ];
 
 const G=[
@@ -943,20 +944,65 @@ const Quiz=({qs,onDone,title})=>{
   );
 };
 
-const AIChat=({ctx,q1,q2,moduleId})=>{
+const AIChat=({ctx,q1,q2,moduleId,interview})=>{
   const [q,setQ]=useState("");const [a,setA]=useState("");
+  const [history,setHistory]=useState([]); // nur im Interview-Modus genutzt: [{role,content}]
+  const [busy,setBusy]=useState(false);
+
+  const call=async(question,priorHistory)=>{
+    const {data:{session}}=await supabase.auth.getSession();
+    if(!session)return{error:"Bitte melde dich an, um die KI zu nutzen."};
+    const r=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`,{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${session.access_token}`},body:JSON.stringify(interview?{ctx,question,moduleId,history:priorHistory,mode:"interview"}:{ctx,question,moduleId})});
+    const d=await r.json();
+    if(!r.ok)return{error:d.error||`Fehler (${r.status}).`};
+    return{answer:d.answer||"Keine Antwort."};
+  };
+
   const ask=async(question)=>{
     if(!question.trim())return;
     setA("Wird geladen...");
-    try{
-      const {data:{session}}=await supabase.auth.getSession();
-      if(!session){setA("Bitte melde dich an, um die KI zu nutzen.");return;}
-      const r=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`,{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${session.access_token}`},body:JSON.stringify({ctx,question,moduleId})});
-      const d=await r.json();
-      if(!r.ok){setA(d.error||`Fehler (${r.status}).`);return;}
-      setA(d.answer||"Keine Antwort.");
-    }catch(e){setA(`Verbindung fehlgeschlagen.`);}
+    try{const res=await call(question);setA(res.error||res.answer);}
+    catch(e){setA("Verbindung fehlgeschlagen.");}
   };
+
+  // Anthropic verlangt strikt abwechselnde user/assistant-Rollen, beginnend
+  // mit user. Der Auslöser-Text für die erste Frage wird deshalb selbst als
+  // echter user-Turn gespeichert (sonst würde der zweite Aufruf mit einem
+  // assistant-Turn beginnen und die API mit einem Fehler ablehnen) — beim
+  // Rendern wird nur dieser eine, unsichtbare Auslöser-Turn ausgeblendet.
+  const interviewStep=async(userText)=>{
+    const turnText=userText||"Bitte beginne das Interview mit deiner ersten Frage.";
+    const priorHistory=history;
+    setHistory(h=>[...h,{role:"user",content:turnText}]);
+    setQ("");setBusy(true);
+    try{
+      const res=await call(turnText,priorHistory);
+      setHistory(h=>[...h,{role:"assistant",content:res.error||res.answer}]);
+    }catch(e){setHistory(h=>[...h,{role:"assistant",content:"Verbindung fehlgeschlagen."}]);}
+    setBusy(false);
+  };
+
+  if(interview)return(
+    <div style={{borderTop:`0.5px solid ${C.bd}`,paddingTop:14}}>
+      <p style={{fontSize:11,fontWeight:600,letterSpacing:".06em",textTransform:"uppercase",color:C.cy,marginBottom:10}}>🎤 Mock-Interview</p>
+      {history.length===0?(
+        <button onClick={()=>interviewStep(null)} disabled={busy} style={{...pri,width:"100%",justifyContent:"center",opacity:busy?.6:1}}>{busy?"...":"Interview starten"}</button>
+      ):(<>
+        <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:10}}>
+          {history.slice(1).map((m,i)=>(
+            <div key={i} style={{alignSelf:m.role==="user"?"flex-end":"flex-start",maxWidth:"88%",background:m.role==="user"?C.s2:"#0f2744",border:`0.5px solid ${m.role==="user"?C.bd:C.bl}`,borderRadius:10,padding:"9px 12px"}}>
+              <p style={{fontSize:13,color:m.role==="user"?C.t:"#93c5fd",lineHeight:1.6,margin:0}}>{m.content}</p>
+            </div>
+          ))}
+        </div>
+        <div style={{display:"flex",gap:8}}>
+          <input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!busy&&interviewStep(q)} placeholder="Deine Antwort..." disabled={busy} style={{flex:1,background:C.s2,border:`0.5px solid ${C.bd}`,borderRadius:10,color:C.t,padding:"10px 14px",fontSize:14,outline:"none",fontFamily:"inherit"}}/>
+          <button onClick={()=>interviewStep(q)} disabled={busy||!q.trim()} style={{...pri,padding:"10px 14px",flexShrink:0,opacity:busy||!q.trim()?.6:1}}>→</button>
+        </div>
+      </>)}
+    </div>
+  );
+
   return(
     <div style={{borderTop:`0.5px solid ${C.bd}`,paddingTop:14}}>
       <p style={{fontSize:11,fontWeight:600,letterSpacing:".06em",textTransform:"uppercase",color:C.cy,marginBottom:10}}>Frag nach</p>
@@ -1075,7 +1121,14 @@ const PRQ=[
   {q:"Warum steht die IST-Analyse am Anfang jedes Projekts?",o:["Ausschließlich um wertvolle Zeit im Projekt zu gewinnen","Um den tatsächlichen Zustand zu erfassen, bevor Lösungen geplant werden","Weil es gesetzlich in jedem Fall zwingend vorgeschrieben ist","Ausschließlich um die Projektkosten künstlich zu erhöhen"],c:1,e:"Ohne sauberes IST kein sinnvolles SOLL: Erst verstehen, was vorhanden ist und wo es klemmt – dann lösen."},
 ];
 
-const DATA={g:{items:G,quiz:GQ,title:"Grundlagen IT &amp; Hardware",intro:"Bevor Netzwerke, Server oder Betriebssysteme Sinn ergeben, musst du verstehen was ein Computer überhaupt ist. Wir starten bei null — mit dem, was jeder IT-Techniker am ersten Tag wissen muss.",case:"💼",caseTitle:"Neuer PC im Büro — von der Lieferung bis zum ersten Login"},o:{items:O,quiz:OQ,title:"Netzwerktechnik",intro:"Das OSI-Modell ist das Grundgerüst der gesamten Netzwerktechnik. Du wirst es in jedem weiteren Modul wiedersehen — hier lernst du die 7 Schichten als solides Fundament, anhand eines echten Netzwerkausfalls.",case:"🔌",caseTitle:"Netzwerkausfall — Techniker geht alle 7 Schichten durch"},b:{items:B,quiz:BQ,title:"Betriebssysteme &amp; Server",intro:"Das Betriebssystem ist die unsichtbare Schaltzentrale jedes Computers. Ohne OS läuft keine Anwendung, kein Dienst, kein Netzwerk. Wir begleiten einen Techniker beim Einrichten eines frisch installierten Windows-Servers.",case:"🖥️",caseTitle:"Windows Server im Einsatz — vom ersten Start bis zur fertigen Konfiguration"},si:{items:SI,quiz:SIQ,title:"IT-Sicherheit",intro:"IT-Sicherheit ist kein Produkt das man kauft — es ist ein Prozess. Die meisten Angriffe nutzen keine technischen Lücken, sondern menschliche. Wir begleiten einen IT-Betrieb nach einem echten Sicherheitsvorfall.",case:"🎣",caseTitle:"Phishing-Vorfall — was passiert, wie reagiert die IT, was hätte es verhindert?"},db:{items:DB,quiz:DBQ,title:"Datenbanken &amp; Daten",intro:"Fast jede Software die wir kennen steckt dahinter eine Datenbank. Von der einfachen Kundenliste bis zur komplexen API-Anbindung — Daten sind das Herzstück moderner IT-Systeme.",case:"🏢",caseTitle:"Neue Kundenverwaltung — von der Datenbankstruktur bis zur API-Anbindung",intro:"Fast jede Software die wir kennen steckt dahinter eine Datenbank. Von der einfachen Kundenliste bis zur komplexen API-Anbindung — Daten sind das Herzstück moderner IT-Systeme."},sk:{items:SK,quiz:SKQ,title:"Skripting &amp; Automatisierung",case:"💻",caseTitle:"50 Server täglich prüfen — manuell 2 Stunden, mit Skript 2 Minuten",intro:"Wer Aufgaben automatisiert spart Zeit, vermeidet Fehler und kann sich auf das Wesentliche konzentrieren. Wir begleiten einen Techniker der ein Monitoring-System für 50 Server aufbaut."},pr:{items:PR,quiz:PRQ,title:"Beruf &amp; Projekt",case:"👥",caseTitle:"IT-Projekt von der Bedarfsanalyse bis zur Abnahme",intro:"IT ist mehr als Technik — Kommunikation, Organisation und Recht sind genauso wichtig. Wir begleiten einen Azubi durch ein komplettes IT-Projekt."}};
+const BW=[
+  {n:1,nm:"Der Lebenslauf — dein erster Eindruck",th:"In Deutschland ist der tabellarische Lebenslauf Standard: umgekehrt-chronologisch (neuestes zuerst), 1-2 Seiten, klare Abschnitte (Kontaktdaten, Werdegang, Kenntnisse, ggf. Interessen). IT-Kenntnisse gehören konkret aufgelistet (z. B. „Python – Grundkenntnisse“, nicht nur „gute EDV-Kenntnisse“). Lücken im Werdegang kurz erklären statt unkommentiert zu lassen.",pc:"Ein Personaler sichtet 50 Bewerbungen für einen Ausbildungsplatz — im Schnitt 30 Sekunden pro Lebenslauf. Was sofort auffällt: unklare Struktur, Rechtschreibfehler, generische Skill-Listen ohne Einordnung.",q1:"Wie lang sollte mein Lebenslauf als Azubi/Berufseinsteiger sein?",q2:"Wie liste ich IT-Kenntnisse am besten auf, z. B. Programmiersprachen oder Tools?"},
+  {n:2,nm:"Das Anschreiben — warum gerade du?",th:"Das Anschreiben wiederholt nicht den Lebenslauf, sondern erklärt die Motivation und den Bezug zum konkreten Betrieb. Aufbau: ein Einstieg ohne Floskel wie „Hiermit bewerbe ich mich“, dann warum gerade dieser Betrieb, dann warum du passt (mit konkretem Beispiel), zum Schluss der Wunsch nach einem Gespräch. Eine halbe bis eine Seite reicht.",pc:"Zwei Anschreiben liegen nebeneinander: eins generisch und austauschbar, eins mit konkretem Bezug zum Betrieb (z. B. dessen Technologien oder Projekte). Das zweite bleibt im Gedächtnis.",q1:"Wie fange ich ein Anschreiben an, ohne 'Hiermit bewerbe ich mich' zu schreiben?",q2:"Wie zeige ich im Anschreiben echtes Interesse an einem bestimmten Betrieb?"},
+  {n:3,nm:"Der erste Kontakt — Anruf oder Rückruf",th:"Viele Betriebe rufen vor dem Vorstellungsgespräch kurz an oder erwarten einen Rückruf. Wichtig: sich mit vollem Namen melden, eine ruhige Umgebung suchen, Zettel und Stift griffbereit haben, und eine kurze Zusammenfassung der eigenen Bewerbung im Kopf haben, falls Rückfragen kommen.",pc:"Ein unerwarteter Anruf kommt während der Berufsschule. Statt unvorbereitet zu antworten, bittet der Azubi freundlich um einen Rückruf in 15 Minuten — und ist dann vorbereitet.",q1:"Was mache ich, wenn ich unerwartet und gerade ungünstig angerufen werde?",q2:"Was sollte ich für ein Telefonat mit einem Betrieb parat haben?"},
+  {n:4,nm:"Das Vorstellungsgespräch",th:"Typischer Ablauf: Begrüßung, kurze Selbstvorstellung, Fragen zu Motivation und Betrieb, fachliche Fragen, eigene Rückfragen, Verabschiedung. Eine gute Selbstvorstellung ist kurz und strukturiert (Werdegang, warum diese Ausbildung, warum dieser Betrieb). Eigene Fragen am Ende zeigen echtes Interesse — sie gehören vorbereitet, nicht spontan erfunden.",pc:"Unten kannst du ein Vorstellungsgespräch für eine FISI-Ausbildung direkt mit der KI durchspielen — sie stellt Fragen, gibt kurzes Feedback zu deinen Antworten und macht mit der nächsten Frage weiter.",q1:"Wie stelle ich mich in ein bis zwei Minuten überzeugend vor?",q2:"Welche Rückfragen sollte ich am Ende des Gesprächs stellen?",interview:true},
+];
+
+const DATA={bw:{items:BW,quiz:[],title:"Karriere &amp; Bewerbung",intro:"Vor der Ausbildung steht die Bewerbung um den Platz, danach der Übergang in den ersten Job — beides läuft nicht nebenbei. Dieses Modul ist komplett kostenfrei und begleitet dich von der Bewerbungsunterlage bis zum Gespräch, inklusive einem interaktiven KI-Mock-Interview zum Üben.",case:"💼",caseTitle:"Eine Bewerbung von der Unterlage bis zum Vorstellungsgespräch"},g:{items:G,quiz:GQ,title:"Grundlagen IT &amp; Hardware",intro:"Bevor Netzwerke, Server oder Betriebssysteme Sinn ergeben, musst du verstehen was ein Computer überhaupt ist. Wir starten bei null — mit dem, was jeder IT-Techniker am ersten Tag wissen muss.",case:"💼",caseTitle:"Neuer PC im Büro — von der Lieferung bis zum ersten Login"},o:{items:O,quiz:OQ,title:"Netzwerktechnik",intro:"Das OSI-Modell ist das Grundgerüst der gesamten Netzwerktechnik. Du wirst es in jedem weiteren Modul wiedersehen — hier lernst du die 7 Schichten als solides Fundament, anhand eines echten Netzwerkausfalls.",case:"🔌",caseTitle:"Netzwerkausfall — Techniker geht alle 7 Schichten durch"},b:{items:B,quiz:BQ,title:"Betriebssysteme &amp; Server",intro:"Das Betriebssystem ist die unsichtbare Schaltzentrale jedes Computers. Ohne OS läuft keine Anwendung, kein Dienst, kein Netzwerk. Wir begleiten einen Techniker beim Einrichten eines frisch installierten Windows-Servers.",case:"🖥️",caseTitle:"Windows Server im Einsatz — vom ersten Start bis zur fertigen Konfiguration"},si:{items:SI,quiz:SIQ,title:"IT-Sicherheit",intro:"IT-Sicherheit ist kein Produkt das man kauft — es ist ein Prozess. Die meisten Angriffe nutzen keine technischen Lücken, sondern menschliche. Wir begleiten einen IT-Betrieb nach einem echten Sicherheitsvorfall.",case:"🎣",caseTitle:"Phishing-Vorfall — was passiert, wie reagiert die IT, was hätte es verhindert?"},db:{items:DB,quiz:DBQ,title:"Datenbanken &amp; Daten",intro:"Fast jede Software die wir kennen steckt dahinter eine Datenbank. Von der einfachen Kundenliste bis zur komplexen API-Anbindung — Daten sind das Herzstück moderner IT-Systeme.",case:"🏢",caseTitle:"Neue Kundenverwaltung — von der Datenbankstruktur bis zur API-Anbindung",intro:"Fast jede Software die wir kennen steckt dahinter eine Datenbank. Von der einfachen Kundenliste bis zur komplexen API-Anbindung — Daten sind das Herzstück moderner IT-Systeme."},sk:{items:SK,quiz:SKQ,title:"Skripting &amp; Automatisierung",case:"💻",caseTitle:"50 Server täglich prüfen — manuell 2 Stunden, mit Skript 2 Minuten",intro:"Wer Aufgaben automatisiert spart Zeit, vermeidet Fehler und kann sich auf das Wesentliche konzentrieren. Wir begleiten einen Techniker der ein Monitoring-System für 50 Server aufbaut."},pr:{items:PR,quiz:PRQ,title:"Beruf &amp; Projekt",case:"👥",caseTitle:"IT-Projekt von der Bedarfsanalyse bis zur Abnahme",intro:"IT ist mehr als Technik — Kommunikation, Organisation und Recht sind genauso wichtig. Wir begleiten einen Azubi durch ein komplettes IT-Projekt."}};
 
 const registerLinkRequested=typeof window!=="undefined"&&new URLSearchParams(window.location.search).get("mode")==="register";
 
@@ -1115,7 +1168,7 @@ export default function ITDart({onOpenExam,onOpenLegal}){
   const mark=(mid,n)=>setDone(d=>({...d,[mid]:new Set([...(d[mid]||[]),n])}));
   const doneFor=mid=>(done[mid]||new Set());
   const totalDone=Object.values(done).reduce((s,v)=>s+v.size,0);
-  const totalItems=6+7+6+7+6+6+6;
+  const totalItems=6+7+6+7+6+6+6+4;
 
   const isFreeMod=m=>FREE_MODULE_IDS.includes(m.id);
   const canOpen=m=>isFreeMod(m)||isPremium;
@@ -1274,7 +1327,7 @@ export default function ITDart({onOpenExam,onOpenLegal}){
             )}
           </div>
         ):(<>
-          <div style={{marginBottom:14}}><Scene mid={mod.id} n={item.n}/></div>
+          {mod.id!=="bw"&&<div style={{marginBottom:14}}><Scene mid={mod.id} n={item.n}/></div>}
           <div style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:10,padding:"14px 16px",marginBottom:8}}>
             <p style={{fontSize:11,fontWeight:600,letterSpacing:".06em",textTransform:"uppercase",color:C.cy,marginBottom:6}}>Theorie</p>
             <p style={{fontSize:15,fontWeight:600,marginBottom:6}} dangerouslySetInnerHTML={{__html:item.nm}}/>
@@ -1288,11 +1341,11 @@ export default function ITDart({onOpenExam,onOpenLegal}){
         </>)}
         <div style={{display:"flex",gap:8,marginBottom:20}}>
           <button disabled={idx===0} onClick={()=>setIdx(i=>i-1)} style={{...ghost,flex:1,justifyContent:"center",opacity:idx===0?.45:1}}>← Zurück</button>
-          {!topicLocked&&<button onClick={()=>{if(idx===data.items.length-1)setPhase("quiz");else{const ni=idx+1;setIdx(ni);const n=data.items[ni].n;if(topicLimit==null||n<=topicLimit)mark(mod.id,n);}}} style={{...pri,flex:1,justifyContent:"center"}}>
-            {idx===data.items.length-1?"🎯 Zum Quiz →":"Weiter →"}
+          {!topicLocked&&<button onClick={()=>{if(idx===data.items.length-1){if(data.quiz?.length)setPhase("quiz");else{mark(mod.id,item.n);setView("overview");}}else{const ni=idx+1;setIdx(ni);const n=data.items[ni].n;if(topicLimit==null||n<=topicLimit)mark(mod.id,n);}}} style={{...pri,flex:1,justifyContent:"center"}}>
+            {idx===data.items.length-1?(data.quiz?.length?"🎯 Zum Quiz →":"✓ Abschließen"):"Weiter →"}
           </button>}
         </div>
-        {!topicLocked&&<AIChat key={`${mod.id}-${item.n}`} ctx={`Thema "${item.nm}" aus dem ${data.title}-Modul. Theorie: ${item.th}`} q1={item.q1} q2={item.q2} moduleId={mod.id}/>}
+        {!topicLocked&&<AIChat key={`${mod.id}-${item.n}`} ctx={`Thema "${item.nm}" aus dem ${data.title}-Modul. Theorie: ${item.th}`} q1={item.q1} q2={item.q2} moduleId={mod.id} interview={!!item.interview}/>}
       </div></div>
     );
   }

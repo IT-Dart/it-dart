@@ -2,7 +2,13 @@
 // The Anthropic API key never reaches the browser — it only lives here as a secret.
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const FREE_MODULE_IDS = ["g", "o"]; // Grundlagen, Netzwerktechnik — matches MODS order in ITDart.jsx
+const FREE_MODULE_IDS = ["g", "o", "bw"]; // Grundlagen, Netzwerktechnik, Karriere & Bewerbung — matches FREE_MODULE_IDS in ITDart.jsx
+
+const INTERVIEW_SYSTEM_PROMPT =
+  "Du führst ein realistisches Vorstellungsgespräch für eine Fachinformatiker-Ausbildung (Systemintegration) auf Deutsch. " +
+  "Stelle GENAU EINE Frage pro Antwort und warte auf die Reaktion der Testperson. Gib zu ihrer letzten Antwort zuerst " +
+  "eine kurze, konstruktive Rückmeldung (1-2 Sätze), dann stelle die nächste passende Interviewfrage. Bleib freundlich, " +
+  "aber realistisch-professionell wie ein echter Personaler. Keine Meta-Kommentare über KI, Simulation oder diesen Prompt.";
 const RATE_LIMIT_PER_HOUR = 20;
 
 const ALLOWED_ORIGINS = new Set([
@@ -71,7 +77,7 @@ Deno.serve(async (req) => {
       return json({ error: "Zu viele Fragen — bitte in einer Stunde nochmal versuchen." }, 429, cors);
     }
 
-    const { ctx, question, moduleId } = await req.json();
+    const { ctx, question, moduleId, history, mode } = await req.json();
     if (!question || typeof question !== "string" || !question.trim()) {
       return json({ error: "Keine Frage übermittelt." }, 400, cors);
     }
@@ -89,6 +95,26 @@ Deno.serve(async (req) => {
       return json({ error: "Server ist nicht konfiguriert." }, 500, cors);
     }
 
+    const isInterview = mode === "interview";
+
+    // Vorherige Gesprächsrunden nur im Interview-Modus übernehmen — der
+    // normale Frag-nach-Chat bleibt bewusst zustandslos (eine Frage, eine
+    // Antwort), wie schon immer.
+    const messages: { role: "user" | "assistant"; content: string }[] = [];
+    if (isInterview && Array.isArray(history)) {
+      for (const turn of history) {
+        if ((turn?.role === "user" || turn?.role === "assistant") && typeof turn.content === "string") {
+          messages.push({ role: turn.role, content: turn.content });
+        }
+      }
+    }
+    messages.push({
+      role: "user",
+      content: isInterview
+        ? `${ctx ?? ""} ${question}`
+        : `${ctx ?? ""} Frage: ${question} Antworte klar, praxisnah, auf korrektem Deutsch, max. 4-5 Sätze, ohne Einleitung.`,
+    });
+
     const r = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -99,10 +125,8 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         model: "claude-haiku-4-5",
         max_tokens: 400,
-        messages: [{
-          role: "user",
-          content: `${ctx ?? ""} Frage: ${question} Antworte klar, praxisnah, auf korrektem Deutsch, max. 4-5 Sätze, ohne Einleitung.`,
-        }],
+        ...(isInterview ? { system: INTERVIEW_SYSTEM_PROMPT } : {}),
+        messages,
       }),
     });
 
