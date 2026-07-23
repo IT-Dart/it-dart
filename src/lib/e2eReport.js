@@ -136,12 +136,32 @@ export async function generateE2EReport(run) {
   y += 20;
 
   // ---------- Zusammenfassung ----------
+  // Mehrzeilige Ampel-Zusammenfassung (Status-Tag je Kernaussage), nach dem
+  // Vorbild des ersten manuellen Testberichts dieser Session — hier
+  // generisch aus run.report abgeleitet statt handkuratiert.
   h1("Zusammenfassung");
   if (typeof summary.total === "number") {
-    para(`${summary.passed ?? 0} von ${summary.total} Prüfungen bestanden (${summary.failed ?? 0} fehlgeschlagen).`);
+    const okCount = findings.filter((f) => f.status === "OK").length;
+    const openCount = findings.filter((f) => f.status !== "OK").length;
+    statusTag(
+      summary.failed ? "FEHLER" : "OK",
+      `${summary.passed ?? 0} von ${summary.total} Prüfungen bestanden (${summary.failed ?? 0} fehlgeschlagen).`
+    );
+    if (findings.length) {
+      statusTag(openCount ? "FEHLER" : "OK", `${findings.length} Befund(e) erfasst — ${okCount} behoben, ${openCount} offen.`);
+    }
+    if (resultsByRole.length) {
+      statusTag("OK", `${resultsByRole.length} Rolle(n) durchlaufen: ${resultsByRole.map((r) => r.role).join(", ")}.`);
+    }
+    if (incidents.length) {
+      statusTag("OFFEN", `${incidents.length} Zwischenfall/-fälle während des Laufs — siehe unten.`);
+    }
+    if (openItems.length) {
+      statusTag("OFFEN", `${openItems.length} offene(r) Punkt(e) — siehe unten.`);
+    }
+  } else {
+    statusTag(summary.status || "OFFEN", "Noch keine abschließende Bewertung für diesen Lauf.");
   }
-  spacer(1);
-  statusTag(summary.status, summary.status === "OK" ? "Alle geprüften Punkte bestanden." : summary.status === "FEHLER" ? "Mindestens ein Befund erfordert Aufmerksamkeit." : "Noch keine abschließende Bewertung.");
   spacer(4);
 
   // ---------- Befunde ----------
@@ -149,6 +169,7 @@ export async function generateE2EReport(run) {
     h1("Gefundene Punkte");
     findings.forEach((f, i) => {
       h2(`${i + 1}. ${f.symptom || "Unbenannter Befund"}`);
+      if (f.symptom) para(`Symptom: ${f.symptom}`, { indent: 3 });
       if (f.ursache) para(`Ursache: ${f.ursache}`, { indent: 3 });
       if (f.fix) para(`Fix: ${f.fix}`, { indent: 3 });
       statusTag(f.status || "OFFEN", `Status: ${f.status === "OK" ? "behoben" : f.status === "FEHLER" ? "noch offen" : "in Bearbeitung"}`);

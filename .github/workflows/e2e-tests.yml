@@ -61,6 +61,12 @@ jobs:
         continue-on-error: true
 
       - name: Ergebnisse in Ingest-Format übersetzen
+        # if: always() — läuft auch, wenn ein früherer Schritt (z. B. npm ci,
+        # Playwright-Installation) fehlgeschlagen ist. build-report.js kommt
+        # damit klar (results.json fehlt dann einfach) und erzeugt trotzdem
+        # ein gültiges report.json — sonst bliebe die e2e_runs-Zeile für
+        # immer auf "queued" stehen, ohne dass je ein Fehler gemeldet wird.
+        if: always()
         working-directory: e2e
         env:
           E2E_RUN_ID: ${{ inputs.run_id }}
@@ -84,3 +90,19 @@ jobs:
             -H "Content-Type: application/json" \
             -H "X-E2E-Ingest-Secret: $INGEST_SECRET" \
             --data @e2e/report.json
+
+      - name: Notfall-Meldung, falls report.json nie entstanden ist
+        # Zweite Sicherheitsebene: selbst wenn build-report.js aus einem
+        # unerwarteten Grund selbst fehlschlägt (z. B. Node-Setup kaputt),
+        # meldet dieser Schritt trotzdem "failure" statt die Zeile für immer
+        # auf "queued" hängen zu lassen — kein Schreibvorgang im Hintergrund
+        # bleibt ohne sichtbares Ergebnis.
+        if: failure()
+        env:
+          INGEST_SECRET: ${{ secrets.SUPABASE_INGEST_SECRET }}
+        run: |
+          curl -sf -X POST "https://vukqjpqawzhfvpjjpipp.supabase.co/functions/v1/e2e-report-ingest" \
+            -H "Content-Type: application/json" \
+            -H "X-E2E-Ingest-Secret: $INGEST_SECRET" \
+            --data "{\"run_id\":${{ inputs.run_id }},\"status\":\"failure\",\"gh_run_id\":${{ github.run_id }},\"gh_workflow_url\":\"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\",\"report\":{\"report_version\":1,\"summary\":{\"total\":0,\"passed\":0,\"failed\":0,\"status\":\"FEHLER\"},\"findings\":[{\"id\":1,\"symptom\":\"Workflow ist vor Abschluss fehlgeschlagen.\",\"ursache\":\"Siehe GitHub-Actions-Log dieses Laufs.\",\"fix\":\"Noch offen.\",\"status\":\"FEHLER\"}],\"results_by_role\":[],\"incidents\":[],\"open_items\":[\"GitHub-Actions-Log prüfen.\"],\"test_accounts\":[]}}" \
+          || true
