@@ -162,20 +162,26 @@ function analyzeHtml(html: string, finalUrl: string) {
 
   // Erkennt clientseitig gerenderte Single-Page-Apps (React/Vue/... ohne
   // Server-Rendering): der roh abgerufene HTML-Body enthält dann praktisch
-  // keinen sichtbaren Inhalt, nur einen Mount-Punkt + ein Modul-Script — der
-  // tatsächliche Inhalt (inkl. echter H1-Überschriften, echter Bilder)
-  // entsteht erst nach JavaScript-Ausführung im Browser, die dieses Werkzeug
-  // bewusst nicht durchführt (siehe Architektur-Kommentar oben). Body-
-  // abhängige Prüfungen wären in diesem Fall irreführend statt hilfreich —
-  // real aufgetreten: IT-Dart selbst hat eine echte H1 (nur clientseitig
-  // gerendert), der erste Testlauf meldete trotzdem fälschlich "keine H1".
+  // keinen sichtbaren Inhalt, nur einen Mount-Punkt — der tatsächliche
+  // Inhalt (inkl. echter H1-Überschriften, echter Bilder) entsteht erst nach
+  // JavaScript-Ausführung im Browser, die dieses Werkzeug bewusst nicht
+  // durchführt (siehe Architektur-Kommentar oben). Body-abhängige Prüfungen
+  // wären in diesem Fall irreführend statt hilfreich.
+  //
+  // Das Modul-Script selbst NICHT nur im Body suchen: ein Vite-
+  // Produktionsbuild legt es typischerweise in <head> ab (mit
+  // crossorigin-Attribut), nur die lokale Entwicklungsversion in <body> —
+  // real aufgetreten: dieser Unterschied ließ die Erkennung beim ersten
+  // Produktions-Testlauf gegen IT-Dart selbst fälschlich durchfallen, obwohl
+  // der Body nachweislich nur aus einem leeren Mount-Punkt bestand.
   const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
   const bodyContent = bodyMatch ? bodyMatch[1] : html;
   const bodyTextOnly = bodyContent
     .replace(/<script[\s\S]*?<\/script>/gi, "")
     .replace(/<[^>]+>/g, "")
     .trim();
-  const looksClientRendered = bodyTextOnly.length < 200 && /<script[^>]+type=["']module["']/i.test(bodyContent);
+  const hasModuleScript = /<script[^>]+type=["']module["']/i.test(html);
+  const looksClientRendered = bodyTextOnly.length < 200 && hasModuleScript;
 
   return {
     title,
