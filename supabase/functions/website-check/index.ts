@@ -160,6 +160,23 @@ function analyzeHtml(html: string, finalUrl: string) {
     mixedContentCount = [...html.matchAll(/(?:src|href)\s*=\s*["']http:\/\/[^"']+["']/gi)].length;
   }
 
+  // Erkennt clientseitig gerenderte Single-Page-Apps (React/Vue/... ohne
+  // Server-Rendering): der roh abgerufene HTML-Body enthält dann praktisch
+  // keinen sichtbaren Inhalt, nur einen Mount-Punkt + ein Modul-Script — der
+  // tatsächliche Inhalt (inkl. echter H1-Überschriften, echter Bilder)
+  // entsteht erst nach JavaScript-Ausführung im Browser, die dieses Werkzeug
+  // bewusst nicht durchführt (siehe Architektur-Kommentar oben). Body-
+  // abhängige Prüfungen wären in diesem Fall irreführend statt hilfreich —
+  // real aufgetreten: IT-Dart selbst hat eine echte H1 (nur clientseitig
+  // gerendert), der erste Testlauf meldete trotzdem fälschlich "keine H1".
+  const bodyMatch = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
+  const bodyContent = bodyMatch ? bodyMatch[1] : html;
+  const bodyTextOnly = bodyContent
+    .replace(/<script[\s\S]*?<\/script>/gi, "")
+    .replace(/<[^>]+>/g, "")
+    .trim();
+  const looksClientRendered = bodyTextOnly.length < 200 && /<script[^>]+type=["']module["']/i.test(bodyContent);
+
   return {
     title,
     metaDescription,
@@ -174,6 +191,7 @@ function analyzeHtml(html: string, finalUrl: string) {
     imgTotal: imgTags.length,
     imgsMissingAlt,
     mixedContentCount,
+    looksClientRendered,
   };
 }
 
@@ -261,9 +279,15 @@ Deno.serve(async (req) => {
     else if (responseTimeMs < 3000) push("Technik", "Antwortzeit", "WARN", `${responseTimeMs} ms — spürbar langsam.`, "Server-Antwortzeit / Caching prüfen.");
     else push("Technik", "Antwortzeit", "FEHLER", `${responseTimeMs} ms — deutlich zu langsam.`, "Hosting/Caching/Serverleistung prüfen.");
 
-    const contentEncoding = res.headers.get("content-encoding");
-    if (contentEncoding) push("Technik", "Komprimierung", "OK", `Content-Encoding: ${contentEncoding}.`);
-    else push("Technik", "Komprimierung", "WARN", "Keine Komprimierung (gzip/br) erkennbar.", "Kompression (gzip oder Brotli) am Server/CDN aktivieren.");
+    // Keine "Komprimierung"-Prüfung: fetch() dekomprimiert gzip/br/deflate
+    // transparent und entfernt dabei den Content-Encoding-Header aus den
+    // sichtbaren Response-Headers (Web-Standard-Verhalten, nicht Deno-
+    // spezifisch) — ein Fehlen des Headers ist daher grundsätzlich nicht von
+    // echtem Fehlen der Kompression unterscheidbar. Real aufgetreten: IT-Dart
+    // selbst wird nachweislich per Brotli ausgeliefert (curl bestätigt), der
+    // erste Testlauf dieses Werkzeugs meldete hier trotzdem fälschlich WARN.
+    // Ohne verlässliche Erkennungsmethode über Standard-fetch lieber keine
+    // Prüfung als eine strukturell falsche.
 
     if (res.redirected) push("Technik", "Weiterleitungen", "OK", "Seite leitet weiter, Endziel wurde erreicht.");
 
@@ -324,13 +348,23 @@ Deno.serve(async (req) => {
     else push("SEO", "sitemap.xml", "WARN", `sitemap.xml nicht erreichbar${sitemap.status ? ` (Status ${sitemap.status})` : ""}.`, "XML-Sitemap bereitstellen und ggf. in robots.txt referenzieren.");
 
     // --- Barrierefreiheit ---
-    if (a.h1Count === 1) push("Barrierefreiheit", "Überschriftenstruktur (H1)", "OK", "Genau eine H1-Überschrift gefunden.");
-    else if (a.h1Count === 0) push("Barrierefreiheit", "Überschriftenstruktur (H1)", "WARN", "Keine H1-Überschrift gefunden.", "Genau eine H1-Hauptüberschrift je Seite ergänzen.");
-    else push("Barrierefreiheit", "Überschriftenstruktur (H1)", "WARN", `${a.h1Count} H1-Überschriften gefunden — empfohlen ist genau eine.`, "Auf eine H1-Hauptüberschrift je Seite reduzieren.");
+    if (a.looksClientRendered) {
+      push(
+        "Barrierefreiheit",
+        "Inhaltsprüfung (H1, Alt-Texte)",
+        "WARN",
+        "Diese Seite wirkt clientseitig per JavaScript gerendert (z. B. React/Vue-SPA) — der roh abgerufene HTML-Code enthält kaum sichtbaren Inhalt. H1-Struktur und Alt-Texte konnten deshalb nicht zuverlässig geprüft werden, da dieses Werkzeug bewusst keinen Browser ausführt.",
+        "Manuell im Browser oder mit einem Tool prüfen, das JavaScript ausführt."
+      );
+    } else {
+      if (a.h1Count === 1) push("Barrierefreiheit", "Überschriftenstruktur (H1)", "OK", "Genau eine H1-Überschrift gefunden.");
+      else if (a.h1Count === 0) push("Barrierefreiheit", "Überschriftenstruktur (H1)", "WARN", "Keine H1-Überschrift gefunden.", "Genau eine H1-Hauptüberschrift je Seite ergänzen.");
+      else push("Barrierefreiheit", "Überschriftenstruktur (H1)", "WARN", `${a.h1Count} H1-Überschriften gefunden — empfohlen ist genau eine.`, "Auf eine H1-Hauptüberschrift je Seite reduzieren.");
 
-    if (a.imgTotal === 0) push("Barrierefreiheit", "Alt-Texte für Bilder", "OK", "Keine <img>-Tags im HTML gefunden.");
-    else if (a.imgsMissingAlt === 0) push("Barrierefreiheit", "Alt-Texte für Bilder", "OK", `Alle ${a.imgTotal} Bilder haben ein alt-Attribut.`);
-    else push("Barrierefreiheit", "Alt-Texte für Bilder", a.imgsMissingAlt / a.imgTotal > 0.2 ? "FEHLER" : "WARN", `${a.imgsMissingAlt} von ${a.imgTotal} Bildern ohne alt-Attribut.`, "alt-Attribute für alle inhaltstragenden Bilder ergänzen.");
+      if (a.imgTotal === 0) push("Barrierefreiheit", "Alt-Texte für Bilder", "OK", "Keine <img>-Tags im HTML gefunden.");
+      else if (a.imgsMissingAlt === 0) push("Barrierefreiheit", "Alt-Texte für Bilder", "OK", `Alle ${a.imgTotal} Bilder haben ein alt-Attribut.`);
+      else push("Barrierefreiheit", "Alt-Texte für Bilder", a.imgsMissingAlt / a.imgTotal > 0.2 ? "FEHLER" : "WARN", `${a.imgsMissingAlt} von ${a.imgTotal} Bildern ohne alt-Attribut.`, "alt-Attribute für alle inhaltstragenden Bilder ergänzen.");
+    }
 
     if (a.hasDoctype) push("Technik", "HTML-Doctype", "OK", "<!DOCTYPE html> vorhanden.");
     else push("Technik", "HTML-Doctype", "WARN", "Kein <!DOCTYPE html> gefunden — Browser können in den Quirks-Modus wechseln.", "<!DOCTYPE html> als erste Zeile ergänzen.");
