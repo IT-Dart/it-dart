@@ -1,0 +1,86 @@
+name: E2E-Tests
+
+# Führt echte Browser-End-to-End-Tests (Playwright) gegen die Live-App aus.
+# Weder das React-Frontend noch eine Supabase Edge Function können selbst
+# einen Browser steuern — GitHub Actions ist dafür der einzige Ort in diesem
+# Stack (wie beim bestehenden db-backup.yml-Workflow). Wird ausschließlich
+# über das Admin-Dashboard ausgelöst (supabase/functions/e2e-trigger-run),
+# nie automatisch per Zeitplan, da echte Testkonten echte Schreibvorgänge
+# gegen die Produktivdatenbank auslösen.
+
+on:
+  workflow_dispatch:
+    inputs:
+      suite:
+        description: "Welche Testsuite laufen soll"
+        required: true
+        default: "full"
+        type: choice
+        options: [full, roleA, roleB, roleC, roleD]
+      run_id:
+        description: "ID der e2e_runs-Zeile, gegen die das Ergebnis gemeldet wird"
+        required: true
+        type: string
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Code auschecken
+        uses: actions/checkout@v4
+
+      - name: Node einrichten
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Playwright installieren
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+
+      - name: Tests ausführen
+        id: run_tests
+        working-directory: e2e
+        env:
+          BASE_URL: https://www.it-dart.de
+          E2E_SUITE: ${{ inputs.suite }}
+          E2E_TEST_FREE_EMAIL: ${{ secrets.E2E_TEST_FREE_EMAIL }}
+          E2E_TEST_FREE_PASSWORD: ${{ secrets.E2E_TEST_FREE_PASSWORD }}
+          E2E_TEST_TRAINEE_EMAIL: ${{ secrets.E2E_TEST_TRAINEE_EMAIL }}
+          E2E_TEST_TRAINEE_PASSWORD: ${{ secrets.E2E_TEST_TRAINEE_PASSWORD }}
+          E2E_TEST_TRAINER_EMAIL: ${{ secrets.E2E_TEST_TRAINER_EMAIL }}
+          E2E_TEST_TRAINER_PASSWORD: ${{ secrets.E2E_TEST_TRAINER_PASSWORD }}
+          E2E_TEST_JUNIORADMIN_EMAIL: ${{ secrets.E2E_TEST_JUNIORADMIN_EMAIL }}
+          E2E_TEST_JUNIORADMIN_PASSWORD: ${{ secrets.E2E_TEST_JUNIORADMIN_PASSWORD }}
+        # continue-on-error, damit fehlgeschlagene Tests trotzdem einen
+        # Bericht erzeugen und melden, statt den Job stillschweigend rot
+        # abbrechen zu lassen, ohne dass das Dashboard je etwas erfährt.
+        run: npx playwright test || echo "tests_failed=1" >> "$GITHUB_OUTPUT"
+        continue-on-error: true
+
+      - name: Ergebnisse in Ingest-Format übersetzen
+        working-directory: e2e
+        env:
+          E2E_RUN_ID: ${{ inputs.run_id }}
+          E2E_SUITE: ${{ inputs.suite }}
+        run: node scripts/build-report.js
+
+      - name: Testbericht als Artefakt sichern
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report-${{ inputs.run_id }}
+          path: e2e/report.json
+          retention-days: 30
+
+      - name: Ergebnis an Supabase melden
+        if: always()
+        env:
+          INGEST_SECRET: ${{ secrets.SUPABASE_INGEST_SECRET }}
+        run: |
+          curl -sf -X POST "https://vukqjpqawzhfvpjjpipp.supabase.co/functions/v1/e2e-report-ingest" \
+            -H "Content-Type: application/json" \
+            -H "X-E2E-Ingest-Secret: $INGEST_SECRET" \
+            --data @e2e/report.json

@@ -1,7 +1,9 @@
 import { supabase } from "./supabaseClient";
 
-// App palette, as RGB triples (matches src/lib/theme.js)
-const COL = {
+// App palette, as RGB triples (matches src/lib/theme.js). Exported so other
+// jsPDF-based generators (e.g. src/lib/e2eReport.js) reuse the same palette
+// instead of duplicating it.
+export const COL = {
   bg: [15, 22, 35],
   s1: [26, 37, 53],
   s2: [33, 46, 66],
