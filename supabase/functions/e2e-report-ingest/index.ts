@@ -5,6 +5,19 @@
 // endpoint is authenticated with a long shared secret instead. It can only
 // update a row that e2e-trigger-run already created (by run_id); it cannot
 // create new rows or touch any other table.
+//
+// DEPLOYMENT REQUIREMENT: "Enforce JWT Verification" MUST be disabled for
+// this function in the Supabase Dashboard (Edge Functions -> this function
+// -> Settings). Without that, Supabase's own gateway rejects every request
+// with 401 "Missing authorization header" before this code ever runs, since
+// the CI runner never sends a Supabase JWT — only the X-E2E-Ingest-Secret
+// header below. Real incident: every single run silently failed this way
+// until the toggle was found and disabled; the secret comparison itself was
+// never even reached. This does NOT weaken security - the shared-secret
+// check below still fully gates every request, it just removes a platform
+// layer that was never appropriate for this CI-to-server webhook pattern.
+// e2e-trigger-run and website-check must keep JWT verification ENABLED -
+// both are called from the browser with a real admin session.
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 function timingSafeEqual(a: string, b: string): boolean {
