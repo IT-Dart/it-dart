@@ -12,6 +12,35 @@ const LegalLayout=({title,onClose,children})=>(
   </div></div>
 );
 
+// Datengetrieben statt Fließtext: eine spätere Feature-Flag-/API-gesteuerte
+// Bezahl-/Credit-Anbindung (Premium-Inhalte, Zertifikate, Analysen) kann so
+// an genau dieser Stelle einzelne Pakete ergänzen oder Preise dynamisch
+// nachladen, ohne die Seite selbst umzubauen. Bewusst ohne feste Euro-
+// Beträge — die Konditionen sind laut Auftrag ausdrücklich variabel und
+// werden individuell abgestimmt, keine erfundenen Zahlen auf einer echten
+// Produktivseite.
+const PACKAGES=[
+  {
+    name:"Einzelzugang",
+    zielgruppe:"Einzelne Auszubildende & Selbstlernende",
+    umfang:["1 persönliches Konto","Voller Funktionsumfang (Module, Prüfungsvorbereitung, KI-Lernassistent)","Monatlich oder dauerhaft"],
+  },
+  {
+    name:"Ausbildungsbetrieb",
+    zielgruppe:"Betriebe mit mehreren Auszubildenden",
+    umfang:["Trainer-Konto mit skalierbarem Platz-Kontingent","Zentrale Status- und Fortschrittsübersicht je Auszubildendem","Eigenständige Einladung neuer Auszubildender ohne Verwaltungsaufwand"],
+  },
+  {
+    name:"Unternehmen / Enterprise",
+    zielgruppe:"Größere Organisationen & mehrere Standorte",
+    umfang:["Individuelles Lizenzmodell nach Nutzerzahl","Dediziertes Onboarding und Ansprechpartner","Erweiterbar um unternehmensspezifische Inhalte"],
+  },
+];
+
+const card={background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:12,padding:"16px 18px",marginBottom:12};
+const cardTitle={fontSize:14,fontWeight:700,color:C.t,marginBottom:2};
+const cardSub={fontSize:12,color:C.cy,marginBottom:10};
+
 export function Impressum({onClose}){
   return(
     <LegalLayout title="Impressum" onClose={onClose}>
@@ -80,6 +109,48 @@ export function Datenschutz({onClose}){
 
       <h2 style={h2}>8. Änderungen</h2>
       <p style={p}>Diese Datenschutzerklärung kann bei Weiterentwicklung des Angebots angepasst werden. Es gilt die jeweils aktuelle, hier abrufbare Fassung.</p>
+    </LegalLayout>
+  );
+}
+
+export function Leistungen({onClose}){
+  return(
+    <LegalLayout title="Leistungen & Pakete" onClose={onClose}>
+      <p style={p}>IT-Dart ist eine digitale Lernplattform mit einem skalierbaren Account-Modell und flexibel anpassbaren Preis- und Lizenzstrukturen — von der einzelnen Auszubildenden-Person bis zum ganzen Ausbildungsbetrieb.</p>
+
+      <h2 style={h2}>1. IT-Dart Lernplattform</h2>
+      <p style={p}>Digitale Bildung und strukturierte Prüfungsvorbereitung für angehende Fachinformatiker/-innen für Systemintegration und Auszubildende: acht aufeinander aufbauende Lernmodule, praxisnahe Fallbeispiele, ein kontextbezogener KI-Lernassistent sowie eine IHK-nahe Prüfungssimulation mit automatischer Auswertung und Lernnachweis.</p>
+
+      <h2 style={h2}>2. Skalierbares Account- & Benutzermodell</h2>
+      <p style={p}>Sichere Authentifizierung und rollenbasierte Zugriffsrechte (RBAC) auf Basis von Supabase — vom Einzelkonto bis zu mehreren hundert Nutzenden:</p>
+      <ul style={{paddingLeft:20,marginBottom:10}}>
+        <li style={li}>Einladungsbasierter Zugang mit E-Mail-Bestätigung, kein offener Registrierungsprozess</li>
+        <li style={li}>Abgestufte Rollen: Free-/Premium-Konto, Ausbilder-Konto mit eigener Gruppe, Verwaltung</li>
+        <li style={li}>Durchgehende Rechtetrennung auf Datenbankebene (Row-Level-Security) statt reiner Oberflächenprüfung</li>
+        <li style={li}>Selbstverwaltung für Ausbildungsbetriebe: eigene Auszubildende einladen, Status und Fortschritt einsehen, ohne dass wir bei jedem Vorgang eingebunden werden müssen</li>
+      </ul>
+
+      <h2 style={h2}>3. Flexibles Preis- & Lizenzmodell</h2>
+      <p style={p}>Die Konditionen sind bewusst dynamisch konfigurierbar und richten sich nach Nutzerzahl, Lizenzdauer und gewünschtem Funktionsumfang — kein starres Einheitsmodell:</p>
+      {PACKAGES.map(pkg=>(
+        <div key={pkg.name} style={card}>
+          <div style={cardTitle}>{pkg.name}</div>
+          <div style={cardSub}>{pkg.zielgruppe}</div>
+          <ul style={{paddingLeft:18,margin:0}}>
+            {pkg.umfang.map(item=><li key={item} style={li}>{item}</li>)}
+          </ul>
+        </div>
+      ))}
+      <p style={p}>Konkrete Preise erstellen wir individuell auf Anfrage, abgestimmt auf die jeweilige Nutzergruppe.</p>
+
+      <h2 style={h2}>4. Rollout & Seminare ("Bleib am Dart")</h2>
+      <p style={p}>Vor-Ort-Seminare bzw. Präsentationen durch unsere Trainer zur Einführung und Erklärung der IT-Dart-Plattform für Gruppen und Unternehmen — von der ersten Vorstellung bis zur praktischen Einweisung im Ausbildungsalltag. Der Aufwand und damit der Richtpreis richten sich nach Gruppengröße, Dauer und Durchführungsort (vor Ort oder remote) und werden individuell abgestimmt.</p>
+
+      <h2 style={h2}>5. Unternehmens-Services</h2>
+      <p style={p}>Auf Basis der bewährten IT-Dart-Architektur erstellen wir maßgeschneiderte Lernplattformen für andere Unternehmen, Fachbereiche oder Gruppen — inklusive cloudbasierter Bereitstellung (Setup und Hosting über Vercel und Supabase) und derselben Sicherheits- und Datenschutzgrundlage wie bei IT-Dart selbst.</p>
+
+      <h2 style={h2}>Kontakt</h2>
+      <p style={p}>Für ein individuelles Angebot erreichst du uns unter <a href="mailto:kontakt@it-dart.de" style={{color:C.cy}}>kontakt@it-dart.de</a>.</p>
     </LegalLayout>
   );
 }
