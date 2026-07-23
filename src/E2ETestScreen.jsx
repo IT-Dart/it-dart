@@ -11,6 +11,15 @@ const STATUS_LABEL={queued:"WARTET",running:"LÄUFT",success:"OK",failure:"FEHLE
 const STATUS_COLOR={queued:C.mu,running:C.cy,success:C.gr,failure:C.co,error:C.co};
 const IN_PROGRESS=new Set(["queued","running"]);
 
+// Ein Lauf dauert laut Hinweistext oben "typischerweise einige Minuten" —
+// bleibt er deutlich länger auf "queued"/"running" hängen, ist die
+// Rückmeldung von GitHub Actions höchstwahrscheinlich gescheitert (real
+// aufgetreten: ein falsch hinterlegter Ingest-Secret ließ mehrere Läufe
+// unbemerkt für immer auf "queued" stehen). Ohne diese Kennzeichnung fällt
+// das nur auf, wenn jemand zusätzlich manuell in GitHub Actions nachschaut.
+const STALE_MS=20*60*1000;
+const isStale=(r)=>IN_PROGRESS.has(r.status)&&(Date.now()-new Date(r.created_at).getTime())>STALE_MS;
+
 const fmtDateTime=(iso)=>iso?new Date(iso).toLocaleString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}):"—";
 
 export default function E2ETestScreen({onClose}){
@@ -104,11 +113,12 @@ export default function E2ETestScreen({onClose}){
               <button onClick={()=>setExpandedId(open?null:r.id)} style={{background:"none",border:"none",padding:0,cursor:"pointer",width:"100%",textAlign:"left",fontFamily:ff,color:"inherit"}}>
                 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap"}}>
                   <span style={{fontSize:14,fontWeight:600}}>Lauf #{r.id} · {label}</span>
-                  <span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:600,background:C.s2,color:STATUS_COLOR[r.status]||C.mu,whiteSpace:"nowrap"}}>{STATUS_LABEL[r.status]||r.status}</span>
+                  <span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:600,background:C.s2,color:isStale(r)?C.co:(STATUS_COLOR[r.status]||C.mu),whiteSpace:"nowrap"}}>{isStale(r)?"WARTET (ungewöhnlich lange)":(STATUS_LABEL[r.status]||r.status)}</span>
                 </div>
                 <p style={{fontSize:11,color:C.mu,margin:"4px 0 0"}}>Gestartet {fmtDateTime(r.created_at)}{r.finished_at?` · Abgeschlossen ${fmtDateTime(r.finished_at)}`:""}</p>
               </button>
               {open&&<div style={{marginTop:12,paddingTop:12,borderTop:`0.5px solid ${C.bd}`}}>
+                {isStale(r)&&<p style={{fontSize:12,color:"#fca5a5",marginBottom:10}}>Dieser Lauf hat seit über 20 Minuten keine Rückmeldung erhalten und ist vermutlich fehlgeschlagen (häufigste Ursache: Ingest-Secret zwischen Supabase und GitHub stimmt nicht überein). GitHub-Actions-Log des Laufs prüfen; der Status lässt sich bei Bedarf auch direkt per SQL korrigieren (siehe dokumentation/13_SQL_Admin_Notfallreferenz, Abschnitt 6).</p>}
                 {r.error_text&&<p style={{fontSize:12,color:"#fca5a5",marginBottom:10}}>{r.error_text}</p>}
                 {r.report?.summary&&<p style={{fontSize:13,color:C.t2,marginBottom:10}}>{r.report.summary.passed??0} von {r.report.summary.total??0} Prüfungen bestanden ({r.report.summary.failed??0} fehlgeschlagen).</p>}
                 {Array.isArray(r.report?.findings)&&r.report.findings.length>0&&<div style={{marginBottom:10}}>
