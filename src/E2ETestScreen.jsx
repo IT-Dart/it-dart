@@ -11,16 +11,25 @@ const STATUS_LABEL={queued:"WARTET",running:"LÄUFT",success:"OK",failure:"FEHLE
 const STATUS_COLOR={queued:C.mu,running:C.cy,success:C.gr,failure:C.co,error:C.co};
 const IN_PROGRESS=new Set(["queued","running"]);
 
-// Ein Lauf dauert laut Hinweistext oben "typischerweise einige Minuten" —
-// bleibt er deutlich länger auf "queued"/"running" hängen, ist die
-// Rückmeldung von GitHub Actions höchstwahrscheinlich gescheitert (real
-// aufgetreten: ein falsch hinterlegter Ingest-Secret ließ mehrere Läufe
+// Fällt ein Lauf deutlich länger auf "queued"/"running" hängen als üblich,
+// ist die Rückmeldung von GitHub Actions höchstwahrscheinlich gescheitert
+// (real aufgetreten: eine deaktivierte JWT-Prüfung ließ mehrere Läufe
 // unbemerkt für immer auf "queued" stehen). Ohne diese Kennzeichnung fällt
 // das nur auf, wenn jemand zusätzlich manuell in GitHub Actions nachschaut.
-const STALE_MS=20*60*1000;
-const isStale=(r)=>IN_PROGRESS.has(r.status)&&(Date.now()-new Date(r.created_at).getTime())>STALE_MS;
+// Schwelle = das Dreifache der echten Durchschnittsdauer (siehe
+// avgDurationMs unten), mit Mindest-/Höchstwert, solange noch wenig
+// Datenbasis vorhanden ist.
+const DEFAULT_STALE_MS=20*60*1000;
+const MIN_STALE_MS=10*60*1000;
+const MAX_STALE_MS=30*60*1000;
 
 const fmtDateTime=(iso)=>iso?new Date(iso).toLocaleString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}):"—";
+const fmtDuration=(ms)=>{
+  const totalSec=Math.max(0,Math.round(ms/1000));
+  const min=Math.floor(totalSec/60);
+  const sec=totalSec%60;
+  return min>0?`${min} Min. ${sec} Sek.`:`${sec} Sek.`;
+};
 
 export default function E2ETestScreen({onClose}){
   const [runs,setRuns]=useState(null); // null = lädt
@@ -78,6 +87,24 @@ export default function E2ETestScreen({onClose}){
     setPdfBusyId(null);
   };
 
+  // Durchschnittliche Dauer aus echten, vollständig durchgelaufenen Läufen —
+  // bewusst nur "success"/"failure" (die Pipeline ist tatsächlich einmal
+  // komplett durchgelaufen), nicht "error": das schließt sowohl früh am
+  // Trigger gescheiterte Versuche als auch manuell per SQL zurückgesetzte
+  // Karteileichen aus, deren "Dauer" nichts mit einer echten Laufzeit zu tun
+  // hätte und den Schnitt sonst stark verzerren würde.
+  const completedDurationsMs=(runs||[])
+    .filter(r=>(r.status==="success"||r.status==="failure")&&r.finished_at)
+    .map(r=>new Date(r.finished_at).getTime()-new Date(r.created_at).getTime())
+    .filter(ms=>ms>0);
+  const avgDurationMs=completedDurationsMs.length
+    ?completedDurationsMs.reduce((a,b)=>a+b,0)/completedDurationsMs.length
+    :null;
+  const staleMs=avgDurationMs
+    ?Math.min(Math.max(avgDurationMs*3,MIN_STALE_MS),MAX_STALE_MS)
+    :DEFAULT_STALE_MS;
+  const isStale=(r)=>IN_PROGRESS.has(r.status)&&(Date.now()-new Date(r.created_at).getTime())>staleMs;
+
   return(
     <div style={wrap}><div style={inner}>
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:24,paddingBottom:16,borderBottom:`0.5px solid ${C.bd}`}}>
@@ -87,7 +114,7 @@ export default function E2ETestScreen({onClose}){
 
       <div style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:12,padding:"14px 16px",marginBottom:20}}>
         <p style={{fontSize:12,fontWeight:600,letterSpacing:".04em",textTransform:"uppercase",color:C.cy,marginBottom:10}}>Neuen Testlauf starten</p>
-        <p style={{fontSize:12,color:C.mu,marginBottom:10,lineHeight:1.5}}>Führt echte Browser-Tests über GitHub Actions gegen die Live-App aus — inklusive echter Logins mit den hinterlegten Testkonten. Ein Lauf dauert typischerweise einige Minuten.</p>
+        <p style={{fontSize:12,color:C.mu,marginBottom:10,lineHeight:1.5}}>Führt echte Browser-Tests über GitHub Actions gegen die Live-App aus — inklusive echter Logins mit den hinterlegten Testkonten. {avgDurationMs?`Ein Lauf dauert im Schnitt etwa ${fmtDuration(avgDurationMs)} (basierend auf den letzten abgeschlossenen Läufen).`:"Ein Lauf dauert typischerweise einige Minuten."}</p>
         <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
           <select value={suite} onChange={e=>setSuite(e.target.value)} style={{...input,flex:1,minWidth:220}}>
             {E2E_SUITES.map(s=><option key={s.key} value={s.key}>{s.label}</option>)}
@@ -115,10 +142,14 @@ export default function E2ETestScreen({onClose}){
                   <span style={{fontSize:14,fontWeight:600}}>Lauf #{r.id} · {label}</span>
                   <span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:600,background:C.s2,color:isStale(r)?C.co:(STATUS_COLOR[r.status]||C.mu),whiteSpace:"nowrap"}}>{isStale(r)?"WARTET (ungewöhnlich lange)":(STATUS_LABEL[r.status]||r.status)}</span>
                 </div>
-                <p style={{fontSize:11,color:C.mu,margin:"4px 0 0"}}>Gestartet {fmtDateTime(r.created_at)}{r.finished_at?` · Abgeschlossen ${fmtDateTime(r.finished_at)}`:""}</p>
+                <p style={{fontSize:11,color:C.mu,margin:"4px 0 0"}}>
+                  {IN_PROGRESS.has(r.status)
+                    ?`Läuft seit ${fmtDuration(Date.now()-new Date(r.created_at).getTime())}${avgDurationMs?` (Ø sonst ${fmtDuration(avgDurationMs)})`:""}`
+                    :`Gestartet ${fmtDateTime(r.created_at)}${r.finished_at?` · Abgeschlossen ${fmtDateTime(r.finished_at)}`:""}`}
+                </p>
               </button>
               {open&&<div style={{marginTop:12,paddingTop:12,borderTop:`0.5px solid ${C.bd}`}}>
-                {isStale(r)&&<p style={{fontSize:12,color:"#fca5a5",marginBottom:10}}>Dieser Lauf hat seit über 20 Minuten keine Rückmeldung erhalten und ist vermutlich fehlgeschlagen (häufigste Ursache: Ingest-Secret zwischen Supabase und GitHub stimmt nicht überein). GitHub-Actions-Log des Laufs prüfen; der Status lässt sich bei Bedarf auch direkt per SQL korrigieren (siehe dokumentation/13_SQL_Admin_Notfallreferenz, Abschnitt 6).</p>}
+                {isStale(r)&&<p style={{fontSize:12,color:"#fca5a5",marginBottom:10}}>Dieser Lauf hat seit über {fmtDuration(staleMs)} keine Rückmeldung erhalten — deutlich länger als der übliche Schnitt{avgDurationMs?` von ${fmtDuration(avgDurationMs)}`:""} — und ist vermutlich fehlgeschlagen. GitHub-Actions-Log des Laufs prüfen; der Status lässt sich bei Bedarf auch direkt per SQL korrigieren (siehe dokumentation/13_SQL_Admin_Notfallreferenz, Abschnitt 6).</p>}
                 {r.error_text&&<p style={{fontSize:12,color:"#fca5a5",marginBottom:10}}>{r.error_text}</p>}
                 {r.report?.summary&&<p style={{fontSize:13,color:C.t2,marginBottom:10}}>{r.report.summary.passed??0} von {r.report.summary.total??0} Prüfungen bestanden ({r.report.summary.failed??0} fehlgeschlagen).</p>}
                 {Array.isArray(r.report?.findings)&&r.report.findings.length>0&&<div style={{marginBottom:10}}>
