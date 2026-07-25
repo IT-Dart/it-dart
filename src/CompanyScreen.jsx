@@ -3,6 +3,12 @@ import { useAuth } from "./lib/AuthContext";
 import { Logo } from "./ITDart";
 import bookCoverImg from "./assets/book-claude-praxis-cover.png";
 
+// Markentexte gebündelt an einer Stelle, damit spätere Überarbeitungen ein
+// reiner Textedit hier sind, ohne die JSX-Struktur darunter anzufassen.
+const INTRO_TEXT="IT-Dart ist die Marke hinter „Bleib am Dart!\" — unserer digitalen Lernplattform für die Ausbildung zum Fachinformatiker für Systemintegration (FISI). Rund um die Plattform entstehen weitere Angebote: Fachliteratur, herunterladbare Lernmaterialien und individuelle Lösungen für Ausbildungsbetriebe.";
+const VISION_TEXT="IT-Ausbildung soll nicht an trockenen Skripten und Frontalunterricht hängenbleiben. Wir glauben an praxisnahes Lernen an echten Alltagsfällen — ergänzt durch KI als Werkzeug, das schneller macht, ohne das eigene Verständnis zu ersetzen.";
+const ZIEL_TEXT="Kurzfristig: angehenden Fachinformatikern für Systemintegration eine Plattform geben, mit der Prüfungsvorbereitung strukturiert und nachvollziehbar gelingt. Mittelfristig: dasselbe Prinzip auf weitere IT-Ausbildungsberufe übertragen und Ausbildungsbetrieben ein eigenständiges Angebot für ihre Auszubildenden bieten.";
+
 // Sobald die Unternehmensgründung abgeschlossen ist: hier reale Amazon-Links
 // eintragen und status auf "live" setzen — der Rest der Karte bleibt gleich.
 const EBOOKS=[
@@ -44,15 +50,15 @@ export default function CompanyScreen({onEnterApp,onOpenLegal}){
         <p style={{fontSize:13,color:C.cy,fontWeight:500}}>Digitale Bildung für die IT-Ausbildung</p>
       </div>
 
-      <p style={p}>IT-Dart ist die Marke hinter „Bleib am Dart!" — unserer digitalen Lernplattform für die Ausbildung zum Fachinformatiker für Systemintegration (FISI). Rund um die Plattform entstehen weitere Angebote: Fachliteratur, herunterladbare Lernmaterialien und individuelle Lösungen für Ausbildungsbetriebe.</p>
+      <p style={p}>{INTRO_TEXT}</p>
 
       <button onClick={onEnterApp} style={{...pri,width:"100%",justifyContent:"center",padding:"14px 18px",fontSize:15,marginTop:14}}>Zum Lerntool „Bleib am Dart!" →</button>
 
       <h2 style={h2}>Vision</h2>
-      <p style={p}>IT-Ausbildung soll nicht an trockenen Skripten und Frontalunterricht hängenbleiben. Wir glauben an praxisnahes Lernen an echten Alltagsfällen — ergänzt durch KI als Werkzeug, das schneller macht, ohne das eigene Verständnis zu ersetzen.</p>
+      <p style={p}>{VISION_TEXT}</p>
 
       <h2 style={h2}>Ziel</h2>
-      <p style={p}>Kurzfristig: angehenden Fachinformatikern für Systemintegration eine Plattform geben, mit der Prüfungsvorbereitung strukturiert und nachvollziehbar gelingt. Mittelfristig: dasselbe Prinzip auf weitere IT-Ausbildungsberufe übertragen und Ausbildungsbetrieben ein eigenständiges Angebot für ihre Auszubildenden bieten.</p>
+      <p style={p}>{ZIEL_TEXT}</p>
 
       <h2 style={h2}>Leistungen</h2>
       <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:14}}>
