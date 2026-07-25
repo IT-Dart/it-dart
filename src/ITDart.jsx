@@ -1245,8 +1245,11 @@ export default function ITDart({onOpenExam,onOpenLegal}){
       {user?(
         <img src={coverImg} alt="IT-Dart" style={{width:"100%",maxWidth:340,borderRadius:14,margin:"16px auto",display:"block",boxShadow:"0 8px 32px rgba(37,99,235,0.25)"}}/>
       ):(
-        <div style={{width:"100%",maxWidth:340,aspectRatio:"4/3",borderRadius:14,margin:"16px auto",display:"flex",alignItems:"center",justifyContent:"center",background:C.s1,border:`0.5px solid ${C.bd}`}}>
-          <p style={{fontSize:14,color:C.mu,fontWeight:500,padding:"0 20px",textAlign:"center"}}>Hier entsteht eine Lernplattform</p>
+        <div style={{width:"100%",maxWidth:340,aspectRatio:"4/3",borderRadius:14,margin:"16px auto",position:"relative",overflow:"hidden",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:12,background:C.s1,border:`0.5px solid ${C.bd}`}}>
+          <div style={{position:"absolute",top:0,left:0,right:0,height:12,backgroundImage:"repeating-linear-gradient(135deg, #f5c518 0 16px, #1a1a1a 16px 32px)"}}/>
+          <div style={{position:"absolute",bottom:0,left:0,right:0,height:12,backgroundImage:"repeating-linear-gradient(135deg, #f5c518 0 16px, #1a1a1a 16px 32px)"}}/>
+          <span style={{fontSize:52}}>🚧</span>
+          <p style={{fontSize:14,color:C.mu,fontWeight:500,padding:"0 24px",textAlign:"center",margin:0}}>Hier entsteht eine Lernplattform</p>
         </div>
       )}
       <p style={{fontSize:14,color:C.cy,fontWeight:500,marginBottom:4}}>IT-Infrastruktur verstehen. Praxisorientiert lernen.</p><p style={{fontSize:12,color:C.mu,marginBottom:24}}>Ausgerichtet auf den Fachinformatiker für Systemintegration (FISI)</p>
