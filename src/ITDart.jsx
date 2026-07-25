@@ -15,14 +15,16 @@ import TrainerScreen from "./TrainerScreen";
 import HilfeScreen from "./HilfeScreen";
 import coverImg from "./assets/cover.jpg";
 import moduleGImg from "./assets/module-g.jpg";
+import moduleOImg from "./assets/module-o.jpg";
 import moduleBImg from "./assets/module-b.jpg";
 import moduleSiImg from "./assets/module-si.jpg";
 import moduleDbImg from "./assets/module-db.jpg";
 import moduleSkImg from "./assets/module-sk.jpg";
 import modulePrImg from "./assets/module-pr.jpg";
+import moduleBwImg from "./assets/module-bw.jpg";
 
-const MODULE_IMAGES={g:moduleGImg,b:moduleBImg,si:moduleSiImg,db:moduleDbImg,sk:moduleSkImg,pr:modulePrImg};
-const MODULE_IMAGE_ALT={g:"PC Komponenten",b:"Betriebssysteme",si:"IT-Sicherheit",db:"Datenbanken",sk:"Skripting",pr:"Beruf und Projekt"};
+const MODULE_IMAGES={g:moduleGImg,o:moduleOImg,b:moduleBImg,si:moduleSiImg,db:moduleDbImg,sk:moduleSkImg,pr:modulePrImg,bw:moduleBwImg};
+const MODULE_IMAGE_ALT={g:"PC Komponenten",o:"Sechs leuchtende Netzwerk-Symbole in Blau und Cyan: WLAN-Router, Switch mit nummerierten Ports, VPN-Schloss, WLAN-Signal, Server-Rack, DHCP-Tag",b:"Betriebssysteme",si:"IT-Sicherheit",db:"Datenbanken",sk:"Skripting",pr:"Beruf und Projekt",bw:"Illustration einer Bewerberin mit Lebenslauf, umgeben von Symbolen für Telefon-Interview, Zertifikat und KI-gestütztes Mock-Interview am Laptop"};
 
 const FREE_MODULE_IDS=["g","o"]; // Grundlagen frei zugänglich, Netzwerktechnik als Vorschau — Rest inkl. Karriere & Bewerbung (Mock-Interview) ist Premium
 const INTERVIEW_MAX_ROUNDS=8; // muss mit INTERVIEW_MAX_ROUNDS in supabase/functions/ai-chat/index.ts übereinstimmen
@@ -140,7 +142,7 @@ const DBQ=[
   {q:"Warum ist Redundanz in Tabellen problematisch?",o:["Sie spart erheblich Speicherplatz auf der Festplatte","Mehrfach gespeicherte Daten werden bei Änderungen leicht inkonsistent","Sie beschleunigt sämtliche Datenbankabfragen erheblich","Sie ist in Deutschland gesetzlich ausdrücklich vorgeschrieben"],c:1,e:"Steht dieselbe Information mehrfach, wird bei Änderungen leicht eine Stelle vergessen – die Normalisierung verhindert genau das."},
 ];
 
-const Logo=({sz=44})=>(
+export const Logo=({sz=44})=>(
   <svg width={sz} height={sz} viewBox="0 0 44 44" fill="none">
     <circle cx="22" cy="22" r="21" stroke="#2563eb" strokeWidth="1.5" fill="#1a2535"/>
     <circle cx="22" cy="22" r="14" stroke="#3b82f6" strokeWidth="1" fill="none" opacity=".5"/>
@@ -1271,7 +1273,8 @@ export default function ITDart({onOpenExam,onOpenLegal}){
           <span style={{fontSize:12,color:C.mu}}><button onClick={()=>setView("auth")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Anmelden / Registrieren</button> · <button onClick={()=>setView("hilfe")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>❓ Hilfe</button></span>
         )}
       </div>
-      {onOpenLegal&&<div style={{marginTop:20,textAlign:"center",display:"flex",gap:14,justifyContent:"center"}}>
+      {onOpenLegal&&<div style={{marginTop:20,textAlign:"center",display:"flex",gap:14,justifyContent:"center",flexWrap:"wrap"}}>
+        <button onClick={()=>onOpenLegal("company")} style={{background:"none",border:"none",color:C.mu,cursor:"pointer",fontSize:11,textDecoration:"underline",padding:0,fontFamily:ff}}>Über IT-Dart</button>
         <button onClick={()=>onOpenLegal("leistungen")} style={{background:"none",border:"none",color:C.mu,cursor:"pointer",fontSize:11,textDecoration:"underline",padding:0,fontFamily:ff}}>Leistungen</button>
         <button onClick={()=>onOpenLegal("impressum")} style={{background:"none",border:"none",color:C.mu,cursor:"pointer",fontSize:11,textDecoration:"underline",padding:0,fontFamily:ff}}>Impressum</button>
         <button onClick={()=>onOpenLegal("datenschutz")} style={{background:"none",border:"none",color:C.mu,cursor:"pointer",fontSize:11,textDecoration:"underline",padding:0,fontFamily:ff}}>Datenschutz</button>
@@ -1334,7 +1337,16 @@ export default function ITDart({onOpenExam,onOpenLegal}){
         <p style={{fontSize:11,fontWeight:600,letterSpacing:".06em",textTransform:"uppercase",color:C.cy,marginBottom:6}}>Modul {MODS.findIndex(m=>m.id===mod.id)+1} von {MODS.length}</p>
         <h2 style={{fontSize:20,fontWeight:700,marginBottom:10}} dangerouslySetInnerHTML={{__html:data.title}}/>
         {data.intro&&<p style={{fontSize:14,color:C.t2,lineHeight:1.7,marginBottom:20}}>{data.intro}</p>}
-        {user&&MODULE_IMAGES[mod.id]&&<img src={MODULE_IMAGES[mod.id]} alt={MODULE_IMAGE_ALT[mod.id]} style={{width:"100%",maxWidth:400,borderRadius:12,margin:"12px auto 16px",display:"block",boxShadow:"0 4px 20px rgba(37,99,235,0.3)"}}/>}
+        {MODULE_IMAGES[mod.id]?(
+          user&&<img src={MODULE_IMAGES[mod.id]} alt={MODULE_IMAGE_ALT[mod.id]} style={{width:"100%",maxWidth:400,borderRadius:12,margin:"12px auto 16px",display:"block",boxShadow:"0 4px 20px rgba(37,99,235,0.3)"}}/>
+        ):(
+          <div style={{width:"100%",maxWidth:400,aspectRatio:"4/3",borderRadius:12,margin:"12px auto 16px",position:"relative",overflow:"hidden",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:10,background:C.s1,border:`0.5px solid ${C.bd}`}}>
+            <div style={{position:"absolute",top:0,left:0,right:0,height:10,backgroundImage:"repeating-linear-gradient(135deg, #f5c518 0 14px, #1a1a1a 14px 28px)"}}/>
+            <div style={{position:"absolute",bottom:0,left:0,right:0,height:10,backgroundImage:"repeating-linear-gradient(135deg, #f5c518 0 14px, #1a1a1a 14px 28px)"}}/>
+            <span style={{fontSize:44}}>{mod.e}</span>
+            <p style={{fontSize:13,color:C.mu,fontWeight:500,padding:"0 20px",textAlign:"center",margin:0}}>Illustration folgt</p>
+          </div>
+        )}
         {mod.id==="o"&&<OSIOverview/>}
         <div style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:10,padding:"12px 16px",marginBottom:20,display:"flex",gap:12,alignItems:"center"}}>
           <span style={{fontSize:24}}>{data.case}</span>

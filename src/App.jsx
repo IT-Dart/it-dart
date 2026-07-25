@@ -1,18 +1,35 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import ITDart from "./ITDart";
 import Pruefung from "./Pruefung";
 import ResetPasswordScreen from "./ResetPasswordScreen";
+import CompanyScreen from "./CompanyScreen";
 import { Impressum, Datenschutz, Leistungen } from "./LegalPages";
 import { AuthProvider, useAuth } from "./lib/AuthContext";
 
 function AppShell(){
-  const {recoveryMode}=useAuth();
-  const [page,setPage]=useState("app"); // "app" | "pruefung" | "impressum" | "datenschutz" | "leistungen"
+  const {recoveryMode,user,loading}=useAuth();
+  // "company" | "app" | "pruefung" | "impressum" | "datenschutz" | "leistungen"
+  const [page,setPage]=useState("company");
+  const [routed,setRouted]=useState(false);
+
+  // Einmalige Entscheidung, sobald die Sitzung geladen ist: bestehende
+  // Konten landen wie gewohnt direkt im Lerntool, neue/anonyme Besucher
+  // sehen zuerst die Unternehmenspräsentation. Danach volle manuelle
+  // Navigation, kein erzwungenes Zurückspringen mehr.
+  useEffect(()=>{
+    if(!loading&&!routed){
+      setRouted(true);
+      if(user)setPage("app");
+    }
+  },[loading,user,routed]);
 
   if(recoveryMode)return <ResetPasswordScreen/>;
-  if(page==="impressum")return <Impressum onClose={()=>setPage("app")}/>;
-  if(page==="datenschutz")return <Datenschutz onClose={()=>setPage("app")}/>;
-  if(page==="leistungen")return <Leistungen onClose={()=>setPage("app")}/>;
+  if(loading)return null;
+  if(page==="company")return <CompanyScreen onEnterApp={()=>setPage("app")} onOpenLegal={setPage}/>;
+  const backHome=()=>setPage(user?"app":"company");
+  if(page==="impressum")return <Impressum onClose={backHome}/>;
+  if(page==="datenschutz")return <Datenschutz onClose={backHome}/>;
+  if(page==="leistungen")return <Leistungen onClose={backHome}/>;
 
   return (
     <>
