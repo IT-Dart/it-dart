@@ -9,7 +9,10 @@ import { AuthProvider, useAuth } from "./lib/AuthContext";
 function AppShell(){
   const {recoveryMode,user,loading}=useAuth();
   // "company" | "app" | "pruefung" | "impressum" | "datenschutz" | "leistungen"
-  const [page,setPage]=useState("company");
+  // it-dart.de/?login überspringt die Unternehmensseite direkt zum Lerntool/Login —
+  // Zugang für Bestandskonten ohne aktive Sitzung, ohne dass dafür auf der
+  // Unternehmensseite selbst ein Link sichtbar sein muss.
+  const [page,setPage]=useState(()=>new URLSearchParams(window.location.search).has("login")?"app":"company");
   const [routed,setRouted]=useState(false);
 
   // Einmalige Entscheidung, sobald die Sitzung geladen ist: bestehende

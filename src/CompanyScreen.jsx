@@ -52,7 +52,7 @@ export default function CompanyScreen({onEnterApp,onOpenLegal}){
 
       <p style={p}>{INTRO_TEXT}</p>
 
-      <button onClick={onEnterApp} style={{...pri,width:"100%",justifyContent:"center",padding:"14px 18px",fontSize:15,marginTop:14}}>Zum Lerntool „Bleib am Dart!" →</button>
+      {user&&<button onClick={onEnterApp} style={{...pri,width:"100%",justifyContent:"center",padding:"14px 18px",fontSize:15,marginTop:14}}>Zum Lerntool „Bleib am Dart!" →</button>}
 
       <h2 style={h2}>Vision</h2>
       <p style={p}>{VISION_TEXT}</p>
@@ -68,7 +68,7 @@ export default function CompanyScreen({onEnterApp,onOpenLegal}){
           </div>
         ))}
       </div>
-      <button onClick={()=>onOpenLegal("leistungen")} style={{...ghost,width:"100%",justifyContent:"center"}}>Alle Leistungen & Pakete ansehen →</button>
+      {user&&<button onClick={()=>onOpenLegal("leistungen")} style={{...ghost,width:"100%",justifyContent:"center"}}>Alle Leistungen & Pakete ansehen →</button>}
 
       <h2 style={h2}>Erweiterungen</h2>
       <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -103,18 +103,14 @@ export default function CompanyScreen({onEnterApp,onOpenLegal}){
         <p style={{...p,marginBottom:0}}>Ergänzend zur Plattform entstehen herunterladbare Lernmaterialien — zum Beispiel Cheat Sheets und Zusammenfassungen zu einzelnen Modulen.</p>
       </div>
 
-      <button onClick={onEnterApp} style={{...pri,width:"100%",justifyContent:"center",padding:"14px 18px",fontSize:15,marginTop:28}}>Zum Lerntool „Bleib am Dart!" →</button>
+      {user&&<button onClick={onEnterApp} style={{...pri,width:"100%",justifyContent:"center",padding:"14px 18px",fontSize:15,marginTop:28}}>Zum Lerntool „Bleib am Dart!" →</button>}
 
-      <div style={{marginTop:14,textAlign:"center"}}>
-        {user?(
-          <span style={{fontSize:12,color:C.mu}}>Angemeldet als {user.email} · <button onClick={signOut} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Abmelden</button></span>
-        ):(
-          <span style={{fontSize:12,color:C.mu}}><button onClick={onEnterApp} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Anmelden / Registrieren</button></span>
-        )}
-      </div>
+      {user&&<div style={{marginTop:14,textAlign:"center"}}>
+        <span style={{fontSize:12,color:C.mu}}>Angemeldet als {user.email} · <button onClick={signOut} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Abmelden</button></span>
+      </div>}
 
       <div style={{marginTop:20,textAlign:"center",display:"flex",gap:14,justifyContent:"center",flexWrap:"wrap"}}>
-        <button onClick={()=>onOpenLegal("leistungen")} style={{background:"none",border:"none",color:C.mu,cursor:"pointer",fontSize:11,textDecoration:"underline",padding:0,fontFamily:ff}}>Leistungen</button>
+        {user&&<button onClick={()=>onOpenLegal("leistungen")} style={{background:"none",border:"none",color:C.mu,cursor:"pointer",fontSize:11,textDecoration:"underline",padding:0,fontFamily:ff}}>Leistungen</button>}
         <button onClick={()=>onOpenLegal("impressum")} style={{background:"none",border:"none",color:C.mu,cursor:"pointer",fontSize:11,textDecoration:"underline",padding:0,fontFamily:ff}}>Impressum</button>
         <button onClick={()=>onOpenLegal("datenschutz")} style={{background:"none",border:"none",color:C.mu,cursor:"pointer",fontSize:11,textDecoration:"underline",padding:0,fontFamily:ff}}>Datenschutz</button>
       </div>
