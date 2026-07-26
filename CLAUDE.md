@@ -52,6 +52,16 @@ Nach jeder Änderung an diesen drei Bereichen den Nutzer explizit auf die fälli
 - Postgres-Fehlercodes (`23505` Eindeutigkeitsverletzung, `42501` RLS-Verstoß, ...) im Frontend immer auf verständliche Meldungen abbilden, nie roh durchreichen.
 - Ein Einladungs-Link löst kein eigenes Auth-Event aus — `type=invite` steckt im URL-Hash-Fragment und muss in `AuthContext.jsx` **vor** Supabases eigener Session-Erkennung ausgelesen werden.
 - `python-docx`s namensbasierte Style-Auflösung (`add_heading(..., level=1)`, `style="Heading 1"`) kann bei manchen `.docx`-Dateien einen falschen `KeyError` werfen, obwohl der Style existiert — Workaround: Style-Objekt über `style_id` statt über den Namen auflösen.
+- OpenArt-Bildmodelle befolgen explizite "kein Text"-Anweisungen im Prompt unzuverlässig (bei Tests ca. 25-75% Verstoßrate je nach Modell) — jedes generierte Bild visuell prüfen, nicht dem Prompt vertrauen. Feststehende Fachkürzel (DHCP, VPN, DNS) sind eine vertretbare Ausnahme.
+- Beim Herunterladen mehrerer Bilder aus einer OpenArt-Batch-Antwort jedes `url`-Feld einzeln zuordnen, nicht mit `thumbnailUrl`-Fragmenten vermischen — sonst entstehen wenige-Byte-große, korrupte Dateien (Dateigröße nach jedem Download prüfen).
+
+## KI-Bildgenerierung (OpenArt)
+
+- **Kommerzielle Nutzungsrechte seit 2026-07-25 geklärt — aber NICHT rückwirkend:** Account läuft auf **Advanced-Plan** (12.000 Credits/Monat). OpenArt-Support hat schriftlich bestätigt, dass kommerzielle Rechte an Bildern/Videos, die **während eines aktiven, kommerziell-berechtigten Abos** erzeugt wurden, auch nach Kündigung/Downgrade bestehen bleiben. Das gilt nur für Generierungen ab dem Advanced-Upgrade — Essential hatte nie kommerzielle Rechte, ein späteres Upgrade heilt das nicht rückwirkend. Bei jedem Bild vor der Verwendung prüfen, unter welchem Plan es erzeugt wurde. Details: `dokumentation/16_OpenArt_Lizenz_und_Datenschutz_Referenz.docx`.
+- **Alle 9 Bilder in `src/assets/` (cover.jpg + 8 Modul-Cover) wurden 2026-07-25 unter dem Advanced-Plan neu generiert**, zur Sicherheit — 7 davon hatten zuvor ungeklärte Erzeugungs-Historie. Bei zusätzlichen künftigen Bildern in `src/assets/` immer das Erzeugungsdatum/den damals aktiven Plan im `GENERATION_LOG.md` nachschlagen, nicht annehmen.
+- KI-generierte Bilder dürfen keine echten Marken-Logos/Maskottchen abbilden (z. B. Windows-Logo, OS-Maskottchen) — das ist ein vom OpenArt-Lizenzrecht unabhängiges Markenrecht-Risiko. Bei Prompts für Betriebssystem-/Software-Icons immer abstrakte, generische Symbole anfordern, keine Anlehnung an reale Logos.
+- Vollständiger Generierungs-Workflow (gebündelte Freigaben, Bewertungs-/Auswahlsystem, Kreditbudget, Prompt-Architekt-Rolle): `dokumentation/17_OpenArt_Nutzungsrichtlinie_Umsetzung.docx`, im Claude-Gedächtnis als `feedback_openart_generation_protocol` hinterlegt.
+- Alle Generierungen (auch verworfene Testkandidaten) landen zuerst in `src/assets/generated/` mit fortlaufendem `GENERATION_LOG.md`; erst nach expliziter Freigabe Übernahme nach `src/assets/` mit gleichem Sichtbarkeitsschutz wie die übrigen Modul-Cover (`user&&<img/>`, nicht für anonyme Besucher).
 
 ## UI-Konventionen
 
@@ -81,6 +91,20 @@ Bei größeren oder unklaren Änderungen zuerst analysieren, dann implementieren
 2. Betroffene Dateien identifizieren.
 3. Kurzen Plan formulieren (bei Unklarheit: nachfragen, gebündelt statt einzeln).
 4. Erst dann Änderungen vornehmen.
+
+**Compliance-Prüfung:** Berührt eine neue Funktion eine dieser Kategorien — neue Datenerhebung, KI-/Chat-Funktionen, potenziell minderjährige Nutzer, Bild-/Content-Lizenzfragen, Konten/Rollen/Zahlungen — zuerst den Prüfkatalog in [COMPLIANCE.md](COMPLIANCE.md) durchgehen und Befunde benennen, bevor implementiert wird. `COMPLIANCE.md` ersetzt keine anwaltliche Prüfung, bereitet sie nur vor.
+
+## Arbeitsteilung bei mehreren gleichzeitigen Claude-Code-Sessions
+
+Reale Erfahrung 2026-07-25: Zwei gleichzeitige Sessions haben dieselben zwei `dokumentation/*.docx`-Dateien bearbeitet — eine Session behauptete danach im Gedächtnis, eine Korrektur sei bereits erfolgt, was sich beim tatsächlichen Nachlesen der Dateien als falsch herausstellte (ein ganzer Absatz war spurlos verschwunden). Deshalb gilt:
+
+- **Zonen-Trennung (verbindliche Regel, gilt nur für die konkret so benannte Chat-Sitzung, nicht automatisch für jede Sitzung in diesem Repo):** Die Chat-Sitzung **"IT-Dart-Media Tool"** (OpenArt-Bildgenerierung) schreibt **ausschließlich** in `src/assets/generated/`, `GENERATION_LOG.md`, `dokumentation/16_*`/`17_*.docx` und die OpenArt-Gedächtnisdateien — niemals in `src/assets/*.jpg` (Produktions-Bilder), niemals in `src/ITDart.jsx` oder andere App-Quelldateien, keine Commits. Die separate Chat-Sitzung **"IT-Dart-Integrator"** übernimmt Einbindung/Code/Commits exklusiv — für sie gilt die Schreibsperre ausdrücklich NICHT. Da beide Sitzungen dasselbe Projekt-Gedächtnis teilen, muss beim Lesen dieser Regel immer klar sein, welche der beiden Rollen die aktuelle Sitzung gerade hat.
+- **Vor jedem Schreiben in eine geteilte Datei: frisch einlesen**, nie auf einen älteren Gesprächsstand verlassen — eine andere Session könnte sie zwischenzeitlich geändert haben.
+- **Nach jedem Schreiben in eine geteilte Datei (v. a. nach einem Hintergrund-Agenten): tatsächlich zurücklesen und verifizieren**, nie einem Selbstbericht (Agent-Zusammenfassung, Gedächtnis-Notiz einer anderen Session) blind vertrauen.
+- Bei `.docx`-Bearbeitung `python-docx` statt rohem XML-Unzip/Edit/Rezip verwenden — deutlich weniger fehleranfällig bei möglichen Parallel-Zugriffen.
+- Bei Verdacht auf einen Konflikt: nicht zurücksetzen/neu anfangen, sondern den tatsächlichen Ist-Zustand lesen, die genaue Lücke identifizieren, gezielt reparieren, dann normal weiterarbeiten.
+
+Details: [[feedback_multi_agent_coordination_protocol]] und [[project_content_producer_integrator_split]] im Claude-Gedächtnis.
 
 ## Referenzen
 
