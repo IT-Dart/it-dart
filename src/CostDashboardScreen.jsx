@@ -76,7 +76,7 @@ export default function CostDashboardScreen({onClose}){
       </div>
 
       <div style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:12,padding:"14px 16px",marginBottom:24}}>
-        <p style={{fontSize:12,fontWeight:600,letterSpacing:".04em",textTransform:"uppercase",color:C.cy,marginBottom:10}}>KI-Kosten (ai-chat, berechnet aus echten Anthropic-Token-Zahlen)</p>
+        <p style={{fontSize:12,fontWeight:600,letterSpacing:".04em",textTransform:"uppercase",color:C.cy,marginBottom:10}}>KI-Kosten (ai-chat + To-Do-Lösungssuche, berechnet aus echten Anthropic-Token-/Websuche-Zahlen)</p>
         {costSummary===null&&<p style={{fontSize:12,color:C.mu,margin:0}}>Lädt…</p>}
         {costSummary?.length===0&&<p style={{fontSize:12,color:C.mu,margin:0}}>Noch keine Daten.</p>}
         {costSummary?.length>0&&<div style={{overflowX:"auto"}}>
@@ -86,6 +86,7 @@ export default function CostDashboardScreen({onClose}){
               <th style={{padding:"4px 8px 6px 0",fontWeight:600}}>Anfragen</th>
               <th style={{padding:"4px 8px 6px 0",fontWeight:600}}>Input-Tokens</th>
               <th style={{padding:"4px 8px 6px 0",fontWeight:600}}>Output-Tokens</th>
+              <th style={{padding:"4px 8px 6px 0",fontWeight:600}}>Websuchen</th>
               <th style={{padding:"4px 0 6px",fontWeight:600}}>Kosten (USD)</th>
             </tr></thead>
             <tbody>
@@ -94,6 +95,7 @@ export default function CostDashboardScreen({onClose}){
                 <td style={{padding:"6px 8px 6px 0"}}>{row.request_count}</td>
                 <td style={{padding:"6px 8px 6px 0"}}>{Number(row.total_input_tokens).toLocaleString("de-DE")}</td>
                 <td style={{padding:"6px 8px 6px 0"}}>{Number(row.total_output_tokens).toLocaleString("de-DE")}</td>
+                <td style={{padding:"6px 8px 6px 0"}}>{Number(row.total_web_searches||0).toLocaleString("de-DE")}</td>
                 <td style={{padding:"6px 0 6px"}}>${Number(row.total_cost_usd).toFixed(4)}</td>
               </tr>)}
             </tbody>

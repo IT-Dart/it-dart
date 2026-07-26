@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { C, pri, ghost, wrap, inner } from "./lib/theme";
 import { supabase } from "./lib/supabaseClient";
+import { authFetch } from "./lib/authFetch";
 import { describeError } from "./lib/errorText";
 
 const input={width:"100%",background:C.s2,border:`0.5px solid ${C.bd}`,borderRadius:10,color:C.t,padding:"11px 14px",fontSize:14,outline:"none",fontFamily:"inherit"};
@@ -19,7 +20,7 @@ export default function TodoScreen({onClose}){
   const [err,setErr]=useState(null);
   const [form,setForm]=useState({title:"",description:"",priority:"medium",tool_slug:""});
   const [addBusy,setAddBusy]=useState(false);
-  const [copiedId,setCopiedId]=useState(null);
+  const [solutions,setSolutions]=useState({}); // todoId -> {loading, answer, sources, error}
 
   const load=async()=>{
     const {data,error}=await supabase.from("todos").select("*").order("status").order("priority",{ascending:false}).order("created_at",{ascending:false});
@@ -56,22 +57,16 @@ export default function TodoScreen({onClose}){
     load();
   };
 
-  const copySolutionPrompt=async(t)=>{
-    const tool=tools.find(x=>x.slug===t.tool_slug);
-    const lines=[
-      `To-Do: ${t.title}`,
-      t.description?`Beschreibung: ${t.description}`:null,
-      `Priorität: ${PRIORITY_LABEL[t.priority]}`,
-      tool?`Bezug: ${tool.name}`:null,
-      "",
-      "Lass uns eine Lösung dafür überlegen.",
-    ].filter(Boolean).join("\n");
+  const findSolution=async(t)=>{
+    if(solutions[t.id]?.loading)return;
+    setSolutions(s=>({...s,[t.id]:{loading:true}}));
     try{
-      await navigator.clipboard.writeText(lines);
-      setCopiedId(t.id);
-      setTimeout(()=>setCopiedId(null),2000);
-    }catch{
-      setErr("Kopieren in die Zwischenablage fehlgeschlagen — Browser-Berechtigung prüfen.");
+      const r=await authFetch("todo-solve",{todoId:t.id});
+      const d=await r.json();
+      if(!r.ok){setSolutions(s=>({...s,[t.id]:{error:d.error||"Fehlgeschlagen."}}));return;}
+      setSolutions(s=>({...s,[t.id]:{answer:d.answer,sources:d.sources||[]}}));
+    }catch(e){
+      setSolutions(s=>({...s,[t.id]:{error:describeError(e)}}));
     }
   };
 
@@ -132,6 +127,7 @@ export default function TodoScreen({onClose}){
           const busy=busyId===t.id;
           const tool=tools.find(x=>x.slug===t.tool_slug);
           const created=fmtDate(t.created_at);
+          const sol=solutions[t.id];
           return(
             <div key={t.id} style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:10,padding:"12px 14px",opacity:t.status==="done"?.6:1}}>
               <div style={{display:"flex",alignItems:"baseline",gap:8,marginBottom:t.description?4:8,flexWrap:"wrap"}}>
@@ -147,9 +143,23 @@ export default function TodoScreen({onClose}){
                   <option value="in_progress">{STATUS_LABEL.in_progress}</option>
                   <option value="done">{STATUS_LABEL.done}</option>
                 </select>
-                <button disabled={busy} title="Kopiert den Kontext dieses To-Dos in die Zwischenablage — zum Einfügen in Claude Code" onClick={()=>copySolutionPrompt(t)} style={{...ghost,fontSize:12,padding:"6px 12px",marginLeft:"auto",opacity:busy?.5:1}}>{copiedId===t.id?"✓ Kopiert":"🔍 Lösung suchen"}</button>
+                <button disabled={busy||sol?.loading} title="Fragt Claude (mit Websuche bei Bedarf) nach einem Lösungsansatz" onClick={()=>findSolution(t)} style={{...ghost,fontSize:12,padding:"6px 12px",marginLeft:"auto",opacity:busy||sol?.loading?.5:1}}>{sol?.loading?"Sucht…":"🔍 Lösung suchen"}</button>
                 <button disabled={busy} onClick={()=>remove(t.id)} style={{...ghost,fontSize:12,padding:"6px 12px",color:"#fca5a5",borderColor:"#7f1d1d",opacity:busy?.5:1}}>Löschen</button>
               </div>
+              {sol&&!sol.loading&&(
+                <div style={{marginTop:10,paddingTop:10,borderTop:`0.5px solid ${C.bd}`}}>
+                  {sol.error?(
+                    <p style={{fontSize:12,color:"#fca5a5",margin:0}}>{sol.error}</p>
+                  ):(<>
+                    <p style={{fontSize:12,color:C.t2,margin:"0 0 6px",lineHeight:1.6,whiteSpace:"pre-wrap"}}>{sol.answer}</p>
+                    {sol.sources?.length>0&&<div style={{display:"flex",flexDirection:"column",gap:2}}>
+                      {sol.sources.map((src,i)=>(
+                        <a key={i} href={src.url} target="_blank" rel="noopener noreferrer" style={{fontSize:11,color:C.cy}}>{src.title||src.url}</a>
+                      ))}
+                    </div>}
+                  </>)}
+                </div>
+              )}
             </div>
           );
         })}
