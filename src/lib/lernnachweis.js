@@ -69,13 +69,13 @@ const ZONES = [
   { minPct: -Infinity, ring: 5, key: "fehlwurf", label: "Fehlwurf! Abweichung im System. Analysiere das Modul erneut, um die Fehlerquelle zu isolieren.", color: COL.coral },
 ];
 
-function zoneForPercent(pct) {
+export function zoneForPercent(pct) {
   return ZONES.find((z) => pct >= z.minPct);
 }
 
 // Deterministic landing angle so the same score always lands in the same
 // spot (reproducible PDF) without every result clustering on one side.
-function seededAngleDeg(score, total) {
+export function seededAngleDeg(score, total) {
   return (score * 53 + total * 17 + 40) % 360;
 }
 
@@ -103,7 +103,7 @@ function drawPreciseDart(doc, landX, landY, dirX, dirY, len) {
 
 // Blend two RGB triples — used to fake a soft glow without relying on PDF
 // alpha/transparency support, which is inconsistent across viewers.
-function blendRGB(a, b, t) {
+export function blendRGB(a, b, t) {
   return [0, 1, 2].map((i) => Math.round(a[i] + (b[i] - a[i]) * t));
 }
 

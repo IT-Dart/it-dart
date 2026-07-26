@@ -35,9 +35,9 @@ Bevor eine neue Funktion umgesetzt wird, die eine dieser Kategorien berührt (er
 | `SECURITY DEFINER`-Funktionen mit `search_path`-Härtung | ✅ Ja | `is_admin_user()`/`is_junior_admin_user()` setzen `set search_path = public` |
 | Geschütztes Hauptkonto in allen Schreibpfaden abgesichert | ✅ Ja | 4 Fundstellen (`admin-delete-user`, `delete-account`, `trainer-manage-invite`, Migration) |
 | CORS/Shared-Secret korrekt je Edge Function | ✅ Ja | 7/9 mit `ALLOWED_ORIGINS`, die übrigen 2 begründet per Shared-Secret (CI/Webhook, kein Browser-Origin) |
-| Unit-Tests für sicherheitsrelevante Kernlogik (PDF/Report-Erzeugung) | ❌ Nein | Kein Vitest/Jest im Projekt, nur E2E |
+| Unit-Tests für sicherheitsrelevante Kernlogik (PDF/Report-Erzeugung) | ✅ Ja | Vitest hinzugefügt (`npm test`), 16 Tests über `lernnachweis.js` (Zonen-/Winkel-/Farb-Logik, echte Log-Berechnung), `websiteCheckReport.js` und `e2eReport.js` (Fehlertoleranz bei fehlenden/fehlgeformten Report-Daten) — 2026-07-27 |
 
-**Zwischenstand: 3/4**
+**Zwischenstand: 4/4**
 
 ### Jugendschutz
 
@@ -70,7 +70,7 @@ Bevor eine neue Funktion umgesetzt wird, die eine dieser Kategorien berührt (er
 
 ## Gesamt-Score (rein faktenbasiert, kein Rechtsurteil)
 
-**14 / 17 erfüllt ≈ 82 %** (Stand 2026-07-26, nach Behebung der Punkte 1–3 und 5 unten)
+**15 / 17 erfüllt ≈ 88 %** (Stand 2026-07-27, nach Behebung der Punkte 1–3, 4 und 5 unten)
 
 Dieser Score ist ein internes Diagnose-Werkzeug. **Er wird nicht extern gegenüber Partnern, Schulen oder Ausbildungsbetrieben als Compliance-Nachweis verwendet** — eine unabhängig geprüfte Aussage wäre etwas anderes als eine selbst erhobene technische Checkliste.
 
@@ -79,7 +79,7 @@ Dieser Score ist ein internes Diagnose-Werkzeug. **Er wird nicht extern gegenüb
 1. ~~Einwilligungs-Checkbox bei Registrierung fehlt~~ — **behoben 2026-07-26**, siehe `AuthScreen.jsx`.
 2. ~~Kein AGB/Nutzungsbedingungen-Dokument~~ — **behoben 2026-07-26**, siehe `LegalPages.jsx`, Export `AGB`.
 3. ~~Keine Minderjährigen-spezifische Passage~~ — **behoben 2026-07-26**, siehe `Datenschutz`, Abschnitt 8.
-4. **Keine Unit-Tests** für `lernnachweis.js`/`websiteCheckReport.js`/`e2eReport.js` — weiterhin offen.
+4. ~~Keine Unit-Tests~~ — **behoben 2026-07-27**, Vitest + 16 Tests über alle drei Dateien, siehe `src/lib/__tests__/`.
 5. ~~Kein Copyright-Hinweis (`©`)~~ — **behoben 2026-07-26**, siehe Footer + `Impressum`.
 6. **Markenklassen-Frage für „IT-Dart-Kids"** — ob eine „IT-Dart"-Eintragung die Nutzung für Druckerzeugnisse/Malbücher mitabdeckt, ist offen und nur durch die anmeldende Person/Fachperson zu klären, nicht durch uns.
 
