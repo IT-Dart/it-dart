@@ -23,10 +23,10 @@ Bevor eine neue Funktion umgesetzt wird, die eine dieser Kategorien berührt (er
 | RLS auf allen Tabellen aktiv | ✅ Ja | `CLAUDE.md` Sicherheitsprinzipien, Migrationen geprüft |
 | Kein Service-Role-Key im Frontend | ✅ Ja | `grep -rl SERVICE_ROLE src/` → keine Treffer |
 | Eigenständiger Lösch-Pfad für Nutzerdaten | ✅ Ja | `DeleteAccountScreen.jsx` + `delete-account` Edge Function |
-| Einwilligungs-Checkbox bei Registrierung (AGB/Datenschutz) | ❌ Nein | `AuthScreen.jsx` — Registrierungsformular hat keine Checkbox |
-| Eigenständiges AGB/Nutzungsbedingungen-Dokument | ❌ Nein | `LegalPages.jsx` exportiert nur `Impressum`, `Datenschutz`, `Leistungen` |
+| Einwilligungs-Checkbox bei Registrierung (AGB/Datenschutz) | ✅ Ja | `AuthScreen.jsx`, Pflichtfeld, blockiert Absenden bis angehakt (2026-07-26, in-Browser verifiziert) |
+| Eigenständiges AGB/Nutzungsbedingungen-Dokument | ✅ Ja | `LegalPages.jsx` exportiert jetzt auch `AGB` (2026-07-26) |
 
-**Zwischenstand: 3/5**
+**Zwischenstand: 5/5**
 
 ### Sicherheit
 
@@ -43,11 +43,11 @@ Bevor eine neue Funktion umgesetzt wird, die eine dieser Kategorien berührt (er
 
 | Punkt | Status | Beleg |
 |---|---|---|
-| Altersfeld/Minderjährigen-Erkennung bei Registrierung | ❌ Nein | `AuthScreen.jsx` fragt kein Alter/Geburtsdatum ab |
-| Explizite Datenschutz-Passage zu (potenziell minderjährigen) Azubis | ❌ Nein | `Datenschutz`-Text adressiert das nicht separat |
+| Altersfeld/Minderjährigen-Erkennung bei Registrierung | ❌ Nein | `AuthScreen.jsx` fragt kein Alter/Geburtsdatum ab (bewusst — Datenminimierung, nicht nachgerüstet) |
+| Explizite Datenschutz-Passage zu (potenziell minderjährigen) Azubis | ✅ Ja | `Datenschutz`, Abschnitt 8 "Minderjährige Nutzer" (2026-07-26, in-Browser verifiziert) |
 | Begrenzung der KI-Chat-Nutzung (reduziert Missbrauchs-/Abhängigkeitsrisiko) | ✅ Ja | `CHAT_MAX_QUESTIONS`-Limit vorhanden |
 
-**Zwischenstand: 1/3**
+**Zwischenstand: 2/3**
 
 ### Content/Lizenzen
 
@@ -60,15 +60,15 @@ Bevor eine neue Funktion umgesetzt wird, die eine dieser Kategorien berührt (er
 
 ## Gesamt-Score (rein faktenbasiert, kein Rechtsurteil)
 
-**9 / 14 erfüllt ≈ 64 %**
+**12 / 14 erfüllt ≈ 86 %** (Stand 2026-07-26, nach Behebung der Punkte 1–3 unten)
 
 Dieser Score ist ein internes Diagnose-Werkzeug. **Er wird nicht extern gegenüber Partnern, Schulen oder Ausbildungsbetrieben als Compliance-Nachweis verwendet** — eine unabhängig geprüfte Aussage wäre etwas anderes als eine selbst erhobene technische Checkliste.
 
 ## Konkrete offene Punkte (priorisiert)
 
-1. **Einwilligungs-Checkbox bei Registrierung fehlt** — einfach umsetzbar, sollte zeitnah nachgerüstet werden.
-2. **Kein AGB/Nutzungsbedingungen-Dokument** — Voraussetzung für Punkt 1 (Checkbox braucht ein Ziel-Dokument).
-3. **Keine Minderjährigen-spezifische Passage**, obwohl FISI-Azubis real ab 16 Jahren beginnen können — sollte in der Datenschutzerklärung ergänzt werden.
-4. **Keine Unit-Tests** für `lernnachweis.js`/`websiteCheckReport.js`/`e2eReport.js`.
+1. ~~Einwilligungs-Checkbox bei Registrierung fehlt~~ — **behoben 2026-07-26**, siehe `AuthScreen.jsx`.
+2. ~~Kein AGB/Nutzungsbedingungen-Dokument~~ — **behoben 2026-07-26**, siehe `LegalPages.jsx`, Export `AGB`.
+3. ~~Keine Minderjährigen-spezifische Passage~~ — **behoben 2026-07-26**, siehe `Datenschutz`, Abschnitt 8.
+4. **Keine Unit-Tests** für `lernnachweis.js`/`websiteCheckReport.js`/`e2eReport.js` — weiterhin offen.
 
-Alle vier Punkte: technisch/organisatorisch lösbar, aber **vor Punkt 1 und 3 sollte eine echte anwaltliche Prüfung erfolgen** (welche Formulierung, welche Rechtsgrundlage genau) — dieser Katalog bereitet das vor, ersetzt es nicht.
+Die Texte zu Punkt 1–3 (AGB, Minderjährigen-Passage) sind erste Entwürfe. **Vor einem tatsächlichen Verlassen darauf sollte weiterhin eine echte anwaltliche Prüfung erfolgen** (Formulierung, Rechtsgrundlage im Detail) — dieser Katalog bereitet das vor, ersetzt es nicht.
