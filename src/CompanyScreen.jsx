@@ -2,6 +2,7 @@ import { C, pri, ghost, wrap, inner, ff } from "./lib/theme";
 import { useAuth } from "./lib/AuthContext";
 import { Logo } from "./ITDart";
 import bookCoverImg from "./assets/book-claude-praxis-cover.png";
+import heroImg from "./assets/company-hero.jpg";
 
 // Markentexte gebündelt an einer Stelle, damit spätere Überarbeitungen ein
 // reiner Textedit hier sind, ohne die JSX-Struktur darunter anzufassen.
@@ -49,6 +50,8 @@ export default function CompanyScreen({onEnterApp,onOpenLegal}){
         <h1 style={{fontSize:26,fontWeight:700,marginTop:20,marginBottom:6}}>IT-Dart</h1>
         <p style={{fontSize:13,color:C.cy,fontWeight:500}}>Digitale Bildung für die IT-Ausbildung</p>
       </div>
+
+      <img src={heroImg} alt="Aufsteigender Pfad aus geometrischen Formen, der zu einem leuchtenden Stern führt — Sinnbild für den Lernfortschritt auf IT-Dart" style={{width:"100%",borderRadius:14,marginBottom:24,display:"block",boxShadow:"0 8px 32px rgba(37,99,235,0.2)"}}/>
 
       <p style={p}>{INTRO_TEXT}</p>
 
