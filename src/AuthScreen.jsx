@@ -5,12 +5,13 @@ import { describeError } from "./lib/errorText";
 
 const input={width:"100%",background:C.s2,border:`0.5px solid ${C.bd}`,borderRadius:10,color:C.t,padding:"11px 14px",fontSize:14,outline:"none",fontFamily:"inherit",marginBottom:10};
 
-export default function AuthScreen({onClose,initialMode="login"}){
+export default function AuthScreen({onClose,initialMode="login",onOpenLegal}){
   const {signIn,signUp,resetPassword}=useAuth();
   const [mode,setMode]=useState(initialMode); // "login" | "forgot" | "register"
   const [email,setEmail]=useState("");
   const [password,setPassword]=useState("");
   const [confirm,setConfirm]=useState("");
+  const [agbAccepted,setAgbAccepted]=useState(false);
   const [busy,setBusy]=useState(false);
   const [msg,setMsg]=useState(null); // {type:"error"|"info", text}
   const [registered,setRegistered]=useState(false);
@@ -31,6 +32,7 @@ export default function AuthScreen({onClose,initialMode="login"}){
     if(mode==="register"){
       if(password.length<8){setMsg({type:"error",text:"Passwort muss mindestens 8 Zeichen haben."});return;}
       if(password!==confirm){setMsg({type:"error",text:"Passwörter stimmen nicht überein."});return;}
+      if(!agbAccepted){setMsg({type:"error",text:"Bitte AGB und Datenschutzerklärung akzeptieren."});return;}
       setBusy(true);setMsg(null);
       const {error}=await signUp(email,password);
       setBusy(false);
@@ -75,6 +77,10 @@ export default function AuthScreen({onClose,initialMode="login"}){
         <input type="email" placeholder="E-Mail" value={email} onChange={e=>setEmail(e.target.value)} style={input} autoComplete="email"/>
         {mode!=="forgot"&&<input type="password" placeholder="Passwort" value={password} onChange={e=>setPassword(e.target.value)} style={input} autoComplete={mode==="register"?"new-password":"current-password"}/>}
         {mode==="register"&&<input type="password" placeholder="Passwort bestätigen" value={confirm} onChange={e=>setConfirm(e.target.value)} style={input} autoComplete="new-password"/>}
+        {mode==="register"&&<label style={{display:"flex",alignItems:"flex-start",gap:8,marginBottom:14,fontSize:12,color:C.t2,lineHeight:1.6,cursor:"pointer"}}>
+          <input type="checkbox" checked={agbAccepted} onChange={e=>setAgbAccepted(e.target.checked)} style={{marginTop:2}}/>
+          <span>Ich habe die <button type="button" onClick={()=>onOpenLegal?.("agb")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,fontFamily:ff,textDecoration:"underline",padding:0}}>AGB</button> und die <button type="button" onClick={()=>onOpenLegal?.("datenschutz")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,fontFamily:ff,textDecoration:"underline",padding:0}}>Datenschutzerklärung</button> gelesen und stimme ihnen zu.</span>
+        </label>}
         {mode==="login"&&<p style={{textAlign:"right",marginTop:-4,marginBottom:14}}>
           <button type="button" onClick={()=>switchMode("forgot")} style={{background:"none",border:"none",color:C.mu,cursor:"pointer",fontSize:12,fontFamily:ff,textDecoration:"underline",padding:0}}>Passwort vergessen?</button>
         </p>}

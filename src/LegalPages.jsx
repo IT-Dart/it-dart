@@ -107,8 +107,50 @@ export function Datenschutz({onClose}){
       <h2 style={h2}>7. Speicherung im Browser</h2>
       <p style={p}>Zur Aufrechterhaltung deiner Anmeldung wird ein Sitzungs-Token im lokalen Speicher (localStorage) deines Browsers abgelegt. Es werden keine Marketing- oder Tracking-Cookies eingesetzt.</p>
 
-      <h2 style={h2}>8. Änderungen</h2>
+      <h2 style={h2}>8. Minderjährige Nutzer</h2>
+      <p style={p}>Ein Teil unserer Nutzer befindet sich in einer Berufsausbildung und kann minderjährig sein. Die Registrierung erfolgt aktuell ausschließlich auf Einladung, häufig im Rahmen eines Ausbildungsverhältnisses über den Ausbildungsbetrieb (Trainer-Rolle). Trainer sehen dabei ohnehin Status und Lernfortschritt der von ihnen eingeladenen Auszubildenden — dieselbe Übersicht besteht unabhängig vom Alter der Person. Es werden keine über den in Punkt 2 genannten Umfang hinausgehenden Daten erhoben, unabhängig vom Alter der nutzenden Person.</p>
+
+      <h2 style={h2}>9. Änderungen</h2>
       <p style={p}>Diese Datenschutzerklärung kann bei Weiterentwicklung des Angebots angepasst werden. Es gilt die jeweils aktuelle, hier abrufbare Fassung.</p>
+    </LegalLayout>
+  );
+}
+
+export function AGB({onClose}){
+  return(
+    <LegalLayout title="Allgemeine Geschäftsbedingungen" onClose={onClose}>
+      <h2 style={h2}>1. Geltungsbereich</h2>
+      <p style={p}>Diese Allgemeinen Geschäftsbedingungen (AGB) gelten für die Nutzung der digitalen Lernplattform IT-Dart ("Bleib am Dart!") unter it-dart.de, betrieben von Coskun Selim Bulut (Anbieter, siehe Impressum).</p>
+
+      <h2 style={h2}>2. Leistungsbeschreibung</h2>
+      <p style={p}>IT-Dart bietet eine digitale Lernplattform für die Ausbildung zum Fachinformatiker für Systemintegration (FISI) — Lernmodule, Praxisfälle, ein KI-gestützter Lernassistent und eine Prüfungssimulation mit Lernnachweis. Details zum Funktionsumfang und den Konten-/Preisstufen: siehe „Leistungen & Pakete".</p>
+
+      <h2 style={h2}>3. Registrierung und Nutzerkonto</h2>
+      <p style={p}>Der Zugang erfolgt aktuell auf Einladung. Bei der Registrierung sind wahrheitsgemäße Angaben zu machen. Zugangsdaten sind vertraulich zu behandeln und nicht an Dritte weiterzugeben. Für Aktivitäten unter dem eigenen Konto ist die registrierte Person verantwortlich, soweit sie diese zu vertreten hat.</p>
+
+      <h2 style={h2}>4. Nutzungsrechte und Pflichten</h2>
+      <p style={p}>Die Plattform darf ausschließlich für den persönlichen Lernzweck genutzt werden. Nicht gestattet sind insbesondere: die Weitergabe von Zugangsdaten an Dritte, automatisierte Zugriffe (z. B. Scraping) sowie Versuche, Sicherheitsmechanismen zu umgehen.</p>
+
+      <h2 style={h2}>5. Kostenpflichtige Leistungen (Premium)</h2>
+      <p style={p}>Premium-Zugänge werden aktuell manuell vergeben; eine automatisierte Zahlungsabwicklung findet derzeit nicht statt. Konditionen für Einzel-, Gruppen- und Unternehmenszugänge werden individuell vereinbart (siehe „Leistungen & Pakete").</p>
+
+      <h2 style={h2}>6. Verfügbarkeit</h2>
+      <p style={p}>Wir bemühen uns um eine hohe Verfügbarkeit der Plattform, können diese aber nicht garantieren — etwa bei Wartungsarbeiten oder Störungen bei vorgelagerten Dienstleistern (Hosting, Datenbank).</p>
+
+      <h2 style={h2}>7. Haftung</h2>
+      <p style={p}>Wir haften unbeschränkt für Vorsatz und grobe Fahrlässigkeit sowie nach Maßgabe des Produkthaftungsgesetzes. Bei leicht fahrlässiger Verletzung wesentlicher Vertragspflichten (Kardinalpflichten) ist die Haftung auf den vertragstypisch vorhersehbaren Schaden begrenzt. Im Übrigen ist die Haftung für leichte Fahrlässigkeit ausgeschlossen.</p>
+
+      <h2 style={h2}>8. Vertragslaufzeit und Kündigung</h2>
+      <p style={p}>Das Nutzungsverhältnis kann jederzeit durch Löschung des eigenen Kontos beendet werden (siehe Datenschutzerklärung, Punkt 6). Wir behalten uns vor, Konten bei einem Verstoß gegen diese AGB zu sperren oder zu löschen.</p>
+
+      <h2 style={h2}>9. Minderjährige Nutzer</h2>
+      <p style={p}>Ein Teil unserer Nutzer befindet sich in einer Berufsausbildung und kann minderjährig sein. Bei einer Registrierung im Rahmen eines Ausbildungsverhältnisses gehen wir davon aus, dass die Nutzung im Einvernehmen mit dem Ausbildungsbetrieb erfolgt. Bei Fragen zur Nutzung durch minderjährige Personen außerhalb eines Ausbildungsverhältnisses bitten wir um vorherige Kontaktaufnahme.</p>
+
+      <h2 style={h2}>10. Änderungen dieser AGB</h2>
+      <p style={p}>Diese AGB können bei Weiterentwicklung des Angebots angepasst werden. Es gilt die jeweils aktuelle, hier abrufbare Fassung. Über wesentliche Änderungen informieren wir registrierte Nutzer in geeigneter Form.</p>
+
+      <h2 style={h2}>11. Schlussbestimmungen</h2>
+      <p style={p}>Es gilt deutsches Recht. Sollte eine Bestimmung dieser AGB unwirksam sein, bleibt die Wirksamkeit der übrigen Bestimmungen unberührt.</p>
     </LegalLayout>
   );
 }
