@@ -17,12 +17,12 @@ export default function TodoScreen({onClose}){
   const [filter,setFilter]=useState("open"); // "open" | "in_progress" | "done" | "all"
   const [busyId,setBusyId]=useState(null);
   const [err,setErr]=useState(null);
-  const [form,setForm]=useState({title:"",description:"",priority:"medium",tool_slug:"",due_date:""});
+  const [form,setForm]=useState({title:"",description:"",priority:"medium",tool_slug:""});
   const [addBusy,setAddBusy]=useState(false);
   const [copiedId,setCopiedId]=useState(null);
 
   const load=async()=>{
-    const {data,error}=await supabase.from("todos").select("*").order("status").order("priority",{ascending:false}).order("due_date",{ascending:true,nullsFirst:false});
+    const {data,error}=await supabase.from("todos").select("*").order("status").order("priority",{ascending:false}).order("created_at",{ascending:false});
     if(error){setErr(describeError(error));setTodos([]);return;}
     setTodos(data||[]);
   };
@@ -41,11 +41,10 @@ export default function TodoScreen({onClose}){
       description:form.description.trim()||null,
       priority:form.priority,
       tool_slug:form.tool_slug||null,
-      due_date:form.due_date||null,
     });
     setAddBusy(false);
     if(error){setErr(describeError(error));return;}
-    setForm({title:"",description:"",priority:"medium",tool_slug:"",due_date:""});
+    setForm({title:"",description:"",priority:"medium",tool_slug:""});
     load();
   };
 
@@ -64,7 +63,6 @@ export default function TodoScreen({onClose}){
       t.description?`Beschreibung: ${t.description}`:null,
       `Priorität: ${PRIORITY_LABEL[t.priority]}`,
       tool?`Bezug: ${tool.name}`:null,
-      t.due_date?`Fällig: ${fmtDate(t.due_date)}`:null,
       "",
       "Lass uns eine Lösung dafür überlegen.",
     ].filter(Boolean).join("\n");
@@ -115,7 +113,6 @@ export default function TodoScreen({onClose}){
               <option value="">Kein Tool-Bezug</option>
               {tools.map(t=><option key={t.slug} value={t.slug}>{t.name}</option>)}
             </select>
-            <input type="date" value={form.due_date} onChange={e=>setForm(f=>({...f,due_date:e.target.value}))} style={{...input,flex:"1 1 140px"}}/>
           </div>
           <button type="submit" disabled={addBusy} style={{...pri,alignSelf:"flex-start",opacity:addBusy?.6:1}}>{addBusy?"...":"Hinzufügen"}</button>
         </form>
@@ -134,15 +131,14 @@ export default function TodoScreen({onClose}){
         {visible.map(t=>{
           const busy=busyId===t.id;
           const tool=tools.find(x=>x.slug===t.tool_slug);
-          const due=fmtDate(t.due_date);
-          const overdue=t.due_date&&t.status!=="done"&&new Date(t.due_date)<new Date(new Date().toDateString());
+          const created=fmtDate(t.created_at);
           return(
             <div key={t.id} style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:10,padding:"12px 14px",opacity:t.status==="done"?.6:1}}>
               <div style={{display:"flex",alignItems:"baseline",gap:8,marginBottom:t.description?4:8,flexWrap:"wrap"}}>
                 <span style={{fontSize:13,fontWeight:600,textDecoration:t.status==="done"?"line-through":"none"}}>{t.title}</span>
                 <span style={{fontSize:10,fontWeight:600,color:PRIORITY_COLOR[t.priority],textTransform:"uppercase",letterSpacing:".03em"}}>{PRIORITY_LABEL[t.priority]}</span>
                 {tool&&<span style={{fontSize:11,color:C.mu}}>· {tool.name}</span>}
-                {due&&<span style={{fontSize:11,color:overdue?C.co:C.mu}}>· fällig {due}{overdue?" (überfällig)":""}</span>}
+                {created&&<span style={{fontSize:11,color:C.mu}}>· erstellt {created}</span>}
               </div>
               {t.description&&<p style={{fontSize:12,color:C.t2,margin:"0 0 8px",lineHeight:1.5}}>{t.description}</p>}
               <div style={{display:"flex",alignItems:"center",gap:8}}>
