@@ -62,6 +62,9 @@ export function Impressum({onClose}){
 
       <h2 style={h2}>Streitschlichtung</h2>
       <p style={p}>Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: <a href="https://ec.europa.eu/consumers/odr/" target="_blank" rel="noreferrer" style={{color:C.cy}}>ec.europa.eu/consumers/odr</a>. Wir sind nicht verpflichtet und nicht bereit, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p>
+
+      <h2 style={h2}>Copyright</h2>
+      <p style={p}>© {new Date().getFullYear()} IT-Dart – Coskun Selim Bulut. Alle Inhalte dieser Plattform (Texte, Code, Gestaltung) sind urheberrechtlich geschützt, soweit nicht anders gekennzeichnet.</p>
     </LegalLayout>
   );
 }
