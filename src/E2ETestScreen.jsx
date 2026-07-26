@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { C, pri, ghost, wrap, inner, ff } from "./lib/theme";
 import { supabase } from "./lib/supabaseClient";
+import { authFetch } from "./lib/authFetch";
 import { describeError } from "./lib/errorText";
 import { E2E_SUITES } from "./lib/e2eSuites";
 import { generateE2EReport } from "./lib/e2eReport";
@@ -62,12 +63,7 @@ export default function E2ETestScreen({onClose}){
   const startRun=async()=>{
     setTriggerBusy(true);setErr(null);
     try{
-      const {data:{session}}=await supabase.auth.getSession();
-      const res=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/e2e-trigger-run`,{
-        method:"POST",
-        headers:{"Content-Type":"application/json",Authorization:`Bearer ${session.access_token}`},
-        body:JSON.stringify({suite}),
-      });
+      const res=await authFetch("e2e-trigger-run",{suite});
       const d=await res.json();
       if(!res.ok){setErr(d.error||"Testlauf konnte nicht gestartet werden.");setTriggerBusy(false);return;}
       await loadRuns();

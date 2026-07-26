@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { C, pri, ghost, wrap, inner, ff } from "./lib/theme";
 import { useAuth } from "./lib/AuthContext";
 import { supabase } from "./lib/supabaseClient";
+import { authFetch } from "./lib/authFetch";
 import { describeError } from "./lib/errorText";
 
 const input={width:"100%",background:C.s2,border:`0.5px solid ${C.bd}`,borderRadius:10,color:C.t,padding:"11px 14px",fontSize:14,outline:"none",fontFamily:"inherit"};
@@ -74,12 +75,7 @@ export default function TrainerScreen({onClose,onOpenUser}){
     if(!inviteEmail.trim())return;
     setInviteBusy(true);setInviteMsg(null);
     try{
-      const {data:{session}}=await supabase.auth.getSession();
-      const res=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invite-user`,{
-        method:"POST",
-        headers:{"Content-Type":"application/json",Authorization:`Bearer ${session.access_token}`},
-        body:JSON.stringify({email:inviteEmail.trim(),asTrainer:true}),
-      });
+      const res=await authFetch("invite-user",{email:inviteEmail.trim(),asTrainer:true});
       const d=await res.json();
       if(!res.ok){setInviteMsg({type:"error",text:d.error||"Einladen fehlgeschlagen."});setInviteBusy(false);return;}
       setInviteMsg({type:d.warning?"error":"info",text:d.warning||`Einladung an ${inviteEmail.trim()} verschickt und dir zugeordnet.`});
@@ -95,12 +91,7 @@ export default function TrainerScreen({onClose,onOpenUser}){
     if(action==="delete"&&!window.confirm("Diese Einladung wirklich löschen? Der noch nicht aktivierte Account wird dabei komplett entfernt."))return;
     setActionBusy(traineeId);setErr(null);
     try{
-      const {data:{session}}=await supabase.auth.getSession();
-      const res=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trainer-manage-invite`,{
-        method:"POST",
-        headers:{"Content-Type":"application/json",Authorization:`Bearer ${session.access_token}`},
-        body:JSON.stringify({action,userId:traineeId}),
-      });
+      const res=await authFetch("trainer-manage-invite",{action,userId:traineeId});
       const d=await res.json();
       if(!res.ok){setErr(d.error||"Aktion fehlgeschlagen.");setActionBusy(null);return;}
     }catch(e){

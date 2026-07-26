@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { C, pri, ghost, wrap, inner, ff, fm } from "./lib/theme";
 import { useAuth } from "./lib/AuthContext";
 import { supabase } from "./lib/supabaseClient";
+import { authFetch } from "./lib/authFetch";
 import { generateLernnachweis, logLernnachweis } from "./lib/lernnachweis";
 import { describeError } from "./lib/errorText";
 import { MODS } from "./lib/modules";
@@ -970,7 +971,7 @@ const AIChat=({ctx,q1,q2,moduleId,interview})=>{
   const call=async(question,priorHistory)=>{
     const {data:{session}}=await supabase.auth.getSession();
     if(!session)return{error:"Bitte melde dich an, um die KI zu nutzen."};
-    const r=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat`,{method:"POST",headers:{"Content-Type":"application/json",Authorization:`Bearer ${session.access_token}`},body:JSON.stringify(interview?{ctx,question,moduleId,history:priorHistory,mode:"interview"}:{ctx,question,moduleId})});
+    const r=await authFetch("ai-chat",interview?{ctx,question,moduleId,history:priorHistory,mode:"interview"}:{ctx,question,moduleId});
     const d=await r.json();
     if(!r.ok)return{error:d.error||`Fehler (${r.status}).`};
     return{answer:d.answer||"Keine Antwort."};

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { C, pri, ghost, wrap, inner, ff } from "./lib/theme";
 import { supabase } from "./lib/supabaseClient";
+import { authFetch } from "./lib/authFetch";
 import { describeError } from "./lib/errorText";
 import { generateWebsiteCheckReport } from "./lib/websiteCheckReport";
 
@@ -32,12 +33,7 @@ export default function WebsiteCheckScreen({onClose}){
     if(!url.trim())return;
     setCheckBusy(true);setErr(null);
     try{
-      const {data:{session}}=await supabase.auth.getSession();
-      const res=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/website-check`,{
-        method:"POST",
-        headers:{"Content-Type":"application/json",Authorization:`Bearer ${session.access_token}`},
-        body:JSON.stringify({url:url.trim()}),
-      });
+      const res=await authFetch("website-check",{url:url.trim()});
       const d=await res.json();
       if(!res.ok){setErr(d.error||"Prüfung konnte nicht durchgeführt werden.");setCheckBusy(false);return;}
       if(d.error){setErr(d.error);}

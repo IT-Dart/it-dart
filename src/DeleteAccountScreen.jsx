@@ -2,6 +2,7 @@ import { useState } from "react";
 import { C, ghost, wrap, inner, ff } from "./lib/theme";
 import { useAuth } from "./lib/AuthContext";
 import { supabase } from "./lib/supabaseClient";
+import { authFetch } from "./lib/authFetch";
 import { describeError } from "./lib/errorText";
 
 const input={width:"100%",background:C.s2,border:`0.5px solid ${C.bd}`,borderRadius:10,color:C.t,padding:"11px 14px",fontSize:14,outline:"none",fontFamily:"inherit",marginBottom:10};
@@ -21,10 +22,7 @@ export default function DeleteAccountScreen({onClose}){
     try{
       const {data:{session}}=await supabase.auth.getSession();
       if(!session){setErr("Nicht angemeldet.");setBusy(false);return;}
-      const r=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/delete-account`,{
-        method:"POST",
-        headers:{Authorization:`Bearer ${session.access_token}`},
-      });
+      const r=await authFetch("delete-account");
       const d=await r.json();
       if(!r.ok){setErr(d.error||"Löschen fehlgeschlagen.");setBusy(false);return;}
       setDone(true);

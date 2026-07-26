@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { C, pri, ghost, wrap, inner, ff } from "./lib/theme";
 import { supabase } from "./lib/supabaseClient";
+import { authFetch } from "./lib/authFetch";
 import { describeError } from "./lib/errorText";
 import { useAuth } from "./lib/AuthContext";
 
@@ -72,12 +73,7 @@ export default function AdminScreen({onClose}){
     }
     setInviteBusy(true);setInviteMsg(null);setInviteLink(null);setCopied(false);
     try{
-      const {data:{session}}=await supabase.auth.getSession();
-      const r=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/invite-user`,{
-        method:"POST",
-        headers:{"Content-Type":"application/json",Authorization:`Bearer ${session.access_token}`},
-        body:JSON.stringify({email:inviteEmail.trim()}),
-      });
+      const r=await authFetch("invite-user",{email:inviteEmail.trim()});
       const d=await r.json();
       if(!r.ok){setInviteMsg({type:"error",text:d.error||"Einladen fehlgeschlagen."});setInviteBusy(false);return;}
       setInviteMsg({type:"info",text:`Einladung an ${inviteEmail.trim()} verschickt.${d.link?" Optional zusätzlich manuell teilen:":""}`});
@@ -178,12 +174,7 @@ export default function AdminScreen({onClose}){
       if(!window.confirm(`Ausstehende Einladung für ${r.email} wirklich löschen?`))return;
       setBusyId(r.id);setErr(null);
       try{
-        const {data:{session}}=await supabase.auth.getSession();
-        const res=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trainer-manage-invite`,{
-          method:"POST",
-          headers:{"Content-Type":"application/json",Authorization:`Bearer ${session.access_token}`},
-          body:JSON.stringify({action:"delete",userId:r.id}),
-        });
+        const res=await authFetch("trainer-manage-invite",{action:"delete",userId:r.id});
         const d=await res.json();
         if(!res.ok){setErr(d.error||"Löschen fehlgeschlagen.");setBusyId(null);return;}
         setResults(rs=>rs.filter(x=>x.id!==r.id));
@@ -196,12 +187,7 @@ export default function AdminScreen({onClose}){
     if(!window.confirm(`${r.email} wirklich unwiderruflich löschen? Alle Daten (Fortschritt, Lernnachweise) gehen verloren.`))return;
     setBusyId(r.id);setErr(null);
     try{
-      const {data:{session}}=await supabase.auth.getSession();
-      const res=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-delete-user`,{
-        method:"POST",
-        headers:{"Content-Type":"application/json",Authorization:`Bearer ${session.access_token}`},
-        body:JSON.stringify({userId:r.id}),
-      });
+      const res=await authFetch("admin-delete-user",{userId:r.id});
       const d=await res.json();
       if(!res.ok){setErr(d.error||"Löschen fehlgeschlagen.");setBusyId(null);return;}
       setResults(rs=>rs.filter(x=>x.id!==r.id));
@@ -214,12 +200,7 @@ export default function AdminScreen({onClose}){
   const resendInvite=async(r)=>{
     setBusyId(r.id);setErr(null);
     try{
-      const {data:{session}}=await supabase.auth.getSession();
-      const res=await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/trainer-manage-invite`,{
-        method:"POST",
-        headers:{"Content-Type":"application/json",Authorization:`Bearer ${session.access_token}`},
-        body:JSON.stringify({action:"resend",userId:r.id}),
-      });
+      const res=await authFetch("trainer-manage-invite",{action:"resend",userId:r.id});
       const d=await res.json();
       if(!res.ok){setErr(d.error||"Erneutes Senden fehlgeschlagen.");setBusyId(null);return;}
       flash(`Einladung an ${r.email} erneut verschickt.`);
