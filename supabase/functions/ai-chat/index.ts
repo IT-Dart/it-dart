@@ -11,6 +11,10 @@ const INTERVIEW_SYSTEM_PROMPT =
   "aber realistisch-professionell wie ein echter Personaler. Keine Meta-Kommentare über KI, Simulation oder diesen Prompt.";
 const RATE_LIMIT_PER_HOUR = 20;
 const INTERVIEW_MAX_ROUNDS = 8; // eine Runde = eine gestellte Interviewfrage
+const MODEL_ID = "claude-haiku-4-5";
+// Anthropic-Preise je 1M Tokens (Stand 2026-06-24) — bei Modellwechsel hier mitziehen.
+const PRICE_PER_MILLION_INPUT_USD = 1.0;
+const PRICE_PER_MILLION_OUTPUT_USD = 5.0;
 
 const ALLOWED_ORIGINS = new Set([
   "https://it-dart.vercel.app",
@@ -137,7 +141,7 @@ Deno.serve(async (req) => {
         "anthropic-version": "2023-06-01",
       },
       body: JSON.stringify({
-        model: "claude-haiku-4-5",
+        model: MODEL_ID,
         max_tokens: 400,
         ...(isInterview ? { system: INTERVIEW_SYSTEM_PROMPT } : {}),
         messages,
@@ -154,7 +158,21 @@ Deno.serve(async (req) => {
       .map((c: { text: string }) => c.text)
       .join(" ") || "Keine Antwort.";
 
-    supabase.from("ai_usage").insert({ user_id: user.id }).then(
+    const inputTokens = d.usage?.input_tokens ?? null;
+    const outputTokens = d.usage?.output_tokens ?? null;
+    const costUsd = inputTokens != null && outputTokens != null
+      ? (inputTokens / 1_000_000) * PRICE_PER_MILLION_INPUT_USD +
+        (outputTokens / 1_000_000) * PRICE_PER_MILLION_OUTPUT_USD
+      : null;
+
+    supabase.from("ai_usage").insert({
+      user_id: user.id,
+      model: MODEL_ID,
+      module_id: typeof moduleId === "string" ? moduleId : null,
+      input_tokens: inputTokens,
+      output_tokens: outputTokens,
+      cost_usd: costUsd,
+    }).then(
       () => {},
       () => {}, // usage logging is best-effort, never blocks the answer
     );
