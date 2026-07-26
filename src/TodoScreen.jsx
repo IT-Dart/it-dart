@@ -19,6 +19,7 @@ export default function TodoScreen({onClose}){
   const [err,setErr]=useState(null);
   const [form,setForm]=useState({title:"",description:"",priority:"medium",tool_slug:"",due_date:""});
   const [addBusy,setAddBusy]=useState(false);
+  const [copiedId,setCopiedId]=useState(null);
 
   const load=async()=>{
     const {data,error}=await supabase.from("todos").select("*").order("status").order("priority",{ascending:false}).order("due_date",{ascending:true,nullsFirst:false});
@@ -54,6 +55,26 @@ export default function TodoScreen({onClose}){
     setBusyId(null);
     if(error){setErr(describeError(error));return;}
     load();
+  };
+
+  const copySolutionPrompt=async(t)=>{
+    const tool=tools.find(x=>x.slug===t.tool_slug);
+    const lines=[
+      `To-Do: ${t.title}`,
+      t.description?`Beschreibung: ${t.description}`:null,
+      `Priorität: ${PRIORITY_LABEL[t.priority]}`,
+      tool?`Bezug: ${tool.name}`:null,
+      t.due_date?`Fällig: ${fmtDate(t.due_date)}`:null,
+      "",
+      "Lass uns eine Lösung dafür überlegen.",
+    ].filter(Boolean).join("\n");
+    try{
+      await navigator.clipboard.writeText(lines);
+      setCopiedId(t.id);
+      setTimeout(()=>setCopiedId(null),2000);
+    }catch{
+      setErr("Kopieren in die Zwischenablage fehlgeschlagen — Browser-Berechtigung prüfen.");
+    }
   };
 
   const remove=async(id)=>{
@@ -130,7 +151,8 @@ export default function TodoScreen({onClose}){
                   <option value="in_progress">{STATUS_LABEL.in_progress}</option>
                   <option value="done">{STATUS_LABEL.done}</option>
                 </select>
-                <button disabled={busy} onClick={()=>remove(t.id)} style={{...ghost,fontSize:12,padding:"6px 12px",marginLeft:"auto",color:"#fca5a5",borderColor:"#7f1d1d",opacity:busy?.5:1}}>Löschen</button>
+                <button disabled={busy} title="Kopiert den Kontext dieses To-Dos in die Zwischenablage — zum Einfügen in Claude Code" onClick={()=>copySolutionPrompt(t)} style={{...ghost,fontSize:12,padding:"6px 12px",marginLeft:"auto",opacity:busy?.5:1}}>{copiedId===t.id?"✓ Kopiert":"🔍 Lösung suchen"}</button>
+                <button disabled={busy} onClick={()=>remove(t.id)} style={{...ghost,fontSize:12,padding:"6px 12px",color:"#fca5a5",borderColor:"#7f1d1d",opacity:busy?.5:1}}>Löschen</button>
               </div>
             </div>
           );
