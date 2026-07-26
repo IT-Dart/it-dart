@@ -97,7 +97,6 @@ export function Datenschutz({onClose}){
         <li style={li}><strong style={{color:C.t}}>Supabase</strong> (Datenbank, Login) — verarbeitet alle unter Punkt 2 genannten Daten</li>
         <li style={li}><strong style={{color:C.t}}>Vercel Inc.</strong> (USA) — Hosting der Webanwendung</li>
         <li style={li}><strong style={{color:C.t}}>Anthropic PBC</strong> (USA) — Verarbeitung deiner Frage beim KI-Chat, um eine Antwort zu erzeugen; es werden keine Konto- oder Kontaktdaten übermittelt, nur die gestellte Frage und der Lernkontext</li>
-        <li style={li}><strong style={{color:C.t}}>Discord Inc.</strong> (USA) — erhält bei einer Neuregistrierung ausschließlich die E-Mail-Adresse, um uns intern zu benachrichtigen; keine weitere Verwendung</li>
       </ul>
       <p style={p}>Bei Übermittlung in die USA erfolgt dies auf Grundlage von Standardvertragsklauseln der jeweiligen Anbieter.</p>
 
