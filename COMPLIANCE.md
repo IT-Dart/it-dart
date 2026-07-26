@@ -63,14 +63,14 @@ Bevor eine neue Funktion umgesetzt wird, die eine dieser Kategorien berührt (er
 | Punkt | Status | Beleg |
 |---|---|---|
 | Kein vorzeitiger `®`-Gebrauch (Marke „IT-Dart" ist beim DPMA angemeldet, noch nicht eingetragen) | ✅ Ja | `grep -rn "®|™|©" src/` → keine Treffer im gesamten Code (2026-07-26 geprüft) |
-| Copyright-Hinweis (`©`) im Footer/Impressum vorhanden | ❌ Nein | Noch nicht ergänzt |
+| Copyright-Hinweis (`©`) im Footer/Impressum vorhanden | ✅ Ja | **behoben 2026-07-26** — Footer (`CompanyScreen.jsx`, `ITDart.jsx`) + eigener Abschnitt in `Impressum`, in-Browser verifiziert |
 | Markenklassen-Abdeckung für „IT-Dart-Kids" (andere Nizza-Klasse als Software/Bildungsdienstleistung?) geklärt | ❌ Nein | Reine Sachfrage der DPMA-Anmeldung — nur durch die anmeldende Person/Fachperson zu klären, nicht durch Code-Prüfung |
 
-**Zwischenstand: 1/3**
+**Zwischenstand: 2/3**
 
 ## Gesamt-Score (rein faktenbasiert, kein Rechtsurteil)
 
-**13 / 17 erfüllt ≈ 76 %** (Stand 2026-07-26, nach Behebung der Punkte 1–3 unten, plus neuer Kategorie Marken-/Urheberrecht)
+**14 / 17 erfüllt ≈ 82 %** (Stand 2026-07-26, nach Behebung der Punkte 1–3 und 5 unten)
 
 Dieser Score ist ein internes Diagnose-Werkzeug. **Er wird nicht extern gegenüber Partnern, Schulen oder Ausbildungsbetrieben als Compliance-Nachweis verwendet** — eine unabhängig geprüfte Aussage wäre etwas anderes als eine selbst erhobene technische Checkliste.
 
@@ -80,7 +80,7 @@ Dieser Score ist ein internes Diagnose-Werkzeug. **Er wird nicht extern gegenüb
 2. ~~Kein AGB/Nutzungsbedingungen-Dokument~~ — **behoben 2026-07-26**, siehe `LegalPages.jsx`, Export `AGB`.
 3. ~~Keine Minderjährigen-spezifische Passage~~ — **behoben 2026-07-26**, siehe `Datenschutz`, Abschnitt 8.
 4. **Keine Unit-Tests** für `lernnachweis.js`/`websiteCheckReport.js`/`e2eReport.js` — weiterhin offen.
-5. **Kein Copyright-Hinweis (`©`)** im Footer/Impressum — einfach nachrüstbar, unabhängig vom laufenden Markenanmeldeverfahren.
+5. ~~Kein Copyright-Hinweis (`©`)~~ — **behoben 2026-07-26**, siehe Footer + `Impressum`.
 6. **Markenklassen-Frage für „IT-Dart-Kids"** — ob eine „IT-Dart"-Eintragung die Nutzung für Druckerzeugnisse/Malbücher mitabdeckt, ist offen und nur durch die anmeldende Person/Fachperson zu klären, nicht durch uns.
 
 Die Texte zu Punkt 1–3 (AGB, Minderjährigen-Passage) sind erste Entwürfe. **Vor einem tatsächlichen Verlassen darauf sollte weiterhin eine echte anwaltliche Prüfung erfolgen** (Formulierung, Rechtsgrundlage im Detail) — dieser Katalog bereitet das vor, ersetzt es nicht.
