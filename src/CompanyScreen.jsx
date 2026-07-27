@@ -76,7 +76,7 @@ function ParticleBackground(){
     const dpr=window.devicePixelRatio||1;
     const rnd=mulberry32(42);
     let w,h,particles,raf;
-    const N=20,LINK_DIST=110;
+    const N=20,LINK_DIST=110,EXTRA_RIGHT=3;
 
     const resize=()=>{
       w=canvas.clientWidth;h=canvas.clientHeight;
@@ -100,6 +100,14 @@ function ParticleBackground(){
             vx:(rnd()-0.5)*0.18,vy:(rnd()-0.5)*0.18,
           });
         }
+      }
+      // 3 zusätzliche Punkte gezielt im rechten Bereich, auf Wunsch.
+      for(let i=0;i<EXTRA_RIGHT;i++){
+        particles.push({
+          x:w*(0.72+rnd()*0.24),
+          y:h*(0.1+rnd()*0.8),
+          vx:(rnd()-0.5)*0.18,vy:(rnd()-0.5)*0.18,
+        });
       }
     };
     resize();init();
