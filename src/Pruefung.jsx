@@ -3,6 +3,10 @@ import { useAuth } from "./lib/AuthContext";
 import { generateLernnachweis, logLernnachweis } from "./lib/lernnachweis";
 import { describeError } from "./lib/errorText";
 import AuthScreen from "./AuthScreen";
+import iconHeaderImg from "./assets/icon-pruefung-header.jpg";
+import iconZeitImg from "./assets/icon-pruefung-zeit.jpg";
+import iconAusschlussImg from "./assets/icon-pruefung-ausschluss.jpg";
+import iconLesenImg from "./assets/icon-pruefung-lesen.jpg";
 
 const C={bg:"#f8fafc",s1:"#ffffff",s2:"#f1f5f9",bd:"#e2e8f0",bl:"#1d4ed8",cy:"#0ea5e9",t:"#0f172a",t2:"#475569",mu:"#94a3b8",gr:"#16a34a",am:"#d97706",co:"#dc2626"};
 const ff="system-ui,sans-serif";
@@ -239,7 +243,7 @@ export default function Pruefung({onExit}){
       {/* STARTSCREEN */}
       {!modus&&<>
         <div style={{textAlign:"center",paddingTop:20,paddingBottom:32}}>
-          <div style={{fontSize:56,marginBottom:16}}>🎯</div>
+          <img src={iconHeaderImg} alt="" style={{width:72,height:72,borderRadius:14,marginBottom:16}}/>
           <h2 style={{fontSize:22,fontWeight:700,marginBottom:8,color:C.t}}>Prüfungsvorbereitung</h2>
           <p style={{fontSize:14,color:C.t2,lineHeight:1.7,marginBottom:8}}>{!user?`Ein kostenloses Konto genügt für den Schnelltest (20 Fragen). Mit Premium: alle ${PRUEFUNG.length} Fragen aus allen 7 Bereichen.`:isPremium?`${PRUEFUNG.length} Fragen aus allen Themenbereichen — zufällig gemischt, mit sofortigem Feedback und Erklärung.`:`Im kostenlosen Schnelltest: 20 Fragen aus Grundlagen & Netzwerktechnik. Mit Premium: alle ${PRUEFUNG.length} Fragen aus allen 7 Bereichen.`}</p>
           <p style={{fontSize:13,color:C.mu,marginBottom:32}}>Fachinformatiker für Systemintegration (FISI) · IHK-Stil</p>
@@ -270,12 +274,12 @@ export default function Pruefung({onExit}){
           </div>
 
           <div style={{display:"flex",flexDirection:"column",gap:8,textAlign:"left"}}>
-            {[{e:"🕐",t:"Zeit einteilen",s:"Beantworte zuerst die einfachen Fragen. Schwierige Fragen die Nummer notieren, überspringen und am Ende zurückkehren — bloß nicht vergessen!"},
-              {e:"❌",t:"Ausschlussverfahren",s:"Erst offensichtlich falsche Antworten streichen, dann aus den verbleibenden wählen."},
-              {e:"📖",t:"Aufgabe komplett lesen",s:"Die Antwort steckt oft im Situationstext — lies die Frage bis zum Ende bevor du antwortest."}
+            {[{icon:iconZeitImg,t:"Zeit einteilen",s:"Beantworte zuerst die einfachen Fragen. Schwierige Fragen die Nummer notieren, überspringen und am Ende zurückkehren — bloß nicht vergessen!"},
+              {icon:iconAusschlussImg,t:"Ausschlussverfahren",s:"Erst offensichtlich falsche Antworten streichen, dann aus den verbleibenden wählen."},
+              {icon:iconLesenImg,t:"Aufgabe komplett lesen",s:"Die Antwort steckt oft im Situationstext — lies die Frage bis zum Ende bevor du antwortest."}
             ].map((tip,i)=>(
               <div key={i} style={{display:"flex",gap:12,alignItems:"flex-start",background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:10,padding:"12px 14px",boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
-                <span style={{fontSize:20,flexShrink:0}}>{tip.e}</span>
+                <img src={tip.icon} alt="" style={{width:32,height:32,borderRadius:8,flexShrink:0}}/>
                 <div><p style={{fontSize:13,fontWeight:600,color:C.t,margin:"0 0 2px"}}>{tip.t}</p>
                 <p style={{fontSize:12,color:C.t2,margin:0,lineHeight:1.5}}>{tip.s}</p></div>
               </div>
