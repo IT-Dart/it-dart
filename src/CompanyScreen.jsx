@@ -84,10 +84,23 @@ function ParticleBackground(){
       ctx.setTransform(dpr,0,0,dpr,0,0);
     };
     const init=()=>{
-      particles=Array.from({length:N},()=>({
-        x:rnd()*w,y:rnd()*h,
-        vx:(rnd()-0.5)*0.18,vy:(rnd()-0.5)*0.18,
-      }));
+      // Gitter statt reinem Zufalls-Sampling: garantiert gleichmäßige
+      // Verteilung über die Fläche (reiner Zufall klumpt bei nur 24 Punkten
+      // sichtbar), leichter Jitter innerhalb jeder Zelle sorgt trotzdem für
+      // ein organisches statt starr-rasterförmiges Bild.
+      const cols=Math.max(1,Math.round(Math.sqrt(N*w/h)));
+      const rows=Math.max(1,Math.ceil(N/cols));
+      const cellW=w/cols,cellH=h/rows;
+      particles=[];
+      for(let r=0;r<rows&&particles.length<N;r++){
+        for(let c=0;c<cols&&particles.length<N;c++){
+          particles.push({
+            x:(c+0.15+rnd()*0.7)*cellW,
+            y:(r+0.15+rnd()*0.7)*cellH,
+            vx:(rnd()-0.5)*0.18,vy:(rnd()-0.5)*0.18,
+          });
+        }
+      }
     };
     resize();init();
     const onResize=()=>{resize();init();};
