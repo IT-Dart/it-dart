@@ -141,12 +141,14 @@ export default function CompanyScreen({onEnterApp,onOpenLegal}){
 
   return (
     <div style={wrap}><div style={{...inner,paddingTop:40,paddingBottom:40}}>
-      <div style={{position:"relative",textAlign:"center",marginBottom:32,paddingTop:8,paddingBottom:8}}>
-        <ParticleBackground/>
-        <div style={{position:"relative"}}>
-          <Logo sz={72}/>
-          <h1 style={{fontSize:26,fontWeight:700,marginTop:20,marginBottom:6}}>IT-Dart</h1>
-          <p style={{fontSize:13,color:C.cy,fontWeight:500}}>Digitale Bildung für die IT-Ausbildung</p>
+      <div style={{textAlign:"center",marginBottom:32}}>
+        <Logo sz={72}/>
+        <div style={{position:"relative",paddingTop:4,paddingBottom:4}}>
+          <ParticleBackground/>
+          <div style={{position:"relative"}}>
+            <h1 style={{fontSize:26,fontWeight:700,marginTop:20,marginBottom:6}}>IT-Dart</h1>
+            <p style={{fontSize:13,color:C.cy,fontWeight:500}}>Digitale Bildung für die IT-Ausbildung</p>
+          </div>
         </div>
       </div>
 
