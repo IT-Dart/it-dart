@@ -21,6 +21,8 @@ export default function TodoScreen({onClose}){
   const [form,setForm]=useState({title:"",description:"",priority:"medium",tool_slug:""});
   const [addBusy,setAddBusy]=useState(false);
   const [solutions,setSolutions]=useState({}); // todoId -> {loading, answer, sources, error}
+  const [editingId,setEditingId]=useState(null);
+  const [editForm,setEditForm]=useState({title:"",description:"",priority:"medium",tool_slug:""});
 
   const load=async()=>{
     const {data,error}=await supabase.from("todos").select("*").order("status").order("priority",{ascending:false}).order("created_at",{ascending:false});
@@ -68,6 +70,26 @@ export default function TodoScreen({onClose}){
     }catch(e){
       setSolutions(s=>({...s,[t.id]:{error:describeError(e)}}));
     }
+  };
+
+  const startEdit=(t)=>{
+    setEditingId(t.id);
+    setEditForm({title:t.title,description:t.description||"",priority:t.priority,tool_slug:t.tool_slug||""});
+  };
+  const cancelEdit=()=>setEditingId(null);
+  const saveEdit=async(id)=>{
+    if(!editForm.title.trim())return;
+    setBusyId(id);
+    const {error}=await supabase.from("todos").update({
+      title:editForm.title.trim(),
+      description:editForm.description.trim()||null,
+      priority:editForm.priority,
+      tool_slug:editForm.tool_slug||null,
+    }).eq("id",id);
+    setBusyId(null);
+    if(error){setErr(describeError(error));return;}
+    setEditingId(null);
+    load();
   };
 
   const remove=async(id)=>{
@@ -128,6 +150,30 @@ export default function TodoScreen({onClose}){
           const tool=tools.find(x=>x.slug===t.tool_slug);
           const created=fmtDate(t.created_at);
           const sol=solutions[t.id];
+          const editing=editingId===t.id;
+          if(editing)return(
+            <div key={t.id} style={{background:C.s1,border:`0.5px solid ${C.cy}`,borderRadius:10,padding:"12px 14px"}}>
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                <input placeholder="Titel" value={editForm.title} onChange={e=>setEditForm(f=>({...f,title:e.target.value}))} style={input}/>
+                <textarea placeholder="Beschreibung (optional)" value={editForm.description} onChange={e=>setEditForm(f=>({...f,description:e.target.value}))} rows={2} style={{...input,resize:"vertical",fontFamily:"inherit"}}/>
+                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+                  <select value={editForm.priority} onChange={e=>setEditForm(f=>({...f,priority:e.target.value}))} style={{...input,flex:"1 1 110px"}}>
+                    <option value="low">Niedrig</option>
+                    <option value="medium">Mittel</option>
+                    <option value="high">Hoch</option>
+                  </select>
+                  <select value={editForm.tool_slug} onChange={e=>setEditForm(f=>({...f,tool_slug:e.target.value}))} style={{...input,flex:"1 1 140px"}}>
+                    <option value="">Kein Tool-Bezug</option>
+                    {tools.map(x=><option key={x.slug} value={x.slug}>{x.name}</option>)}
+                  </select>
+                </div>
+                <div style={{display:"flex",gap:8}}>
+                  <button disabled={busy} onClick={()=>saveEdit(t.id)} style={{...pri,opacity:busy?.6:1}}>{busy?"...":"Speichern"}</button>
+                  <button disabled={busy} onClick={cancelEdit} style={{...ghost,fontSize:13}}>Abbrechen</button>
+                </div>
+              </div>
+            </div>
+          );
           return(
             <div key={t.id} style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:10,padding:"12px 14px",opacity:t.status==="done"?.6:1}}>
               <div style={{display:"flex",alignItems:"baseline",gap:8,marginBottom:t.description?4:8,flexWrap:"wrap"}}>
@@ -137,12 +183,13 @@ export default function TodoScreen({onClose}){
                 {created&&<span style={{fontSize:11,color:C.mu}}>· erstellt {created}</span>}
               </div>
               {t.description&&<p style={{fontSize:12,color:C.t2,margin:"0 0 8px",lineHeight:1.5}}>{t.description}</p>}
-              <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
                 <select disabled={busy} value={t.status} onChange={e=>setStatus(t.id,e.target.value)} style={{...input,width:"auto",padding:"5px 10px",fontSize:12}}>
                   <option value="open">{STATUS_LABEL.open}</option>
                   <option value="in_progress">{STATUS_LABEL.in_progress}</option>
                   <option value="done">{STATUS_LABEL.done}</option>
                 </select>
+                <button disabled={busy} onClick={()=>startEdit(t)} style={{...ghost,fontSize:12,padding:"6px 12px"}}>✎ Bearbeiten</button>
                 <button disabled={busy||sol?.loading} title="Fragt Claude (mit Websuche bei Bedarf) nach einem Lösungsansatz" onClick={()=>findSolution(t)} style={{...ghost,fontSize:12,padding:"6px 12px",marginLeft:"auto",opacity:busy||sol?.loading?.5:1}}>{sol?.loading?"Sucht…":"🔍 Lösung suchen"}</button>
                 <button disabled={busy} onClick={()=>remove(t.id)} style={{...ghost,fontSize:12,padding:"6px 12px",color:"#fca5a5",borderColor:"#7f1d1d",opacity:busy?.5:1}}>Löschen</button>
               </div>

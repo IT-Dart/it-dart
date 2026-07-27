@@ -143,7 +143,7 @@ export function AGB({onClose}){
       <p style={p}>Wir haften unbeschränkt für Vorsatz und grobe Fahrlässigkeit sowie nach Maßgabe des Produkthaftungsgesetzes. Bei leicht fahrlässiger Verletzung wesentlicher Vertragspflichten (Kardinalpflichten) ist die Haftung auf den vertragstypisch vorhersehbaren Schaden begrenzt. Im Übrigen ist die Haftung für leichte Fahrlässigkeit ausgeschlossen.</p>
 
       <h2 style={h2}>8. Vertragslaufzeit und Kündigung</h2>
-      <p style={p}>Das Nutzungsverhältnis kann jederzeit durch Löschung des eigenen Kontos beendet werden (siehe Datenschutzerklärung, Punkt 6). Wir behalten uns vor, Konten bei einem Verstoß gegen diese AGB zu sperren oder zu löschen.</p>
+      <p style={p}>Das Nutzungsverhältnis kann jederzeit durch Löschung des eigenen Kontos beendet werden (siehe Datenschutzerklärung, Punkt 6). Wir behalten uns vor, Konten bei einem Verstoß gegen diese AGB zu sperren oder zu löschen. Bereits gezahlte Gebühren für Premium-Zugänge werden bei einer Kontolöschung nicht erstattet; der Zugang bleibt bis zum Ende des bereits bezahlten Zeitraums nutzbar.</p>
 
       <h2 style={h2}>9. Minderjährige Nutzer</h2>
       <p style={p}>Ein Teil unserer Nutzer befindet sich in einer Berufsausbildung und kann minderjährig sein. Bei einer Registrierung im Rahmen eines Ausbildungsverhältnisses gehen wir davon aus, dass die Nutzung im Einvernehmen mit dem Ausbildungsbetrieb erfolgt. Bei Fragen zur Nutzung durch minderjährige Personen außerhalb eines Ausbildungsverhältnisses bitten wir um vorherige Kontaktaufnahme.</p>

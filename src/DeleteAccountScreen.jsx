@@ -8,7 +8,7 @@ import { describeError } from "./lib/errorText";
 const input={width:"100%",background:C.s2,border:`0.5px solid ${C.bd}`,borderRadius:10,color:C.t,padding:"11px 14px",fontSize:14,outline:"none",fontFamily:"inherit",marginBottom:10};
 
 export default function DeleteAccountScreen({onClose}){
-  const {user,signOut}=useAuth();
+  const {user,signOut,isPremium}=useAuth();
   const [confirmText,setConfirmText]=useState("");
   const [busy,setBusy]=useState(false);
   const [err,setErr]=useState(null);
@@ -52,6 +52,9 @@ export default function DeleteAccountScreen({onClose}){
         <li>Gespeicherter Lernfortschritt</li>
         <li>Protokoll erzeugter Lernnachweise</li>
       </ul>
+      {isPremium&&<div style={{background:"#451a03",border:"0.5px solid #d97706",borderRadius:10,padding:"10px 14px",marginBottom:16}}>
+        <p style={{fontSize:13,color:"#fcd34d",margin:0,lineHeight:1.5}}>Hinweis: Bereits gezahlte Premium-Gebühren werden bei einer Kontolöschung <strong>nicht erstattet</strong>.</p>
+      </div>}
       <p style={{fontSize:13,color:C.t2,marginBottom:16}}>Das kann nicht rückgängig gemacht werden. Tippe zur Bestätigung <strong style={{color:C.t}}>LÖSCHEN</strong> ein:</p>
       <input value={confirmText} onChange={e=>setConfirmText(e.target.value)} placeholder="LÖSCHEN" style={input}/>
       {err&&<div style={{background:"#450a0a",border:"0.5px solid #ef4444",borderRadius:10,padding:"10px 14px",marginBottom:14}}>
