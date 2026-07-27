@@ -76,7 +76,7 @@ function ParticleBackground(){
     const dpr=window.devicePixelRatio||1;
     const rnd=mulberry32(42);
     let w,h,particles,raf;
-    const N=16,LINK_DIST=110;
+    const N=20,LINK_DIST=110;
 
     const resize=()=>{
       w=canvas.clientWidth;h=canvas.clientHeight;
