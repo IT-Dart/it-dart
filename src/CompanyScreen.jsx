@@ -48,6 +48,20 @@ const leistungenRow=[
   {icon:iconSeminare,t:"Vor-Ort- und Remote-Seminare"},
 ];
 
+// Feste Seed-Zahl statt Math.random(), damit die Partikel-Anordnung bei
+// jedem Seitenaufruf identisch aussieht (einmal abgestimmtes Layout bleibt
+// stabil) statt bei jedem Laden neu und zufällig zu wirken. Mulberry32 —
+// klein, deterministisch, ausreichend gut verteilt für diesen Zweck.
+function mulberry32(seed){
+  let a=seed;
+  return()=>{
+    a|=0;a=(a+0x6D2B79F5)|0;
+    let t=Math.imul(a^(a>>>15),1|a);
+    t=(t+Math.imul(t^(t>>>7),61|t))^t;
+    return((t^(t>>>14))>>>0)/4294967296;
+  };
+}
+
 // Dezenter Netzwerk-Partikel-Hintergrund hinter Logo/Titel — greift die
 // Netzwerk-Topologie-Bildsprache aus Hero-Bild/Icons auf. Respektiert
 // prefers-reduced-motion (dann komplett ohne Canvas/Animation) und bleibt
@@ -60,6 +74,7 @@ function ParticleBackground(){
     if(!canvas)return;
     const ctx=canvas.getContext("2d");
     const dpr=window.devicePixelRatio||1;
+    const rnd=mulberry32(1337);
     let w,h,particles,raf;
     const N=24,LINK_DIST=110;
 
@@ -70,8 +85,8 @@ function ParticleBackground(){
     };
     const init=()=>{
       particles=Array.from({length:N},()=>({
-        x:Math.random()*w,y:Math.random()*h,
-        vx:(Math.random()-0.5)*0.18,vy:(Math.random()-0.5)*0.18,
+        x:rnd()*w,y:rnd()*h,
+        vx:(rnd()-0.5)*0.18,vy:(rnd()-0.5)*0.18,
       }));
     };
     resize();init();
@@ -113,14 +128,12 @@ export default function CompanyScreen({onEnterApp,onOpenLegal}){
 
   return (
     <div style={wrap}><div style={{...inner,paddingTop:40,paddingBottom:40}}>
-      <div style={{textAlign:"center",marginBottom:32}}>
-        <Logo sz={72}/>
-        <div style={{position:"relative",paddingTop:4,paddingBottom:4}}>
-          <ParticleBackground/>
-          <div style={{position:"relative"}}>
-            <h1 style={{fontSize:26,fontWeight:700,marginTop:20,marginBottom:6}}>IT-Dart</h1>
-            <p style={{fontSize:13,color:C.cy,fontWeight:500}}>Digitale Bildung für die IT-Ausbildung</p>
-          </div>
+      <div style={{position:"relative",textAlign:"center",marginBottom:32,paddingTop:8,paddingBottom:8}}>
+        <ParticleBackground/>
+        <div style={{position:"relative"}}>
+          <Logo sz={72}/>
+          <h1 style={{fontSize:26,fontWeight:700,marginTop:20,marginBottom:6}}>IT-Dart</h1>
+          <p style={{fontSize:13,color:C.cy,fontWeight:500}}>Digitale Bildung für die IT-Ausbildung</p>
         </div>
       </div>
 
