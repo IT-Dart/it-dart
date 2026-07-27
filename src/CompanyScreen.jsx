@@ -78,7 +78,7 @@ export default function CompanyScreen({onEnterApp,onOpenLegal}){
           </div>
         ))}
       </div>
-      {user&&<button onClick={()=>onOpenLegal("leistungen")} style={{...ghost,width:"100%",justifyContent:"center"}}>Alle Leistungen & Pakete ansehen →</button>}
+      <button onClick={()=>onOpenLegal("leistungen")} style={{...ghost,width:"100%",justifyContent:"center"}}>Alle Leistungen & Pakete ansehen →</button>
 
       <h2 style={h2}>Erweiterungen</h2>
       <div style={{display:"flex",flexDirection:"column",gap:10}}>
