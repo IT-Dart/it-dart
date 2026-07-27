@@ -1,3 +1,4 @@
+import { useEffect, useRef } from "react";
 import { C, pri, ghost, wrap, inner, ff } from "./lib/theme";
 import { useAuth } from "./lib/AuthContext";
 import { Logo } from "./ITDart";
@@ -47,15 +48,78 @@ const leistungenRow=[
   {icon:iconSeminare,t:"Vor-Ort- und Remote-Seminare"},
 ];
 
+// Dezenter Netzwerk-Partikel-Hintergrund hinter Logo/Titel — greift die
+// Netzwerk-Topologie-Bildsprache aus Hero-Bild/Icons auf. Respektiert
+// prefers-reduced-motion (dann komplett ohne Canvas/Animation) und bleibt
+// bewusst blass/langsam, um nicht vom Inhalt abzulenken.
+function ParticleBackground(){
+  const canvasRef=useRef(null);
+  useEffect(()=>{
+    if(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches)return;
+    const canvas=canvasRef.current;
+    if(!canvas)return;
+    const ctx=canvas.getContext("2d");
+    const dpr=window.devicePixelRatio||1;
+    let w,h,particles,raf;
+    const N=24,LINK_DIST=110;
+
+    const resize=()=>{
+      w=canvas.clientWidth;h=canvas.clientHeight;
+      canvas.width=w*dpr;canvas.height=h*dpr;
+      ctx.setTransform(dpr,0,0,dpr,0,0);
+    };
+    const init=()=>{
+      particles=Array.from({length:N},()=>({
+        x:Math.random()*w,y:Math.random()*h,
+        vx:(Math.random()-0.5)*0.18,vy:(Math.random()-0.5)*0.18,
+      }));
+    };
+    resize();init();
+    const onResize=()=>{resize();init();};
+    window.addEventListener("resize",onResize);
+
+    const draw=()=>{
+      ctx.clearRect(0,0,w,h);
+      particles.forEach(p=>{
+        p.x+=p.vx;p.y+=p.vy;
+        if(p.x<0||p.x>w)p.vx*=-1;
+        if(p.y<0||p.y>h)p.vy*=-1;
+      });
+      for(let i=0;i<particles.length;i++){
+        for(let j=i+1;j<particles.length;j++){
+          const a=particles[i],b=particles[j];
+          const dist=Math.hypot(a.x-b.x,a.y-b.y);
+          if(dist<LINK_DIST){
+            ctx.strokeStyle=`rgba(56,189,248,${0.16*(1-dist/LINK_DIST)})`;
+            ctx.lineWidth=1;
+            ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+          }
+        }
+      }
+      particles.forEach(p=>{
+        ctx.fillStyle="rgba(37,99,235,0.55)";
+        ctx.beginPath();ctx.arc(p.x,p.y,1.6,0,Math.PI*2);ctx.fill();
+      });
+      raf=requestAnimationFrame(draw);
+    };
+    raf=requestAnimationFrame(draw);
+    return()=>{cancelAnimationFrame(raf);window.removeEventListener("resize",onResize);};
+  },[]);
+  return <canvas ref={canvasRef} style={{position:"absolute",inset:0,width:"100%",height:"100%",pointerEvents:"none"}}/>;
+}
+
 export default function CompanyScreen({onEnterApp,onOpenLegal}){
   const {user,signOut}=useAuth();
 
   return (
     <div style={wrap}><div style={{...inner,paddingTop:40,paddingBottom:40}}>
-      <div style={{textAlign:"center",marginBottom:32}}>
-        <Logo sz={72}/>
-        <h1 style={{fontSize:26,fontWeight:700,marginTop:20,marginBottom:6}}>IT-Dart</h1>
-        <p style={{fontSize:13,color:C.cy,fontWeight:500}}>Digitale Bildung für die IT-Ausbildung</p>
+      <div style={{position:"relative",textAlign:"center",marginBottom:32,paddingTop:8,paddingBottom:8}}>
+        <ParticleBackground/>
+        <div style={{position:"relative"}}>
+          <Logo sz={72}/>
+          <h1 style={{fontSize:26,fontWeight:700,marginTop:20,marginBottom:6}}>IT-Dart</h1>
+          <p style={{fontSize:13,color:C.cy,fontWeight:500}}>Digitale Bildung für die IT-Ausbildung</p>
+        </div>
       </div>
 
       <img src={heroImg} alt="Aufsteigender Pfad aus geometrischen Formen, der zu einem leuchtenden Stern führt — Sinnbild für den Lernfortschritt auf IT-Dart" style={{width:"100%",borderRadius:14,marginBottom:24,display:"block",boxShadow:"0 8px 32px rgba(37,99,235,0.2)"}}/>
