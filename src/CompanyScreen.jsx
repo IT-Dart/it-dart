@@ -90,14 +90,14 @@ function ParticleBackground(){
           const a=particles[i],b=particles[j];
           const dist=Math.hypot(a.x-b.x,a.y-b.y);
           if(dist<LINK_DIST){
-            ctx.strokeStyle=`rgba(56,189,248,${0.16*(1-dist/LINK_DIST)})`;
+            ctx.strokeStyle=`rgba(56,189,248,${0.12*(1-dist/LINK_DIST)})`;
             ctx.lineWidth=1;
             ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
           }
         }
       }
       particles.forEach(p=>{
-        ctx.fillStyle="rgba(37,99,235,0.55)";
+        ctx.fillStyle="rgba(37,99,235,0.4)";
         ctx.beginPath();ctx.arc(p.x,p.y,1.6,0,Math.PI*2);ctx.fill();
       });
       raf=requestAnimationFrame(draw);
@@ -113,12 +113,14 @@ export default function CompanyScreen({onEnterApp,onOpenLegal}){
 
   return (
     <div style={wrap}><div style={{...inner,paddingTop:40,paddingBottom:40}}>
-      <div style={{position:"relative",textAlign:"center",marginBottom:32,paddingTop:8,paddingBottom:8}}>
-        <ParticleBackground/>
-        <div style={{position:"relative"}}>
-          <Logo sz={72}/>
-          <h1 style={{fontSize:26,fontWeight:700,marginTop:20,marginBottom:6}}>IT-Dart</h1>
-          <p style={{fontSize:13,color:C.cy,fontWeight:500}}>Digitale Bildung für die IT-Ausbildung</p>
+      <div style={{textAlign:"center",marginBottom:32}}>
+        <Logo sz={72}/>
+        <div style={{position:"relative",paddingTop:4,paddingBottom:4}}>
+          <ParticleBackground/>
+          <div style={{position:"relative"}}>
+            <h1 style={{fontSize:26,fontWeight:700,marginTop:20,marginBottom:6}}>IT-Dart</h1>
+            <p style={{fontSize:13,color:C.cy,fontWeight:500}}>Digitale Bildung für die IT-Ausbildung</p>
+          </div>
         </div>
       </div>
 
