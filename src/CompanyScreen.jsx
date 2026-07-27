@@ -3,6 +3,13 @@ import { useAuth } from "./lib/AuthContext";
 import { Logo } from "./ITDart";
 import bookCoverImg from "./assets/book-claude-praxis-cover.png";
 import heroImg from "./assets/company-hero.jpg";
+import iconLernplattform from "./assets/icon-lernplattform.jpg";
+import iconUnternehmen from "./assets/icon-unternehmen.jpg";
+import iconSeminare from "./assets/icon-seminare.jpg";
+import iconFachrichtungen from "./assets/icon-fachrichtungen.jpg";
+import iconMehrsprachig from "./assets/icon-mehrsprachig.jpg";
+import iconMobil from "./assets/icon-mobil.jpg";
+import iconKiAssistent from "./assets/icon-ki-assistent.jpg";
 
 // Markentexte gebündelt an einer Stelle, damit spätere Überarbeitungen ein
 // reiner Textedit hier sind, ohne die JSX-Struktur darunter anzufassen.
@@ -29,15 +36,15 @@ const p={fontSize:14,color:C.t2,lineHeight:1.7,marginBottom:10};
 const card={background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:12,padding:"16px 18px",marginBottom:12};
 const badge=(bg,fg)=>({display:"inline-block",fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,background:bg,color:fg});
 const featureRow=[
-  {e:"🧭",t:"Weitere IT-Ausbildungsberufe und Fachrichtungen auf derselben Plattform-Basis"},
-  {e:"🌍",t:"Englischsprachige Version der Lerninhalte in Vorbereitung"},
-  {e:"📱",t:"Gezielte mobile Optimierung"},
-  {e:"🤖",t:"Laufender Ausbau des KI-Lernassistenten um weitere Praxis-Dialogformate"},
+  {icon:iconFachrichtungen,t:"Weitere IT-Ausbildungsberufe und Fachrichtungen auf derselben Plattform-Basis"},
+  {icon:iconMehrsprachig,t:"Englischsprachige Version der Lerninhalte in Vorbereitung"},
+  {icon:iconMobil,t:"Gezielte mobile Optimierung"},
+  {icon:iconKiAssistent,t:"Laufender Ausbau des KI-Lernassistenten um weitere Praxis-Dialogformate"},
 ];
 const leistungenRow=[
-  {e:"🎓",t:"Lernplattform für Einzelpersonen & Ausbildungsbetriebe"},
-  {e:"🏢",t:"Individuelle Lösungen für Unternehmen"},
-  {e:"🗓️",t:"Vor-Ort- und Remote-Seminare"},
+  {icon:iconLernplattform,t:"Lernplattform für Einzelpersonen & Ausbildungsbetriebe"},
+  {icon:iconUnternehmen,t:"Individuelle Lösungen für Unternehmen"},
+  {icon:iconSeminare,t:"Vor-Ort- und Remote-Seminare"},
 ];
 
 export default function CompanyScreen({onEnterApp,onOpenLegal}){
@@ -67,7 +74,7 @@ export default function CompanyScreen({onEnterApp,onOpenLegal}){
       <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:14}}>
         {leistungenRow.map((f,i)=>(
           <div key={i} style={{display:"flex",alignItems:"center",gap:12,background:C.s2,borderRadius:10,padding:"10px 14px"}}>
-            <span style={{fontSize:20}}>{f.e}</span><span style={{fontSize:14,color:C.t2}}>{f.t}</span>
+            <img src={f.icon} alt="" style={{width:28,height:28,borderRadius:6,flexShrink:0}}/><span style={{fontSize:14,color:C.t2}}>{f.t}</span>
           </div>
         ))}
       </div>
@@ -77,7 +84,7 @@ export default function CompanyScreen({onEnterApp,onOpenLegal}){
       <div style={{display:"flex",flexDirection:"column",gap:10}}>
         {featureRow.map((f,i)=>(
           <div key={i} style={{display:"flex",alignItems:"center",gap:12,background:C.s2,borderRadius:10,padding:"10px 14px"}}>
-            <span style={{fontSize:20}}>{f.e}</span><span style={{fontSize:14,color:C.t2}}>{f.t}</span>
+            <img src={f.icon} alt="" style={{width:28,height:28,borderRadius:6,flexShrink:0}}/><span style={{fontSize:14,color:C.t2}}>{f.t}</span>
           </div>
         ))}
       </div>

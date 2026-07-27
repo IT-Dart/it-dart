@@ -9,9 +9,9 @@ Was erfüllt sein muss, bevor die Selbstregistrierung wieder geöffnet wird (akt
 | Preismodell | Premium-Preis final festgelegt | offen |
 | Infrastruktur | Bezahlte Supabase-/Vercel-Tarife falls für echten Nutzerandrang nötig | offen (an Gewerbeanmeldung gekoppelt) |
 | Content | Hero-Bild auf der Unternehmensseite | ✅ erledigt (2026-07-27) |
-| Content | Bereits generiertes 7er-Icon-Set einbinden | offen |
+| Content | Bereits generiertes 7er-Icon-Set einbinden | ✅ erledigt (2026-07-27) |
 | Content | Alle 8 Kernmodule inhaltlich vollständig und geprüft | zu verifizieren |
-| Compliance | Unit-Tests für `lernnachweis.js`/`websiteCheckReport.js`/`e2eReport.js` | offen |
+| Compliance | Unit-Tests für `lernnachweis.js`/`websiteCheckReport.js`/`e2eReport.js` | ✅ erledigt (2026-07-27) |
 | Compliance | Markenklassen-Frage IT-Dart-Kids (DPMA) | offen, liegt beim Anwalt/Anmelder |
 
 **Nicht blockierend, aber gut vorher erledigt:** die beiden Compliance-Punkte sind Qualitäts-/Rechtsklarheits-Fragen, kein hartes Show-Stopper-Kriterium für den Go-Live selbst — anders als Gewerbeanmeldung und Preismodell, ohne die eine offene Registrierung geschäftlich/rechtlich keinen Sinn ergibt.
