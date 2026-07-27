@@ -888,7 +888,7 @@ const OSIOverview=()=>(
   </div>
 );
 
-const Quiz=({qs,onDone,title})=>{
+const Quiz=({qs,onDone,title,mid})=>{
   const [i,setI]=useState(0);const [sel,setSel]=useState(null);const [sc,setSc]=useState(0);const [done,setDone]=useState(false);
   const [nachweisBusy,setNachweisBusy]=useState(false);
   const [startedAt,setStartedAt]=useState(()=>new Date());
@@ -913,7 +913,7 @@ const Quiz=({qs,onDone,title})=>{
     setNachweisBusy(true);
     setDlErr(null);
     try{
-      await generateLernnachweis({user,kind:"modul",title,score:sc,total:qs.length,topics:[{name:title,correct:sc,total:qs.length}],startedAt,finishedAt:new Date(),skipLog:true});
+      await generateLernnachweis({user,kind:"modul",title,score:sc,total:qs.length,topics:[{name:title,correct:sc,total:qs.length}],startedAt,finishedAt:new Date(),skipLog:true,moduleIconUrl:MODULE_IMAGES[mid]});
     }catch(e){
       setDlErr(describeError(e));
     }finally{
@@ -1372,7 +1372,7 @@ export default function ITDart({onOpenExam,onOpenLegal}){
         <p style={{fontSize:11,fontWeight:600,letterSpacing:".06em",textTransform:"uppercase",color:C.cy,marginBottom:6}}>Modul {MODS.findIndex(m=>m.id===mod.id)+1} · Quiz</p>
         <h2 style={{fontSize:20,fontWeight:700,marginBottom:8}} dangerouslySetInnerHTML={{__html:`${mod.e} ${data.title}`}}/>
         {!isPremium&&data.quiz.length>FREE_QUIZ_N&&<p style={{fontSize:13,color:C.mu,marginBottom:16}}>Kostenlose Vorschau: {FREE_QUIZ_N} von {data.quiz.length} Fragen. Mit Premium: alle Fragen.</p>}
-        <Quiz qs={isPremium?data.quiz:data.quiz.slice(0,FREE_QUIZ_N)} onDone={()=>setView("overview")} title={data.title.replace(/&amp;/g,"&")}/>
+        <Quiz qs={isPremium?data.quiz:data.quiz.slice(0,FREE_QUIZ_N)} onDone={()=>setView("overview")} title={data.title.replace(/&amp;/g,"&")} mid={mod.id}/>
       </div></div>
     );
     const item=data.items[idx];

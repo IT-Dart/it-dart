@@ -191,6 +191,25 @@ function drawRatingRow(doc, x, y, r, filledCount, totalCount) {
   }
 }
 
+// Loads an image (e.g. a Vite-bundled module cover) into a JPEG data URL so
+// jsPDF's addImage can embed it — jsPDF needs a data URL/Image/Canvas, not a
+// bare asset URL, and the load is async so callers must await it.
+function loadImageDataUrl(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      canvas.getContext("2d").drawImage(img, 0, 0);
+      resolve(canvas.toDataURL("image/jpeg", 0.92));
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
 /**
  * Generates and downloads the Lernnachweis PDF, and logs it to Supabase.
  * @param {object} p
@@ -204,6 +223,8 @@ function drawRatingRow(doc, x, y, r, filledCount, totalCount) {
  * @param {Date} [p.finishedAt] - when it ended; defaults to now
  * @param {boolean} [p.skipLog] - true when re-downloading a past Lernnachweis,
  *   so it isn't logged to Supabase a second time
+ * @param {string} [p.moduleIconUrl] - bundled module cover image (kind==="modul"
+ *   only); shown as a small badge in the header next to the IT-Dart mark
  */
 /**
  * Logs a completed quiz attempt to Supabase without generating a PDF —
@@ -228,9 +249,18 @@ export function logLernnachweis({ user, kind, title, score, total, topics, start
   });
 }
 
-export async function generateLernnachweis({ user, kind, title, score, total, topics, startedAt, finishedAt, skipLog = false }) {
+export async function generateLernnachweis({ user, kind, title, score, total, topics, startedAt, finishedAt, skipLog = false, moduleIconUrl }) {
   const { jsPDF } = await import("jspdf");
   const topicsArr = Array.isArray(topics) ? topics : [];
+
+  let moduleIconData = null;
+  if (kind === "modul" && moduleIconUrl) {
+    try {
+      moduleIconData = await loadImageDataUrl(moduleIconUrl);
+    } catch {
+      // Non-critical — certificate still generates without the module badge.
+    }
+  }
 
   const percent = total > 0 ? Math.round((score / total) * 100) : 0;
   const zone = zoneForPercent(percent);
@@ -258,6 +288,14 @@ export async function generateLernnachweis({ user, kind, title, score, total, to
   doc.setFontSize(9);
   doc.setTextColor(...COL.cyan);
   doc.text("Bleib am Dart!", 40, 29);
+
+  if (moduleIconData) {
+    const iconSize = 18, iconX = W - 20 - iconSize, iconY = 10;
+    doc.setDrawColor(...COL.border);
+    doc.setFillColor(...COL.s1);
+    doc.roundedRect(iconX - 2, iconY - 2, iconSize + 4, iconSize + 4, 2, 2, "FD");
+    doc.addImage(moduleIconData, "JPEG", iconX, iconY, iconSize, iconSize, undefined, "FAST");
+  }
 
   doc.setFont("helvetica", "bold");
   doc.setFontSize(28);
