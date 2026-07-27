@@ -74,7 +74,7 @@ export default function CompanyScreen({onEnterApp,onOpenLegal}){
       <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:14}}>
         {leistungenRow.map((f,i)=>(
           <div key={i} style={{display:"flex",alignItems:"center",gap:12,background:C.s2,borderRadius:10,padding:"10px 14px"}}>
-            <img src={f.icon} alt="" style={{width:28,height:28,borderRadius:6,flexShrink:0}}/><span style={{fontSize:14,color:C.t2}}>{f.t}</span>
+            <img src={f.icon} alt="" style={{width:48,height:48,borderRadius:10,flexShrink:0}}/><span style={{fontSize:14,color:C.t2}}>{f.t}</span>
           </div>
         ))}
       </div>
@@ -84,7 +84,7 @@ export default function CompanyScreen({onEnterApp,onOpenLegal}){
       <div style={{display:"flex",flexDirection:"column",gap:10}}>
         {featureRow.map((f,i)=>(
           <div key={i} style={{display:"flex",alignItems:"center",gap:12,background:C.s2,borderRadius:10,padding:"10px 14px"}}>
-            <img src={f.icon} alt="" style={{width:28,height:28,borderRadius:6,flexShrink:0}}/><span style={{fontSize:14,color:C.t2}}>{f.t}</span>
+            <img src={f.icon} alt="" style={{width:48,height:48,borderRadius:10,flexShrink:0}}/><span style={{fontSize:14,color:C.t2}}>{f.t}</span>
           </div>
         ))}
       </div>
