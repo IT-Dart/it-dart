@@ -48,10 +48,24 @@ const leistungenRow=[
   {icon:iconSeminare,t:"Vor-Ort- und Remote-Seminare"},
 ];
 
+// Feste Seed-Zahl statt Math.random(), damit immer dieselbe Anordnung
+// erscheint statt bei jedem Laden neu zu variieren.
+function mulberry32(seed){
+  let a=seed;
+  return()=>{
+    a|=0;a=(a+0x6D2B79F5)|0;
+    let t=Math.imul(a^(a>>>15),1|a);
+    t=(t+Math.imul(t^(t>>>7),61|t))^t;
+    return((t^(t>>>14))>>>0)/4294967296;
+  };
+}
+
 // Dezenter Netzwerk-Partikel-Hintergrund hinter Logo/Titel — greift die
 // Netzwerk-Topologie-Bildsprache aus Hero-Bild/Icons auf. Respektiert
 // prefers-reduced-motion (dann komplett ohne Canvas/Animation) und bleibt
-// bewusst blass/langsam, um nicht vom Inhalt abzulenken.
+// bewusst blass/langsam, um nicht vom Inhalt abzulenken. Punkte, die zu nah
+// am Logo landen würden, werden radial aus einer Schutzzone herausgedrückt,
+// damit das Logo selbst immer klar freigestellt bleibt.
 function ParticleBackground(){
   const canvasRef=useRef(null);
   useEffect(()=>{
@@ -60,8 +74,18 @@ function ParticleBackground(){
     if(!canvas)return;
     const ctx=canvas.getContext("2d");
     const dpr=window.devicePixelRatio||1;
+    const rnd=mulberry32(42);
     let w,h,particles,raf;
-    const N=24,LINK_DIST=110;
+    const N=24,LINK_DIST=110,LOGO_R=40,LOGO_CY=44;
+
+    const keepOutOfLogoZone=(p,cx)=>{
+      const dx=p.x-cx,dy=p.y-LOGO_CY;
+      const dist=Math.hypot(dx,dy);
+      if(dist<LOGO_R&&dist>0){
+        const push=LOGO_R/dist;
+        p.x=cx+dx*push;p.y=LOGO_CY+dy*push;
+      }
+    };
 
     const resize=()=>{
       w=canvas.clientWidth;h=canvas.clientHeight;
@@ -69,10 +93,15 @@ function ParticleBackground(){
       ctx.setTransform(dpr,0,0,dpr,0,0);
     };
     const init=()=>{
-      particles=Array.from({length:N},()=>({
-        x:Math.random()*w,y:Math.random()*h,
-        vx:(Math.random()-0.5)*0.18,vy:(Math.random()-0.5)*0.18,
-      }));
+      const cx=w/2;
+      particles=Array.from({length:N},()=>{
+        const p={
+          x:rnd()*w,y:rnd()*h,
+          vx:(rnd()-0.5)*0.18,vy:(rnd()-0.5)*0.18,
+        };
+        keepOutOfLogoZone(p,cx);
+        return p;
+      });
     };
     resize();init();
     const onResize=()=>{resize();init();};
@@ -80,10 +109,15 @@ function ParticleBackground(){
 
     const draw=()=>{
       ctx.clearRect(0,0,w,h);
+      const cx=w/2;
       particles.forEach(p=>{
         p.x+=p.vx;p.y+=p.vy;
         if(p.x<0||p.x>w)p.vx*=-1;
         if(p.y<0||p.y>h)p.vy*=-1;
+        if(Math.hypot(p.x-cx,p.y-LOGO_CY)<LOGO_R){
+          keepOutOfLogoZone(p,cx);
+          p.vx*=-1;p.vy*=-1;
+        }
       });
       for(let i=0;i<particles.length;i++){
         for(let j=i+1;j<particles.length;j++){
