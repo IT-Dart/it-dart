@@ -333,6 +333,25 @@ export default function Pruefung({onExit}){
           <div style={{height:10,background:C.s2,borderRadius:5,overflow:"hidden",marginBottom:24}}>
             <div style={{height:"100%",width:`${pct}%`,background:pct>=80?C.gr:pct>=60?C.am:"#ef4444",borderRadius:5,transition:"width .6s"}}/>
           </div>
+          {topicStats.length>1&&<div style={{textAlign:"left",background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:12,padding:"14px 16px",marginBottom:20}}>
+            <p style={{fontSize:12,fontWeight:600,color:C.mu,textTransform:"uppercase",letterSpacing:".05em",margin:"0 0 12px"}}>Ergebnis nach Themenbereich</p>
+            <div style={{display:"flex",flexDirection:"column",gap:10}}>
+              {topicStats.map(t=>{
+                const tp=Math.round((t.correct/t.total)*100);
+                return(
+                  <div key={t.name}>
+                    <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                      <span style={{fontSize:13,color:C.t}}>{t.name}</span>
+                      <span style={{fontSize:12,color:C.t2}}>{t.correct}/{t.total}</span>
+                    </div>
+                    <div style={{height:6,background:C.s2,borderRadius:3,overflow:"hidden"}}>
+                      <div style={{height:"100%",width:`${tp}%`,background:tp>=80?C.gr:tp>=60?C.am:"#ef4444",borderRadius:3}}/>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>}
           {logErr&&<div style={{background:"#fef2f2",border:"0.5px solid #ef4444",borderRadius:10,padding:"10px 14px",marginBottom:20,textAlign:"left"}}>
             <p style={{fontSize:13,color:"#b91c1c",margin:0}}>Ergebnis konnte nicht in „Meine Statistik" gespeichert werden: {logErr}</p>
           </div>}
