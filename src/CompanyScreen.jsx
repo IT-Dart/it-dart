@@ -48,20 +48,6 @@ const leistungenRow=[
   {icon:iconSeminare,t:"Vor-Ort- und Remote-Seminare"},
 ];
 
-// Feste Seed-Zahl statt Math.random(), damit die Partikel-Anordnung bei
-// jedem Seitenaufruf identisch aussieht (einmal abgestimmtes Layout bleibt
-// stabil) statt bei jedem Laden neu und zufällig zu wirken. Mulberry32 —
-// klein, deterministisch, ausreichend gut verteilt für diesen Zweck.
-function mulberry32(seed){
-  let a=seed;
-  return()=>{
-    a|=0;a=(a+0x6D2B79F5)|0;
-    let t=Math.imul(a^(a>>>15),1|a);
-    t=(t+Math.imul(t^(t>>>7),61|t))^t;
-    return((t^(t>>>14))>>>0)/4294967296;
-  };
-}
-
 // Dezenter Netzwerk-Partikel-Hintergrund hinter Logo/Titel — greift die
 // Netzwerk-Topologie-Bildsprache aus Hero-Bild/Icons auf. Respektiert
 // prefers-reduced-motion (dann komplett ohne Canvas/Animation) und bleibt
@@ -74,9 +60,8 @@ function ParticleBackground(){
     if(!canvas)return;
     const ctx=canvas.getContext("2d");
     const dpr=window.devicePixelRatio||1;
-    const rnd=mulberry32(42);
     let w,h,particles,raf;
-    const N=20,LINK_DIST=110,EXTRA_RIGHT=3;
+    const N=24,LINK_DIST=110;
 
     const resize=()=>{
       w=canvas.clientWidth;h=canvas.clientHeight;
@@ -84,31 +69,10 @@ function ParticleBackground(){
       ctx.setTransform(dpr,0,0,dpr,0,0);
     };
     const init=()=>{
-      // Gitter statt reinem Zufalls-Sampling: garantiert gleichmäßige
-      // Verteilung über die Fläche (reiner Zufall klumpt bei nur 24 Punkten
-      // sichtbar), leichter Jitter innerhalb jeder Zelle sorgt trotzdem für
-      // ein organisches statt starr-rasterförmiges Bild.
-      const cols=Math.max(1,Math.round(Math.sqrt(N*w/h)));
-      const rows=Math.max(1,Math.ceil(N/cols));
-      const cellW=w/cols,cellH=h/rows;
-      particles=[];
-      for(let r=0;r<rows&&particles.length<N;r++){
-        for(let c=0;c<cols&&particles.length<N;c++){
-          particles.push({
-            x:(c+0.15+rnd()*0.7)*cellW,
-            y:(r+0.15+rnd()*0.7)*cellH,
-            vx:(rnd()-0.5)*0.18,vy:(rnd()-0.5)*0.18,
-          });
-        }
-      }
-      // 3 zusätzliche Punkte gezielt im rechten Bereich, auf Wunsch.
-      for(let i=0;i<EXTRA_RIGHT;i++){
-        particles.push({
-          x:w*(0.72+rnd()*0.24),
-          y:h*(0.1+rnd()*0.8),
-          vx:(rnd()-0.5)*0.18,vy:(rnd()-0.5)*0.18,
-        });
-      }
+      particles=Array.from({length:N},()=>({
+        x:Math.random()*w,y:Math.random()*h,
+        vx:(Math.random()-0.5)*0.18,vy:(Math.random()-0.5)*0.18,
+      }));
     };
     resize();init();
     const onResize=()=>{resize();init();};
@@ -126,14 +90,14 @@ function ParticleBackground(){
           const a=particles[i],b=particles[j];
           const dist=Math.hypot(a.x-b.x,a.y-b.y);
           if(dist<LINK_DIST){
-            ctx.strokeStyle=`rgba(56,189,248,${0.12*(1-dist/LINK_DIST)})`;
+            ctx.strokeStyle=`rgba(56,189,248,${0.16*(1-dist/LINK_DIST)})`;
             ctx.lineWidth=1;
             ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
           }
         }
       }
       particles.forEach(p=>{
-        ctx.fillStyle="rgba(37,99,235,0.4)";
+        ctx.fillStyle="rgba(37,99,235,0.55)";
         ctx.beginPath();ctx.arc(p.x,p.y,1.6,0,Math.PI*2);ctx.fill();
       });
       raf=requestAnimationFrame(draw);
@@ -149,11 +113,11 @@ export default function CompanyScreen({onEnterApp,onOpenLegal}){
 
   return (
     <div style={wrap}><div style={{...inner,paddingTop:40,paddingBottom:40}}>
-      <div style={{position:"relative",textAlign:"center",marginBottom:32}}>
+      <div style={{position:"relative",textAlign:"center",marginBottom:32,paddingTop:8,paddingBottom:8}}>
         <ParticleBackground/>
         <div style={{position:"relative"}}>
           <Logo sz={72}/>
-          <h1 style={{fontSize:26,fontWeight:700,marginTop:12,marginBottom:6}}>IT-Dart</h1>
+          <h1 style={{fontSize:26,fontWeight:700,marginTop:20,marginBottom:6}}>IT-Dart</h1>
           <p style={{fontSize:13,color:C.cy,fontWeight:500}}>Digitale Bildung für die IT-Ausbildung</p>
         </div>
       </div>
