@@ -3,6 +3,7 @@ import ITDart from "./ITDart";
 import Pruefung from "./Pruefung";
 import ResetPasswordScreen from "./ResetPasswordScreen";
 import CompanyScreen from "./CompanyScreen";
+import NotFoundScreen from "./NotFoundScreen";
 import { Impressum, Datenschutz, Leistungen, AGB } from "./LegalPages";
 import { AuthProvider, useAuth } from "./lib/AuthContext";
 
@@ -31,6 +32,11 @@ function AppShell(){
 
   if(recoveryMode)return <ResetPasswordScreen/>;
   if(loading)return null;
+  // Vercel liefert dank vercel.json-Rewrite für jeden unbekannten Pfad diese
+  // SPA aus, statt selbst ein 404 zu werfen — die App entscheidet also hier,
+  // ob der aufgerufene Pfad überhaupt bekannt ist (die App kennt sonst nur "/",
+  // da es keinen Router gibt und alle Screens über view/page-State laufen).
+  if(window.location.pathname!=="/")return <NotFoundScreen/>;
   if(page==="company")return <CompanyScreen onEnterApp={()=>setPage("app")} onOpenLegal={setPage}/>;
   const backHome=()=>setPage(user?"app":"company");
   if(page==="impressum")return <Impressum onClose={backHome}/>;
