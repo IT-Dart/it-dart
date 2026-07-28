@@ -3,6 +3,16 @@ import { supabase } from "./supabaseClient";
 
 const AuthContext = createContext(null);
 
+// Nur eine aktive Sitzung pro Konto. localStorage statt sessionStorage,
+// damit mehrere Tabs desselben Browsers dieselbe Sitzungs-ID teilen (sonst
+// würde jeder Tab einen eigenen Herzschlag mit unterschiedlicher ID senden
+// und die Sitzung wirkt nach dem Schließen des Original-Tabs fälschlich
+// abgelaufen). Ein echter Login-Versuch mit denselben Zugangsdaten in
+// einem ANDEREN Browser/Gerät hat dagegen sein eigenes, leeres
+// localStorage und löst den Anspruchsversuch entsprechend neu aus.
+const SESSION_ID_KEY = "it_dart_session_id";
+const HEARTBEAT_INTERVAL_MS = 2 * 60 * 1000;
+
 // Invite links redirect back with `type=invite` in the URL hash (same mechanism
 // Supabase uses for `type=recovery`, which fires PASSWORD_RECOVERY). Only invite
 // has no dedicated auth event, so it must be read from the hash before Supabase's
@@ -47,6 +57,32 @@ export function AuthProvider({ children }) {
     return () => { cancelled = true; document.removeEventListener("visibilitychange", onVisible); };
   }, [session?.user?.id]);
 
+  // Herzschlag: solange eine Sitzung besteht, alle 2 Minuten "ich lebe
+  // noch" melden, damit sie nicht nach 5 Minuten fälschlich als beendet
+  // gilt. Bootstrapt auch Sitzungen, die vor Einführung dieser Funktion
+  // entstanden sind (noch keine lokale Sitzungs-ID) — beansprucht dann
+  // still eine neue ID, ohne den Nutzer zu unterbrechen.
+  useEffect(() => {
+    const user = session?.user;
+    if (!user) return;
+    let sid = localStorage.getItem(SESSION_ID_KEY);
+    if (!sid) {
+      sid = crypto.randomUUID();
+      localStorage.setItem(SESSION_ID_KEY, sid);
+      supabase.rpc("claim_session", { new_session_id: sid }).then(({ error }) => {
+        if (error) console.error("[AuthContext] claim_session (bootstrap) failed:", error.message);
+      });
+    }
+    const beat = () => {
+      supabase.rpc("heartbeat_session", { session_id: sid }).then(({ error }) => {
+        if (error) console.error("[AuthContext] heartbeat_session failed:", error.message);
+      });
+    };
+    beat();
+    const id = setInterval(beat, HEARTBEAT_INTERVAL_MS);
+    return () => clearInterval(id);
+  }, [session?.user?.id]);
+
   const hasTimedPremium = !!profile?.premium_until && new Date(profile.premium_until) > new Date();
 
   const value = {
@@ -60,8 +96,32 @@ export function AuthProvider({ children }) {
     isJuniorAdmin: !!profile?.is_junior_admin,
     recoveryMode,
     signUp: (email, password) => supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } }),
-    signIn: (email, password) => supabase.auth.signInWithPassword({ email, password }),
-    signOut: () => supabase.auth.signOut(),
+    signIn: async (email, password) => {
+      const result = await supabase.auth.signInWithPassword({ email, password });
+      if (result.error) return result;
+
+      // Passwort ist bereits von Supabase geprüft -- jetzt zusätzlich
+      // sicherstellen, dass mit diesem Konto nicht schon anderswo eine
+      // aktive Sitzung läuft, bevor der Nutzer tatsächlich hereingelassen wird.
+      const sid = crypto.randomUUID();
+      const { data: claimed, error: claimError } = await supabase.rpc("claim_session", { new_session_id: sid });
+      if (claimError || !claimed) {
+        await supabase.auth.signOut();
+        return { data: { user: null, session: null }, error: { message: "Mit diesen Anmeldedaten existiert bereits eine Sitzung. Weitere Sitzung nicht möglich." } };
+      }
+      localStorage.setItem(SESSION_ID_KEY, sid);
+      return result;
+    },
+    signOut: async () => {
+      const sid = localStorage.getItem(SESSION_ID_KEY);
+      if (sid) {
+        await supabase.rpc("release_session", { session_id: sid }).then(({ error }) => {
+          if (error) console.error("[AuthContext] release_session failed:", error.message);
+        });
+        localStorage.removeItem(SESSION_ID_KEY);
+      }
+      return supabase.auth.signOut();
+    },
     resetPassword: (email) => supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin }),
     updatePassword: async (password) => {
       const result = await supabase.auth.updateUser({ password });
