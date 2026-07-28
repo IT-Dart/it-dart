@@ -6,7 +6,7 @@ Was erfüllt sein muss, bevor die Selbstregistrierung wieder geöffnet wird (akt
 |---|---|---|
 | Rechtlich | Gewerbeanmeldung abgeschlossen | ✅ erledigt (2026-07-28) — Gegenstand siehe `dokumentation/18_Gewerbeanmeldung_Gegenstand.docx` |
 | Rechtlich | AGB/Datenschutz/Impressum/Consent-Checkbox bei Registrierung | ✅ erledigt |
-| Preismodell | Premium-Preis final festgelegt | offen |
+| Preismodell | Premium-Preis final festgelegt | ✅ erledigt (2026-07-28) — 3,99 €/Monat Einführungspreis, siehe `dokumentation/03_Vermarktungs_Preisstrategie.docx` Abschnitt 5.2 |
 | Infrastruktur | Bezahlte Supabase-/Vercel-Tarife falls für echten Nutzerandrang nötig | Supabase Pro ✅ (2026-07-28) · Vercel weiterhin offen |
 | Content | Hero-Bild auf der Unternehmensseite | ✅ erledigt (2026-07-27) |
 | Content | Bereits generiertes 7er-Icon-Set einbinden | ✅ erledigt (2026-07-27) |
