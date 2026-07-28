@@ -132,14 +132,42 @@ async function linkTrainerTrainee(trainerId, traineeId) {
   }
 }
 
+// `gh` per PATH aufzurufen kann kurz nach einer frischen Installation auf
+// Windows fehlschlagen (PATH-Update noch nicht in jedem neuen Prozess
+// sichtbar) — und das lässt spawnSync mit input-Option in einem nativen
+// libuv-Absturz enden statt eines sauberen Fehlerobjekts. Deshalb: bekannte
+// Installationspfade zuerst direkt versuchen, PATH nur als Fallback.
+const GH_CANDIDATES = [
+  "gh",
+  "C:\\Program Files\\GitHub CLI\\gh.exe",
+  "C:\\Program Files (x86)\\GitHub CLI\\gh.exe",
+];
+let ghPath = null;
+
+function resolveGh() {
+  if (ghPath) return ghPath;
+  for (const candidate of GH_CANDIDATES) {
+    const probe = spawnSync(candidate, ["--version"], { encoding: "utf-8" });
+    if (probe.status === 0) {
+      ghPath = candidate;
+      return ghPath;
+    }
+  }
+  throw new Error(
+    "gh wurde weder im PATH noch unter den bekannten Installationspfaden gefunden. " +
+    "Terminal einmal schließen und neu öffnen (PATH-Update) und erneut versuchen."
+  );
+}
+
 function ghSecretSet(name, value) {
+  const gh = resolveGh();
   const result = spawnSync(
-    "gh",
+    gh,
     ["secret", "set", name, "--repo", GITHUB_REPO],
     { input: value, encoding: "utf-8" }
   );
   if (result.status !== 0) {
-    throw new Error(`gh secret set ${name} fehlgeschlagen: ${result.stderr}`);
+    throw new Error(`gh secret set ${name} fehlgeschlagen: ${result.stderr || result.error?.message || "unbekannter Fehler"}`);
   }
 }
 
