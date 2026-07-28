@@ -27,6 +27,7 @@ Webbasierte Lernplattform für die FISI-Ausbildung (Fachinformatiker für System
 
 - Row-Level-Security auf jeder Tabelle.
 - Selbstreferenzierende Berechtigungsprüfungen über `SECURITY DEFINER`-Hilfsfunktionen kapseln (`is_admin_user()`, `is_trainer_user()`, `is_junior_admin_user()` etc.) — sonst „infinite recursion detected in policy".
+- Jede neue `SECURITY DEFINER`-Funktion braucht `SET search_path = public` (Schutz vor Search-Path-Hijacking) — beim Sicherheitsaudit 2026-07-28 fehlte das bei drei bestehenden Funktionen, per `ALTER FUNCTION ... SET search_path = public` nachgerüstet. Neue Funktionen von Anfang an mit dieser Klausel anlegen.
 - Eingeschränkte Rollen (z. B. Junior-Admin) schreiben **nur** über eng gefasste `SECURITY DEFINER`-Funktionen für einzelne Felder (z. B. `update_trainee_limit()`, `set_ai_enabled()`), nie über eine generelle UPDATE-Policy — sonst gibt es einen Weg, sich über denselben Kanal heimlich mehr Rechte zu verschaffen.
 - Service-Role-Key ausschließlich in Edge Functions, nie im Frontend.
 - CORS-Whitelisting je Edge Function über ein `ALLOWED_ORIGINS`-Set.
