@@ -144,6 +144,10 @@ function ParticleBackground(){
 
 export default function CompanyScreen({onEnterApp,onOpenLegal}){
   const {user,signOut}=useAuth();
+  // Anonyme Besucher haben noch kein Konto zum Betreten der App — führt sie
+  // stattdessen direkt zum Login (?mode=login, dasselbe Muster wie die
+  // bestehende ?mode=register-Einladungslink-Logik in ITDart.jsx).
+  const handleEnter=user?onEnterApp:()=>{window.location.href="/?mode=login";};
 
   return (
     <div style={wrap}><div style={{...inner,paddingTop:40,paddingBottom:40}}>
@@ -160,7 +164,7 @@ export default function CompanyScreen({onEnterApp,onOpenLegal}){
 
       <p style={p}>{INTRO_TEXT}</p>
 
-      <button onClick={onEnterApp} style={{...pri,width:"100%",justifyContent:"center",padding:"14px 18px",fontSize:15,marginTop:14}}>{user?"Zum Lerntool „Bleib am Dart!\" →":"Anmelden / Zum Lerntool →"}</button>
+      <button onClick={handleEnter} style={{...pri,width:"100%",justifyContent:"center",padding:"14px 18px",fontSize:15,marginTop:14}}>{user?"Zum Lerntool „Bleib am Dart!\" →":"Anmelden / Registrieren →"}</button>
 
       <h2 style={h2}>Vision</h2>
       <p style={p}>{VISION_TEXT}</p>
@@ -211,7 +215,7 @@ export default function CompanyScreen({onEnterApp,onOpenLegal}){
         <p style={{...p,marginBottom:0}}>Ergänzend zur Plattform entstehen herunterladbare Lernmaterialien — zum Beispiel Cheat Sheets und Zusammenfassungen zu einzelnen Modulen.</p>
       </div>
 
-      <button onClick={onEnterApp} style={{...pri,width:"100%",justifyContent:"center",padding:"14px 18px",fontSize:15,marginTop:28}}>{user?"Zum Lerntool „Bleib am Dart!\" →":"Anmelden / Zum Lerntool →"}</button>
+      <button onClick={handleEnter} style={{...pri,width:"100%",justifyContent:"center",padding:"14px 18px",fontSize:15,marginTop:28}}>{user?"Zum Lerntool „Bleib am Dart!\" →":"Anmelden / Registrieren →"}</button>
 
       {user&&<div style={{marginTop:14,textAlign:"center"}}>
         <span style={{fontSize:12,color:C.mu}}>Angemeldet als {user.email} · <button onClick={signOut} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Abmelden</button></span>

@@ -10,9 +10,12 @@ function AppShell(){
   const {recoveryMode,user,loading}=useAuth();
   // "company" | "app" | "pruefung" | "impressum" | "datenschutz" | "leistungen" | "agb"
   // it-dart.de/?login überspringt die Unternehmensseite direkt zum Lerntool/Login —
-  // Zugang für Bestandskonten ohne aktive Sitzung, ohne dass dafür auf der
-  // Unternehmensseite selbst ein Link sichtbar sein muss.
-  const [page,setPage]=useState(()=>new URLSearchParams(window.location.search).has("login")?"app":"company");
+  // Zugang für Bestandskonten ohne aktive Sitzung. ?mode=login/register kommt
+  // vom "Anmelden / Registrieren"-Button auf der Unternehmensseite selbst
+  // (CompanyScreen.jsx) sowie von Einladungslinks — ITDart.jsx wertet den
+  // genauen mode-Wert dann noch mal selbst aus, hier reicht die Präsenz.
+  const params=new URLSearchParams(window.location.search);
+  const [page,setPage]=useState(()=>(params.has("login")||params.has("mode"))?"app":"company");
   const [routed,setRouted]=useState(false);
 
   // Einmalige Entscheidung, sobald die Sitzung geladen ist: bestehende
