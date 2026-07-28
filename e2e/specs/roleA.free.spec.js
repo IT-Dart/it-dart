@@ -14,6 +14,11 @@ test("Free-Konto zeigt korrekten Status und Freemium-Grenzen", async ({ page }) 
 });
 
 test("Lernnachweis-Download bleibt ohne Premium gesperrt (Regressionstest)", async ({ page }) => {
+  // 20 echte Interaktionsrunden gegen die Live-Seite sprengen leicht das
+  // globale 30s-Timeout (playwright.config.js) — nur dieser Test bekommt
+  // mehr Luft, statt das Timeout für alle anderen, schnelleren Tests
+  // pauschal anzuheben.
+  test.setTimeout(90_000);
   await loginAs(page, "free");
   await page.getByRole("button", { name: /Prüfungsvorbereitung/i }).click();
   await page.getByRole("button", { name: /^Schnelltest/i }).click();
