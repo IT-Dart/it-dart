@@ -21,7 +21,10 @@ test("Lernnachweis-Download bleibt ohne Premium gesperrt (Regressionstest)", asy
   test.setTimeout(90_000);
   await loginAs(page, "free");
   await page.getByRole("button", { name: /Prüfungsvorbereitung/i }).click();
-  await page.getByRole("button", { name: /^Schnelltest/i }).click();
+  // Kein ^-Anker: der Button rendert die Zahl (20) in einem eigenen <div>
+  // VOR dem Label, der zugängliche Name lautet also "20Schnelltest", nicht
+  // "Schnelltest..." (src/Pruefung.jsx, Start-Buttons).
+  await page.getByRole("button", { name: /Schnelltest/i }).click();
 
   // Schnelltest (20 Fragen) zügig mit der jeweils ersten Antwortoption
   // durchklicken, bis das Ergebnis erscheint — Korrektheit ist hier
