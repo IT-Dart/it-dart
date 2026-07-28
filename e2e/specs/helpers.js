@@ -8,7 +8,10 @@ import { credentialsFor } from "../roles.config.js";
 export async function loginAs(page, role) {
   const { email, password } = credentialsFor(role);
   await page.goto("/");
-  await page.getByRole("button", { name: /Anmelden \/ Registrieren/ }).click();
+  // .first() — CompanyScreen.jsx zeigt denselben Button oben und unten auf
+  // der Seite (identischer Ziel-Flow), Playwrights Strict Mode verlangt
+  // sonst genau einen Treffer.
+  await page.getByRole("button", { name: /Anmelden \/ Registrieren/ }).first().click();
   await page.getByPlaceholder("E-Mail").fill(email);
   await page.getByPlaceholder("Passwort").fill(password);
   await page.getByRole("button", { name: /^Anmelden/ }).click();
