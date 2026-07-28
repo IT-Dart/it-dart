@@ -35,7 +35,12 @@ test("Lernnachweis-Download bleibt ohne Premium gesperrt (Regressionstest)", asy
   for (let i = 0; i < 20; i++) {
     const resultHeading = page.getByRole("heading", { name: /richtig — \d+%/ });
     if (await resultHeading.isVisible().catch(() => false)) break;
-    const optionButtons = page.locator("button").filter({ hasNotText: navButtonNames });
+    // "button:visible", nicht nur "button" — App.jsx hält ITDart.jsx beim
+    // Prüfungs-Screen dauerhaft im DOM (nur per CSS display:none versteckt,
+    // nie unmounted), sonst greift .first() auf einen dort verstecken,
+    // niemals sichtbar werdenden Button (z. B. "📊 Statistik") statt auf
+    // eine echte Antwortoption.
+    const optionButtons = page.locator("button:visible").filter({ hasNotText: navButtonNames });
     await optionButtons.first().waitFor({ state: "visible" });
     await optionButtons.first().click();
     await page.getByRole("button", { name: /Nächste Frage|Ergebnis anzeigen/i }).click();
