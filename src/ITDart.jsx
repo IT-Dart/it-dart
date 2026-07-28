@@ -64,7 +64,7 @@ const O=[
   {n:4,nm:"Transportschicht",sh:"Transport",th:"TCP und UDP übertragen Daten zwischen Endpunkten über Ports für einzelne Anwendungen.",pc:"Ping geht, Anwendung nicht → Port durch Firewall blockiert? TCP oder UDP?",q1:"Warum kann Ping gehen aber die Anwendung nicht?",q2:"Was ist der Unterschied zwischen TCP und UDP?"},
   {n:5,nm:"Sitzungsschicht",sh:"Session",th:"Hält eine Verbindung über mehrere Anfragen aufrecht – verwaltet Beginn, Dauer und Ende.",pc:"Verbindung bricht nach kurzer Zeit ab → Sitzungs-Timeout prüfen.",q1:"Was ist eine Sitzung technisch?",q2:"Wie unterscheidet sich das von einem Transport-Problem?"},
   {n:6,nm:"Darstellungsschicht",sh:"Presentation",th:"Daten in gemeinsames Format bringen – Verschlüsselung (TLS) oder Zeichenkodierung – damit Sender und Empfänger sich verstehen.",pc:"Browser zeigt Zertifikatsfehler → TLS-Zertifikat abgelaufen? Falscher Hostname?",q1:"Was passiert beim TLS-Handshake?",q2:"Warum zeigt Browser bei abgelaufenem Zertifikat Fehler?"},
-  {n:7,nm:"Anwendungsschicht",sh:"Application",th:"Die Ebene die der Nutzer sieht: Browser, E-Mail, ERP. Protokolle: HTTP, SMTP, DNS.",pc:"Alles darunter geht, aber die App wirft Fehler → Anwendungs-Logs prüfen, nicht das Netz.",q1:"Woran erkennt man dass das Problem hier liegt?",q2:"Welche Protokolle laufen hier?"},
+  {n:7,nm:"Anwendungsschicht",sh:"Application",th:"Die Ebene die der Nutzer sieht: Browser, E-Mail, ERP. Protokolle: HTTP, SMTP, DNS.",pc:"Alles darunter geht, aber die App wirft Fehler → Anwendungs-Logs prüfen, nicht das Netz. Unten kannst du eine komplette Netzwerkausfall-Diagnose direkt mit der KI durchspielen — sie beschreibt ein Störungssymptom, du schlägst den nächsten Prüfschritt vor, sie gibt Feedback und liefert das Ergebnis, Schicht für Schicht bis zur Ursache.",q1:"Woran erkennt man dass das Problem hier liegt?",q2:"Welche Protokolle laufen hier?",dialogMode:"diagnose"},
 ];
 const OQ=[
   {q:"Keine Link-LED am Switch-Port. Welche Schicht?",o:["Schicht 3 – Network","Schicht 2 – Data Link","Schicht 7 – Application","Schicht 1 – Physical"],c:3,e:"Die Link-LED zeigt physisches Signal – Schicht 1. Kabel, Stecker, Port prüfen."},
@@ -965,16 +965,26 @@ const Quiz=({qs,onDone,title,mid})=>{
   );
 };
 
-const AIChat=({ctx,q1,q2,moduleId,interview})=>{
+// Beide mehrstufigen Dialogmodi (Mock-Interview, Netzwerk-Diagnose) teilen
+// sich dieselbe Verlaufs-/Rundenlogik unten, nur Label/Icon/Texte weichen
+// ab — siehe DIALOG_COPY. Neue Modi hier ergänzen, nicht die Mechanik
+// duplizieren.
+const DIALOG_COPY={
+  interview:{icon:"🎤",label:"Mock-Interview",start:"Interview starten",roundNoun:"Runden",overMsg:"Diese Interview-Runde ist abgeschlossen. Verlasse das Thema und öffne es erneut, um eine neue Runde zu starten.",starterText:"Bitte beginne das Interview mit deiner ersten Frage."},
+  diagnose:{icon:"🔧",label:"Diagnose-Dialog",start:"Diagnose starten",roundNoun:"Runden",overMsg:"Diese Diagnose-Runde ist abgeschlossen. Verlasse das Thema und öffne es erneut, um eine neue Runde zu starten.",starterText:"Bitte beschreibe die erste Störungsmeldung und beginne die Diagnose."},
+};
+
+const AIChat=({ctx,q1,q2,moduleId,dialogMode})=>{
   const [q,setQ]=useState("");const [a,setA]=useState("");
-  const [history,setHistory]=useState([]); // nur im Interview-Modus genutzt: [{role,content}]
+  const [history,setHistory]=useState([]); // nur in Dialogmodi genutzt: [{role,content}]
   const [busy,setBusy]=useState(false);
   const [askCount,setAskCount]=useState(0); // nur im Frag-nach-Modus genutzt
+  const dialog=dialogMode?DIALOG_COPY[dialogMode]:null;
 
   const call=async(question,priorHistory)=>{
     const {data:{session}}=await supabase.auth.getSession();
     if(!session)return{error:"Bitte melde dich an, um die KI zu nutzen."};
-    const r=await authFetch("ai-chat",interview?{ctx,question,moduleId,history:priorHistory,mode:"interview"}:{ctx,question,moduleId});
+    const r=await authFetch("ai-chat",dialog?{ctx,question,moduleId,history:priorHistory,mode:dialogMode}:{ctx,question,moduleId});
     const d=await r.json();
     if(!r.ok)return{error:d.error||`Fehler (${r.status}).`};
     return{answer:d.answer||"Keine Antwort."};
@@ -994,11 +1004,11 @@ const AIChat=({ctx,q1,q2,moduleId,interview})=>{
   // echter user-Turn gespeichert (sonst würde der zweite Aufruf mit einem
   // assistant-Turn beginnen und die API mit einem Fehler ablehnen) — beim
   // Rendern wird nur dieser eine, unsichtbare Auslöser-Turn ausgeblendet.
-  const interviewRounds=history.filter(m=>m.role==="assistant").length;
-  const interviewOver=interviewRounds>=INTERVIEW_MAX_ROUNDS;
-  const interviewStep=async(userText)=>{
-    if(interviewOver)return;
-    const turnText=userText||"Bitte beginne das Interview mit deiner ersten Frage.";
+  const dialogRounds=history.filter(m=>m.role==="assistant").length;
+  const dialogOver=dialogRounds>=INTERVIEW_MAX_ROUNDS;
+  const dialogStep=async(userText)=>{
+    if(dialogOver)return;
+    const turnText=userText||dialog.starterText;
     const priorHistory=history;
     setHistory(h=>[...h,{role:"user",content:turnText}]);
     setQ("");setBusy(true);
@@ -1009,14 +1019,14 @@ const AIChat=({ctx,q1,q2,moduleId,interview})=>{
     setBusy(false);
   };
 
-  if(interview)return(
+  if(dialog)return(
     <div style={{borderTop:`0.5px solid ${C.bd}`,paddingTop:14}}>
       <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:10}}>
-        <p style={{fontSize:11,fontWeight:600,letterSpacing:".06em",textTransform:"uppercase",color:C.cy,margin:0}}>🎤 Mock-Interview</p>
-        {history.length>0&&<span style={{fontSize:11,color:C.mu}}>{Math.min(interviewRounds,INTERVIEW_MAX_ROUNDS)} / {INTERVIEW_MAX_ROUNDS} Runden</span>}
+        <p style={{fontSize:11,fontWeight:600,letterSpacing:".06em",textTransform:"uppercase",color:C.cy,margin:0}}>{dialog.icon} {dialog.label}</p>
+        {history.length>0&&<span style={{fontSize:11,color:C.mu}}>{Math.min(dialogRounds,INTERVIEW_MAX_ROUNDS)} / {INTERVIEW_MAX_ROUNDS} {dialog.roundNoun}</span>}
       </div>
       {history.length===0?(
-        <button onClick={()=>interviewStep(null)} disabled={busy} style={{...pri,width:"100%",justifyContent:"center",opacity:busy?.6:1}}>{busy?"...":"Interview starten"}</button>
+        <button onClick={()=>dialogStep(null)} disabled={busy} style={{...pri,width:"100%",justifyContent:"center",opacity:busy?.6:1}}>{busy?"...":dialog.start}</button>
       ):(<>
         <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:10}}>
           {history.slice(1).map((m,i)=>(
@@ -1025,12 +1035,12 @@ const AIChat=({ctx,q1,q2,moduleId,interview})=>{
             </div>
           ))}
         </div>
-        {interviewOver?(
-          <p style={{fontSize:12,color:C.mu,margin:0}}>Diese Interview-Runde ist abgeschlossen. Verlasse das Thema und öffne es erneut, um eine neue Runde zu starten.</p>
+        {dialogOver?(
+          <p style={{fontSize:12,color:C.mu,margin:0}}>{dialog.overMsg}</p>
         ):(
           <div style={{display:"flex",gap:8}}>
-            <input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!busy&&interviewStep(q)} placeholder="Deine Antwort..." disabled={busy} style={{flex:1,background:C.s2,border:`0.5px solid ${C.bd}`,borderRadius:10,color:C.t,padding:"10px 14px",fontSize:14,outline:"none",fontFamily:"inherit"}}/>
-            <button onClick={()=>interviewStep(q)} disabled={busy||!q.trim()} style={{...pri,padding:"10px 14px",flexShrink:0,opacity:busy||!q.trim()?.6:1}}>→</button>
+            <input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!busy&&dialogStep(q)} placeholder="Deine Antwort..." disabled={busy} style={{flex:1,background:C.s2,border:`0.5px solid ${C.bd}`,borderRadius:10,color:C.t,padding:"10px 14px",fontSize:14,outline:"none",fontFamily:"inherit"}}/>
+            <button onClick={()=>dialogStep(q)} disabled={busy||!q.trim()} style={{...pri,padding:"10px 14px",flexShrink:0,opacity:busy||!q.trim()?.6:1}}>→</button>
           </div>
         )}
       </>)}
@@ -1166,7 +1176,7 @@ const BW=[
   {n:1,nm:"Der Lebenslauf — dein erster Eindruck",th:"In Deutschland ist der tabellarische Lebenslauf Standard: umgekehrt-chronologisch (neuestes zuerst), 1-2 Seiten, klare Abschnitte (Kontaktdaten, Werdegang, Kenntnisse, ggf. Interessen). IT-Kenntnisse gehören konkret aufgelistet (z. B. „Python – Grundkenntnisse“, nicht nur „gute EDV-Kenntnisse“). Lücken im Werdegang kurz erklären statt unkommentiert zu lassen.",pc:"Ein Personaler sichtet 50 Bewerbungen für einen Ausbildungsplatz — im Schnitt 30 Sekunden pro Lebenslauf. Was sofort auffällt: unklare Struktur, Rechtschreibfehler, generische Skill-Listen ohne Einordnung.",q1:"Wie lang sollte mein Lebenslauf als Azubi/Berufseinsteiger sein?",q2:"Wie liste ich IT-Kenntnisse am besten auf, z. B. Programmiersprachen oder Tools?"},
   {n:2,nm:"Das Anschreiben — warum gerade du?",th:"Das Anschreiben wiederholt nicht den Lebenslauf, sondern erklärt die Motivation und den Bezug zum konkreten Betrieb. Aufbau: ein Einstieg ohne Floskel wie „Hiermit bewerbe ich mich“, dann warum gerade dieser Betrieb, dann warum du passt (mit konkretem Beispiel), zum Schluss der Wunsch nach einem Gespräch. Eine halbe bis eine Seite reicht.",pc:"Zwei Anschreiben liegen nebeneinander: eins generisch und austauschbar, eins mit konkretem Bezug zum Betrieb (z. B. dessen Technologien oder Projekte). Das zweite bleibt im Gedächtnis.",q1:"Wie fange ich ein Anschreiben an, ohne 'Hiermit bewerbe ich mich' zu schreiben?",q2:"Wie zeige ich im Anschreiben echtes Interesse an einem bestimmten Betrieb?"},
   {n:3,nm:"Der erste Kontakt — Anruf oder Rückruf",th:"Viele Betriebe rufen vor dem Vorstellungsgespräch kurz an oder erwarten einen Rückruf. Wichtig: sich mit vollem Namen melden, eine ruhige Umgebung suchen, Zettel und Stift griffbereit haben, und eine kurze Zusammenfassung der eigenen Bewerbung im Kopf haben, falls Rückfragen kommen.",pc:"Ein unerwarteter Anruf kommt während der Berufsschule. Statt unvorbereitet zu antworten, bittet der Azubi freundlich um einen Rückruf in 15 Minuten — und ist dann vorbereitet.",q1:"Was mache ich, wenn ich unerwartet und gerade ungünstig angerufen werde?",q2:"Was sollte ich für ein Telefonat mit einem Betrieb parat haben?"},
-  {n:4,nm:"Das Vorstellungsgespräch",th:"Typischer Ablauf: Begrüßung, kurze Selbstvorstellung, Fragen zu Motivation und Betrieb, fachliche Fragen, eigene Rückfragen, Verabschiedung. Eine gute Selbstvorstellung ist kurz und strukturiert (Werdegang, warum diese Ausbildung, warum dieser Betrieb). Eigene Fragen am Ende zeigen echtes Interesse — sie gehören vorbereitet, nicht spontan erfunden.",pc:"Unten kannst du ein Vorstellungsgespräch für eine FISI-Ausbildung direkt mit der KI durchspielen — sie stellt Fragen, gibt kurzes Feedback zu deinen Antworten und macht mit der nächsten Frage weiter.",q1:"Wie stelle ich mich in ein bis zwei Minuten überzeugend vor?",q2:"Welche Rückfragen sollte ich am Ende des Gesprächs stellen?",interview:true},
+  {n:4,nm:"Das Vorstellungsgespräch",th:"Typischer Ablauf: Begrüßung, kurze Selbstvorstellung, Fragen zu Motivation und Betrieb, fachliche Fragen, eigene Rückfragen, Verabschiedung. Eine gute Selbstvorstellung ist kurz und strukturiert (Werdegang, warum diese Ausbildung, warum dieser Betrieb). Eigene Fragen am Ende zeigen echtes Interesse — sie gehören vorbereitet, nicht spontan erfunden.",pc:"Unten kannst du ein Vorstellungsgespräch für eine FISI-Ausbildung direkt mit der KI durchspielen — sie stellt Fragen, gibt kurzes Feedback zu deinen Antworten und macht mit der nächsten Frage weiter.",q1:"Wie stelle ich mich in ein bis zwei Minuten überzeugend vor?",q2:"Welche Rückfragen sollte ich am Ende des Gesprächs stellen?",dialogMode:"interview"},
 ];
 
 const DATA={bw:{items:BW,quiz:[],title:"Karriere &amp; Bewerbung",intro:"Vor der Ausbildung steht die Bewerbung um den Platz, danach der Übergang in den ersten Job — beides läuft nicht nebenbei. Dieses Modul begleitet dich von der Bewerbungsunterlage bis zum Gespräch, inklusive einem interaktiven KI-Mock-Interview zum Üben.",case:"💼",caseTitle:"Eine Bewerbung von der Unterlage bis zum Vorstellungsgespräch"},g:{items:G,quiz:GQ,title:"Grundlagen IT &amp; Hardware",intro:"Bevor Netzwerke, Server oder Betriebssysteme Sinn ergeben, musst du verstehen was ein Computer überhaupt ist. Wir starten bei null — mit dem, was jeder IT-Techniker am ersten Tag wissen muss.",case:"💼",caseTitle:"Neuer PC im Büro — von der Lieferung bis zum ersten Login"},o:{items:O,quiz:OQ,title:"Netzwerktechnik",intro:"Das OSI-Modell ist das Grundgerüst der gesamten Netzwerktechnik. Du wirst es in jedem weiteren Modul wiedersehen — hier lernst du die 7 Schichten als solides Fundament, anhand eines echten Netzwerkausfalls.",case:"🔌",caseTitle:"Netzwerkausfall — Techniker geht alle 7 Schichten durch"},b:{items:B,quiz:BQ,title:"Betriebssysteme &amp; Server",intro:"Das Betriebssystem ist die unsichtbare Schaltzentrale jedes Computers. Ohne OS läuft keine Anwendung, kein Dienst, kein Netzwerk. Wir begleiten einen Techniker beim Einrichten eines frisch installierten Windows-Servers.",case:"🖥️",caseTitle:"Windows Server im Einsatz — vom ersten Start bis zur fertigen Konfiguration"},si:{items:SI,quiz:SIQ,title:"IT-Sicherheit",intro:"IT-Sicherheit ist kein Produkt das man kauft — es ist ein Prozess. Die meisten Angriffe nutzen keine technischen Lücken, sondern menschliche. Wir begleiten einen IT-Betrieb nach einem echten Sicherheitsvorfall.",case:"🎣",caseTitle:"Phishing-Vorfall — was passiert, wie reagiert die IT, was hätte es verhindert?"},db:{items:DB,quiz:DBQ,title:"Datenbanken &amp; Daten",intro:"Fast jede Software die wir kennen steckt dahinter eine Datenbank. Von der einfachen Kundenliste bis zur komplexen API-Anbindung — Daten sind das Herzstück moderner IT-Systeme.",case:"🏢",caseTitle:"Neue Kundenverwaltung — von der Datenbankstruktur bis zur API-Anbindung",intro:"Fast jede Software die wir kennen steckt dahinter eine Datenbank. Von der einfachen Kundenliste bis zur komplexen API-Anbindung — Daten sind das Herzstück moderner IT-Systeme."},sk:{items:SK,quiz:SKQ,title:"Skripting &amp; Automatisierung",case:"💻",caseTitle:"50 Server täglich prüfen — manuell 2 Stunden, mit Skript 2 Minuten",intro:"Wer Aufgaben automatisiert spart Zeit, vermeidet Fehler und kann sich auf das Wesentliche konzentrieren. Wir begleiten einen Techniker der ein Monitoring-System für 50 Server aufbaut."},pr:{items:PR,quiz:PRQ,title:"Beruf &amp; Projekt",case:"👥",caseTitle:"IT-Projekt von der Bedarfsanalyse bis zur Abnahme",intro:"IT ist mehr als Technik — Kommunikation, Organisation und Recht sind genauso wichtig. Wir begleiten einen Azubi durch ein komplettes IT-Projekt."}};
@@ -1420,7 +1430,7 @@ export default function ITDart({onOpenExam,onOpenLegal}){
             {idx===data.items.length-1?(data.quiz?.length?"🎯 Zum Quiz →":"✓ Abschließen"):"Weiter →"}
           </button>}
         </div>
-        {!topicLocked&&<AIChat key={`${mod.id}-${item.n}`} ctx={`Thema "${item.nm}" aus dem ${data.title}-Modul. Theorie: ${item.th}`} q1={item.q1} q2={item.q2} moduleId={mod.id} interview={!!item.interview}/>}
+        {!topicLocked&&<AIChat key={`${mod.id}-${item.n}`} ctx={`Thema "${item.nm}" aus dem ${data.title}-Modul. Theorie: ${item.th}`} q1={item.q1} q2={item.q2} moduleId={mod.id} dialogMode={item.dialogMode}/>}
       </div></div>
     );
   }

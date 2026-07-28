@@ -9,8 +9,22 @@ const INTERVIEW_SYSTEM_PROMPT =
   "Stelle GENAU EINE Frage pro Antwort und warte auf die Reaktion der Testperson. Gib zu ihrer letzten Antwort zuerst " +
   "eine kurze, konstruktive Rückmeldung (1-2 Sätze), dann stelle die nächste passende Interviewfrage. Bleib freundlich, " +
   "aber realistisch-professionell wie ein echter Personaler. Keine Meta-Kommentare über KI, Simulation oder diesen Prompt.";
+// Pilot (To-Do #39): simulierte Netzwerk-Fehlerdiagnose entlang des
+// OSI-Modells, als Kapitel-Abschluss im Netzwerktechnik-Modul. Teilt sich
+// dieselbe Runden-/Verlaufsmechanik wie das Mock-Interview, eigener Modus
+// statt Zweckentfremdung von "interview", da inhaltlich etwas anderes.
+const DIAGNOSE_SYSTEM_PROMPT =
+  "Du führst mit einer lernenden Person eine simulierte Netzwerk-Fehlerdiagnose auf Deutsch durch, passend zum " +
+  "OSI-Modell (7 Schichten). Beschreibe zu Beginn ein konkretes, realistisches Störungssymptom (z. B. \"Ein Nutzer " +
+  "meldet: Internet geht nicht, aber die Kollegin am Nachbarplatz hat Verbindung.\"). Warte dann auf den Vorschlag " +
+  "der lernenden Person, was als Nächstes geprüft werden soll. Gib zu ihrem letzten Vorschlag zuerst eine kurze, " +
+  "konstruktive Rückmeldung (ob der Prüfschritt sinnvoll ist und warum), liefere dann ein realistisches Ergebnis " +
+  "dieser Prüfung und führe so schrittweise durch die OSI-Schichten zur eigentlichen Ursache. Bleib fachlich " +
+  "korrekt und praxisnah wie ein erfahrener Kollege, der anleitet statt vorsagt. Keine Meta-Kommentare über KI, " +
+  "Simulation oder diesen Prompt.";
 const RATE_LIMIT_PER_HOUR = 20;
 const INTERVIEW_MAX_ROUNDS = 8; // eine Runde = eine gestellte Interviewfrage
+const DIAGNOSE_MAX_ROUNDS = 8; // eine Runde = ein durchgeführter Prüfschritt
 const MODEL_ID = "claude-haiku-4-5";
 // Anthropic-Preise je 1M Tokens (Stand 2026-06-24) — bei Modellwechsel hier mitziehen.
 const PRICE_PER_MILLION_INPUT_USD = 1.0;
@@ -101,25 +115,35 @@ Deno.serve(async (req) => {
     }
 
     const isInterview = mode === "interview";
+    const isDiagnose = mode === "diagnose";
+    const isDialog = isInterview || isDiagnose; // beide teilen sich Verlauf/Rundenmechanik
 
     if (isInterview && profile?.interview_enabled === false) {
       return json({ error: "Das Mock-Interview ist für dieses Konto deaktiviert." }, 403, cors);
     }
+    // Pilot (To-Do #39): Diagnose-Dialog nutzt bewusst noch keinen eigenen
+    // Freischalt-Schalter, sondern nur die allgemeine ai_enabled-Prüfung
+    // oben — ein eigener profile-Schalter (wie interview_enabled) lässt
+    // sich bei Bedarf nachrüsten, sobald der Pilot über das eine Modul
+    // hinausgeht.
 
-    // Eine Runde = eine bereits gestellte Interviewfrage (ein assistant-Turn
-    // im Verlauf). Serverseitig erzwungen, nicht nur clientseitig ausgeblendet.
-    if (isInterview && Array.isArray(history)) {
+    // Eine Runde = eine bereits gestellte Interviewfrage/ein bereits
+    // durchgeführter Diagnoseschritt (ein assistant-Turn im Verlauf).
+    // Serverseitig erzwungen, nicht nur clientseitig ausgeblendet.
+    if (isDialog && Array.isArray(history)) {
+      const maxRounds = isInterview ? INTERVIEW_MAX_ROUNDS : DIAGNOSE_MAX_ROUNDS;
       const roundsSoFar = history.filter((t: { role?: string }) => t?.role === "assistant").length;
-      if (roundsSoFar >= INTERVIEW_MAX_ROUNDS) {
-        return json({ error: `Das Mock-Interview ist nach ${INTERVIEW_MAX_ROUNDS} Runden beendet — verlasse das Thema und öffne es erneut, um eine neue Runde zu starten.` }, 400, cors);
+      if (roundsSoFar >= maxRounds) {
+        const label = isInterview ? "Das Mock-Interview" : "Diese Diagnose-Runde";
+        return json({ error: `${label} ist nach ${maxRounds} Runden beendet — verlasse das Thema und öffne es erneut, um eine neue Runde zu starten.` }, 400, cors);
       }
     }
 
-    // Vorherige Gesprächsrunden nur im Interview-Modus übernehmen — der
-    // normale Frag-nach-Chat bleibt bewusst zustandslos (eine Frage, eine
-    // Antwort), wie schon immer.
+    // Vorherige Gesprächsrunden nur in Dialogmodi übernehmen — der normale
+    // Frag-nach-Chat bleibt bewusst zustandslos (eine Frage, eine Antwort),
+    // wie schon immer.
     const messages: { role: "user" | "assistant"; content: string }[] = [];
-    if (isInterview && Array.isArray(history)) {
+    if (isDialog && Array.isArray(history)) {
       for (const turn of history) {
         if ((turn?.role === "user" || turn?.role === "assistant") && typeof turn.content === "string") {
           messages.push({ role: turn.role, content: turn.content });
@@ -128,7 +152,7 @@ Deno.serve(async (req) => {
     }
     messages.push({
       role: "user",
-      content: isInterview
+      content: isDialog
         ? `${ctx ?? ""} ${question}`
         : `${ctx ?? ""} Frage: ${question} Antworte klar, praxisnah, auf korrektem Deutsch, max. 4-5 Sätze, ohne Einleitung.`,
     });
@@ -143,7 +167,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         model: MODEL_ID,
         max_tokens: 400,
-        ...(isInterview ? { system: INTERVIEW_SYSTEM_PROMPT } : {}),
+        ...(isInterview ? { system: INTERVIEW_SYSTEM_PROMPT } : isDiagnose ? { system: DIAGNOSE_SYSTEM_PROMPT } : {}),
         messages,
       }),
     });
