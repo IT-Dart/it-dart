@@ -17,6 +17,7 @@ import iconKiAssistent from "./assets/icon-ki-assistent.jpg";
 const INTRO_TEXT="IT-Dart ist die Marke hinter „Bleib am Dart!\" — unserer digitalen Lernplattform für die Ausbildung zum Fachinformatiker für Systemintegration (FISI). Rund um die Plattform entstehen weitere Angebote: Fachliteratur, herunterladbare Lernmaterialien und individuelle Lösungen für Ausbildungsbetriebe.";
 const VISION_TEXT="IT-Ausbildung soll nicht an trockenen Skripten und Frontalunterricht hängenbleiben. Wir glauben an praxisnahes Lernen an echten Alltagsfällen — ergänzt durch KI als Werkzeug, das schneller macht, ohne das eigene Verständnis zu ersetzen.";
 const ZIEL_TEXT="Kurzfristig: angehenden Fachinformatikern für Systemintegration eine Plattform geben, mit der Prüfungsvorbereitung strukturiert und nachvollziehbar gelingt. Mittelfristig: dasselbe Prinzip auf weitere IT-Ausbildungsberufe übertragen und Ausbildungsbetrieben ein eigenständiges Angebot für ihre Auszubildenden bieten.";
+const KOOPERATION_TEXT="IT-Dart sucht den Austausch mit Ausbildungsbetrieben, Bildungsträgern, Verlagen und anderen Partnern rund um die IT-Ausbildung. Denkbar sind gemeinsame Lerninhalte, die Einbindung von IT-Dart in bestehende Ausbildungsprogramme oder weitere Formen der Zusammenarbeit — im Mittelpunkt steht dabei, möglichst vielen Auszubildenden einen einfachen Zugang zu praxisnaher Prüfungsvorbereitung zu ermöglichen.";
 
 // Sobald die Unternehmensgründung abgeschlossen ist: hier reale Amazon-Links
 // eintragen und status auf "live" setzen — der Rest der Karte bleibt gleich.
@@ -190,6 +191,10 @@ export default function CompanyScreen({onEnterApp,onOpenLegal}){
           </div>
         ))}
       </div>
+
+      <h2 style={h2}>Kooperationen & Partnerschaften</h2>
+      <p style={p}>{KOOPERATION_TEXT}</p>
+      <a href="mailto:kontakt@it-dart.de" style={{...ghost,width:"100%",justifyContent:"center",textDecoration:"none",boxSizing:"border-box"}}>Partnerschaft anfragen →</a>
 
       <h2 style={h2}>Materialien & Publikationen</h2>
       <p style={p}>Verkaufsstart und Freischaltung erfolgen nach Abschluss unserer Unternehmensgründung.</p>
