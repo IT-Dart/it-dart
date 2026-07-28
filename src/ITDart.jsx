@@ -1062,7 +1062,7 @@ const AIChat=({ctx,q1,q2,moduleId,dialogMode})=>{
               <p style={{fontSize:13,color:m.role==="user"?C.t:"#93c5fd",lineHeight:1.6,margin:0}}>{m.content}</p>
             </div>
           ))}
-          {busy&&<AIThinking text="Antwort wird analysiert …"/>}
+          {busy&&<AIThinking text={dialogRounds===0?dialog.startingText:"Antwort wird analysiert …"}/>}
         </div>
         {dialogOver?(
           <p style={{fontSize:12,color:C.mu,margin:0}}>{dialog.overMsg}</p>
