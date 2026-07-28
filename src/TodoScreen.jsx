@@ -12,6 +12,17 @@ const PRIORITY_COLOR={low:C.mu,medium:C.am,high:C.co};
 
 const fmtDate=(iso)=>iso?new Date(iso).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"}):null;
 
+const STATUS_RANK={open:0,in_progress:1,done:2};
+const PRIORITY_RANK={high:0,medium:1,low:2};
+// .order("priority") auf der DB-Seite sortiert den Text alphabetisch
+// (medium < low < high), nicht nach echter Dringlichkeit -- deshalb hier
+// client-seitig mit einer echten Rangfolge sortieren statt serverseitig.
+const sortTodos=(rows)=>[...rows].sort((a,b)=>
+  (STATUS_RANK[a.status]??1)-(STATUS_RANK[b.status]??1)
+  ||(PRIORITY_RANK[a.priority]??1)-(PRIORITY_RANK[b.priority]??1)
+  ||new Date(b.created_at)-new Date(a.created_at)
+);
+
 export default function TodoScreen({onClose}){
   const [todos,setTodos]=useState(null); // null=lädt noch
   const [tools,setTools]=useState([]);
@@ -25,9 +36,9 @@ export default function TodoScreen({onClose}){
   const [editForm,setEditForm]=useState({title:"",description:"",priority:"medium",tool_slug:""});
 
   const load=async()=>{
-    const {data,error}=await supabase.from("todos").select("*").order("status").order("priority",{ascending:false}).order("created_at",{ascending:false});
+    const {data,error}=await supabase.from("todos").select("*");
     if(error){setErr(describeError(error));setTodos([]);return;}
-    setTodos(data||[]);
+    setTodos(sortTodos(data||[]));
   };
   const loadTools=async()=>{
     const {data}=await supabase.from("tools").select("slug,name").order("name");
