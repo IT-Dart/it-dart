@@ -9,13 +9,13 @@ import { AuthProvider, useAuth } from "./lib/AuthContext";
 function AppShell(){
   const {recoveryMode,user,loading}=useAuth();
   // "company" | "app" | "pruefung" | "impressum" | "datenschutz" | "leistungen" | "agb"
-  // it-dart.de/?login überspringt die Unternehmensseite direkt zum Lerntool/Login —
-  // Zugang für Bestandskonten ohne aktive Sitzung. ?mode=login/register kommt
-  // vom "Anmelden / Registrieren"-Button auf der Unternehmensseite selbst
-  // (CompanyScreen.jsx) sowie von Einladungslinks — ITDart.jsx wertet den
-  // genauen mode-Wert dann noch mal selbst aus, hier reicht die Präsenz.
+  // ?mode=login/register kommt vom "Anmelden / Registrieren"-Button auf der
+  // Unternehmensseite selbst (CompanyScreen.jsx) sowie von Einladungslinks —
+  // ITDart.jsx wertet den genauen mode-Wert dann noch mal selbst aus, hier
+  // reicht die Präsenz. Bestandskonten ohne aktive Sitzung landen über die
+  // reine Domain automatisch in der App (siehe useEffect unten).
   const params=new URLSearchParams(window.location.search);
-  const [page,setPage]=useState(()=>(params.has("login")||params.has("mode"))?"app":"company");
+  const [page,setPage]=useState(()=>params.has("mode")?"app":"company");
   const [routed,setRouted]=useState(false);
 
   // Einmalige Entscheidung, sobald die Sitzung geladen ist: bestehende
