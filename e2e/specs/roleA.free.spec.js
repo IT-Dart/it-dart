@@ -46,6 +46,15 @@ test("Lernnachweis-Download bleibt ohne Premium gesperrt (Regressionstest)", asy
     await page.getByRole("button", { name: /Nächste Frage|Ergebnis anzeigen/i }).click();
   }
 
-  await expect(page.getByText("Lernnachweis-Download ist ein Premium-Feature", { exact: false })).toBeVisible({ timeout: 15_000 });
+  // Die "Premium-Feature"-Sperrmeldung rendert in src/Pruefung.jsx nur bei
+  // mindestens 50% richtig (pct>=50) — bei "immer erste Option" ist das
+  // nicht garantiert. Die eigentliche Regression (Download-Button darf für
+  // Free-Konten NIE erscheinen) gilt unabhängig vom Ergebnis und wird immer
+  // geprüft; die Sperrmeldung nur, wenn die Schwelle tatsächlich erreicht wurde.
+  const resultText = await page.getByText(/richtig — \d+%/).textContent();
+  const pct = parseInt(resultText?.match(/(\d+)%/)?.[1] ?? "0", 10);
+  if (pct >= 50) {
+    await expect(page.getByText("Lernnachweis-Download ist ein Premium-Feature", { exact: false })).toBeVisible({ timeout: 15_000 });
+  }
   await expect(page.getByRole("button", { name: /Lernnachweis herunterladen/i })).toHaveCount(0);
 });
