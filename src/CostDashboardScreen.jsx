@@ -5,6 +5,8 @@ import { describeError } from "./lib/errorText";
 
 const input={width:"100%",background:C.s2,border:`0.5px solid ${C.bd}`,borderRadius:10,color:C.t,padding:"11px 14px",fontSize:14,outline:"none",fontFamily:"inherit"};
 
+const CURRENCY_SYMBOL={USD:"$",EUR:"€"};
+
 export default function CostDashboardScreen({onClose}){
   const [costSummary,setCostSummary]=useState(null); // null=lädt noch, [] = keine Daten
   const [toolOverview,setToolOverview]=useState(null); // Fixkosten+ai-chat-Kosten je registriertem Tool
@@ -12,6 +14,10 @@ export default function CostDashboardScreen({onClose}){
   const [toolBusySlug,setToolBusySlug]=useState(null);
   const [newTool,setNewTool]=useState({slug:"",name:"",category:"",status:"idea",owner:""});
   const [toolMsg,setToolMsg]=useState(null);
+  const [recurringCosts,setRecurringCosts]=useState(null); // null=lädt noch
+  const [newCost,setNewCost]=useState({provider:"",amount:"",currency:"USD",billing_cycle:"monthly",category:""});
+  const [costBusyId,setCostBusyId]=useState(null);
+  const [recurringMsg,setRecurringMsg]=useState(null);
 
   const loadCostSummary=async()=>{
     const {data,error}=await supabase.rpc("get_ai_usage_cost_summary");
@@ -26,7 +32,53 @@ export default function CostDashboardScreen({onClose}){
     const costBySlug=Object.fromEntries((costs||[]).map(c=>[c.slug,c]));
     setToolOverview((tools||[]).map(t=>({...t,cost:costBySlug[t.slug]||null})));
   };
-  useEffect(()=>{loadCostSummary();loadToolOverview();},[]);
+  const loadRecurringCosts=async()=>{
+    const {data,error}=await supabase.from("recurring_costs").select("*").order("provider");
+    if(error){console.error("[CostDashboardScreen] loadRecurringCosts failed:",error.message);setRecurringCosts([]);return;}
+    setRecurringCosts(data||[]);
+  };
+  useEffect(()=>{loadCostSummary();loadToolOverview();loadRecurringCosts();},[]);
+
+  const addRecurringCost=async(e)=>{
+    e.preventDefault();
+    if(!newCost.provider.trim()||!newCost.amount)return;
+    setCostBusyId("__new__");
+    const {error}=await supabase.from("recurring_costs").insert({
+      provider:newCost.provider.trim(),
+      amount:Number(newCost.amount),
+      currency:newCost.currency,
+      billing_cycle:newCost.billing_cycle,
+      category:newCost.category.trim()||null,
+    });
+    setCostBusyId(null);
+    if(error){setRecurringMsg({type:"error",text:describeError(error)});return;}
+    setNewCost({provider:"",amount:"",currency:"USD",billing_cycle:"monthly",category:""});
+    setRecurringMsg({type:"ok",text:"Fixkosten-Eintrag gespeichert."});
+    setTimeout(()=>setRecurringMsg(null),3000);
+    loadRecurringCosts();
+  };
+
+  const toggleRecurringActive=async(cost)=>{
+    setCostBusyId(cost.id);
+    const {error}=await supabase.from("recurring_costs").update({active:!cost.active}).eq("id",cost.id);
+    setCostBusyId(null);
+    if(error){setRecurringMsg({type:"error",text:describeError(error)});return;}
+    loadRecurringCosts();
+  };
+
+  const deleteRecurringCost=async(cost)=>{
+    setCostBusyId(cost.id);
+    const {error}=await supabase.from("recurring_costs").delete().eq("id",cost.id);
+    setCostBusyId(null);
+    if(error){setRecurringMsg({type:"error",text:describeError(error)});return;}
+    loadRecurringCosts();
+  };
+
+  const monthlyTotalsByCurrency=(recurringCosts||[]).filter(c=>c.active).reduce((acc,c)=>{
+    const monthly=c.billing_cycle==="yearly"?Number(c.amount)/12:Number(c.amount);
+    acc[c.currency]=(acc[c.currency]||0)+monthly;
+    return acc;
+  },{});
 
   const toolField=(slug,key,fallback)=>toolEdits[slug]?.[key]??fallback;
   const setToolField=(slug,key,value)=>setToolEdits(e=>({...e,[slug]:{...e[slug],[key]:value}}));
@@ -147,6 +199,44 @@ export default function CostDashboardScreen({onClose}){
           <input placeholder="Name" value={newTool.name} onChange={e=>setNewTool(n=>({...n,name:e.target.value}))} style={{...input,flex:"1 1 140px"}}/>
           <input placeholder="Kategorie" value={newTool.category} onChange={e=>setNewTool(n=>({...n,category:e.target.value}))} style={{...input,flex:"1 1 120px"}}/>
           <button type="submit" disabled={toolBusySlug==="__new__"} style={{...pri,flexShrink:0,opacity:toolBusySlug==="__new__"?.6:1}}>{toolBusySlug==="__new__"?"...":"Registrieren"}</button>
+        </form>
+      </div>
+
+      <div style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:12,padding:"14px 16px"}}>
+        <p style={{fontSize:12,fontWeight:600,letterSpacing:".04em",textTransform:"uppercase",color:C.cy,marginBottom:10}}>Fixkosten-Register (wiederkehrende Abos)</p>
+        <p style={{fontSize:11,color:C.mu,marginBottom:10}}>Manuell gepflegt — die meisten Anbieter (Claude Pro, Gemini Premium, STRATO, OpenArt) bieten keine automatisch abrufbare Abrechnungs-API.</p>
+        {recurringMsg&&<p style={{fontSize:12,color:recurringMsg.type==="error"?"#fca5a5":"#86efac",marginBottom:8}}>{recurringMsg.text}</p>}
+        {Object.keys(monthlyTotalsByCurrency).length>0&&<div style={{display:"flex",gap:16,marginBottom:12,flexWrap:"wrap"}}>
+          {Object.entries(monthlyTotalsByCurrency).map(([cur,total])=>(
+            <div key={cur}>
+              <div style={{fontSize:20,fontWeight:700}}>{CURRENCY_SYMBOL[cur]||cur}{total.toFixed(2)}<span style={{fontSize:11,fontWeight:400,color:C.mu}}> /Monat</span></div>
+            </div>
+          ))}
+        </div>}
+        {recurringCosts===null&&<p style={{fontSize:12,color:C.mu,margin:"0 0 12px"}}>Lädt…</p>}
+        {recurringCosts?.length===0&&<p style={{fontSize:12,color:C.mu,margin:"0 0 12px"}}>Noch keine Fixkosten erfasst.</p>}
+        {recurringCosts?.map(c=>(
+          <div key={c.id} style={{display:"flex",alignItems:"center",gap:10,background:C.s2,border:`0.5px solid ${C.bd}`,borderRadius:10,padding:"8px 12px",marginBottom:6,opacity:c.active?1:.5,flexWrap:"wrap"}}>
+            <span style={{fontSize:13,fontWeight:600}}>{c.provider}</span>
+            {c.category&&<span style={{fontSize:11,color:C.mu}}>({c.category})</span>}
+            <span style={{fontSize:12,color:C.t2,marginLeft:"auto"}}>{CURRENCY_SYMBOL[c.currency]||c.currency}{Number(c.amount).toFixed(2)} / {c.billing_cycle==="yearly"?"Jahr":"Monat"}</span>
+            <button onClick={()=>toggleRecurringActive(c)} disabled={costBusyId===c.id} style={{...ghost,fontSize:11,padding:"4px 8px"}}>{c.active?"Pausieren":"Aktivieren"}</button>
+            <button onClick={()=>deleteRecurringCost(c)} disabled={costBusyId===c.id} style={{...ghost,fontSize:11,padding:"4px 8px",color:"#fca5a5"}}>Löschen</button>
+          </div>
+        ))}
+        <form onSubmit={addRecurringCost} style={{display:"flex",gap:8,flexWrap:"wrap",marginTop:8}}>
+          <input placeholder="Anbieter (z. B. Vercel)" value={newCost.provider} onChange={e=>setNewCost(n=>({...n,provider:e.target.value}))} style={{...input,flex:"1 1 140px"}}/>
+          <input type="number" step="0.01" placeholder="Betrag" value={newCost.amount} onChange={e=>setNewCost(n=>({...n,amount:e.target.value}))} style={{...input,flex:"1 1 90px"}}/>
+          <select value={newCost.currency} onChange={e=>setNewCost(n=>({...n,currency:e.target.value}))} style={{...input,flex:"0 1 80px"}}>
+            <option value="USD">USD</option>
+            <option value="EUR">EUR</option>
+          </select>
+          <select value={newCost.billing_cycle} onChange={e=>setNewCost(n=>({...n,billing_cycle:e.target.value}))} style={{...input,flex:"0 1 110px"}}>
+            <option value="monthly">monatlich</option>
+            <option value="yearly">jährlich</option>
+          </select>
+          <input placeholder="Kategorie (optional)" value={newCost.category} onChange={e=>setNewCost(n=>({...n,category:e.target.value}))} style={{...input,flex:"1 1 120px"}}/>
+          <button type="submit" disabled={costBusyId==="__new__"} style={{...pri,flexShrink:0,opacity:costBusyId==="__new__"?.6:1}}>{costBusyId==="__new__"?"...":"Hinzufügen"}</button>
         </form>
       </div>
     </div></div>
