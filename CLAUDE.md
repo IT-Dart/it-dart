@@ -54,6 +54,8 @@ Nach jeder Änderung an diesen drei Bereichen den Nutzer explizit auf die fälli
 - `python-docx`s namensbasierte Style-Auflösung (`add_heading(..., level=1)`, `style="Heading 1"`) kann bei manchen `.docx`-Dateien einen falschen `KeyError` werfen, obwohl der Style existiert — Workaround: Style-Objekt über `style_id` statt über den Namen auflösen.
 - OpenArt-Bildmodelle befolgen explizite "kein Text"-Anweisungen im Prompt unzuverlässig (bei Tests ca. 25-75% Verstoßrate je nach Modell) — jedes generierte Bild visuell prüfen, nicht dem Prompt vertrauen. Feststehende Fachkürzel (DHCP, VPN, DNS) sind eine vertretbare Ausnahme.
 - Beim Herunterladen mehrerer Bilder aus einer OpenArt-Batch-Antwort jedes `url`-Feld einzeln zuordnen, nicht mit `thumbnailUrl`-Fragmenten vermischen — sonst entstehen wenige-Byte-große, korrupte Dateien (Dateigröße nach jedem Download prüfen).
+- „Centered single-icon composition" steuert nicht zuverlässig den Füllgrad des Icons relativ zur Leinwand — bei 8 identisch prompt-strukturierten Modul-Icons (IT-Dart-Troubleshooter, 2026-07-27) schwankte der gemessene Füllgrad zwischen 24 % und 73 %, alle mussten nachträglich manuell zugeschnitten werden. Bei Icon-/Einzelobjekt-Prompts zusätzlich einen expliziten Füllgrad fordern, z. B. „the icon shape must occupy at least 55-65% of the image's width and height, not appear as a small object surrounded by large empty background".
+- „Centered" heißt auch nicht zuverlässig tatsächlich zentriert (IT-Dart-Logo-Generierung, 2026-07-27): zwei Kandidaten waren trotz „centered"-Anweisung sichtbar Richtung Rand verschoben bzw. überragten die Rahmen-Silhouette. Zusätzlich eine explizite Geometrie-Vorgabe ergänzen: „perfectly centered, equal margin on all four sides, not shifted toward any edge; no element may extend past the shape/canvas boundary" — eine Neugenerierung mit dieser Ergänzung behob beide Fälle.
 
 ## KI-Bildgenerierung (OpenArt)
 
@@ -105,6 +107,10 @@ Reale Erfahrung 2026-07-25: Zwei gleichzeitige Sessions haben dieselben zwei `do
 - Bei Verdacht auf einen Konflikt: nicht zurücksetzen/neu anfangen, sondern den tatsächlichen Ist-Zustand lesen, die genaue Lücke identifizieren, gezielt reparieren, dann normal weiterarbeiten.
 
 Details: [[feedback_multi_agent_coordination_protocol]] und [[project_content_producer_integrator_split]] im Claude-Gedächtnis.
+
+## Projekt-Status-Datei
+
+[PROJEKT-STATUS.md](PROJEKT-STATUS.md) ist die kompakte Orientierungsdatei für jede neue Sitzung (eigene oder andere) — max. ~10 Zeilen: was fertig ist, was offen ist, was zuletzt geändert wurde. **Am Ende jeder Session mit sichtbarem Fortschritt aktualisieren** (nicht bei reinen Lese-/Rückfragen), damit eine frisch gestartete Sitzung sofort den Stand kennt, ohne erst Git-Log/Todos/GO_LIVE.md durchsuchen zu müssen. Kurz halten — Details gehören weiter in GO_LIVE.md, COMPLIANCE.md, die `todos`-Tabelle oder das Claude-Gedächtnis, nicht hierher.
 
 ## Referenzen
 
