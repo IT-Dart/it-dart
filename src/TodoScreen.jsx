@@ -188,6 +188,7 @@ export default function TodoScreen({onClose}){
           return(
             <div key={t.id} style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:10,padding:"12px 14px",opacity:t.status==="done"?.6:1}}>
               <div style={{display:"flex",alignItems:"baseline",gap:8,marginBottom:t.description?4:8,flexWrap:"wrap"}}>
+                <span style={{fontSize:11,fontWeight:600,color:C.mu}}>#{t.id}</span>
                 <span style={{fontSize:13,fontWeight:600,textDecoration:t.status==="done"?"line-through":"none"}}>{t.title}</span>
                 <span style={{fontSize:10,fontWeight:600,color:PRIORITY_COLOR[t.priority],textTransform:"uppercase",letterSpacing:".03em"}}>{PRIORITY_LABEL[t.priority]}</span>
                 {tool&&<span style={{fontSize:11,color:C.mu}}>· {tool.name}</span>}
