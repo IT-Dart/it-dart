@@ -35,3 +35,8 @@ supabase/.branches
 
 # Claude Code local settings can contain command history with secrets
 .claude/settings.local.json
+
+# Playwright E2E run artifacts
+e2e/results.json
+e2e/test-results/
+e2e/playwright-report/
