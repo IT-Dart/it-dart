@@ -37,6 +37,11 @@ const h2={fontSize:16,fontWeight:700,marginTop:32,marginBottom:10,color:C.t};
 const p={fontSize:14,color:C.t2,lineHeight:1.7,marginBottom:10};
 const card={background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:12,padding:"16px 18px",marginBottom:12};
 const badge=(bg,fg)=>({display:"inline-block",fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,background:bg,color:fg});
+// Auffälligere Variante der sekundären CTAs auf dieser Seite (Leistungen,
+// Partnerschaft) — bewusst nicht der globale `ghost`-Stil, der in 12 anderen
+// Screens für unauffällige Sekundär-Buttons verwendet wird und dort nicht
+// mitverändert werden soll.
+const ctaAccent={...ghost,color:C.cy,border:`1.5px solid ${C.cy}`,background:"rgba(56,189,248,0.1)",fontWeight:600};
 const featureRow=[
   {icon:iconFachrichtungen,t:"Weitere IT-Ausbildungsberufe und Fachrichtungen auf derselben Plattform-Basis"},
   {icon:iconMehrsprachig,t:"Englischsprachige Version der Lerninhalte in Vorbereitung"},
@@ -181,7 +186,7 @@ export default function CompanyScreen({onEnterApp,onOpenLegal}){
           </div>
         ))}
       </div>
-      <button onClick={()=>onOpenLegal("leistungen")} style={{...ghost,width:"100%",justifyContent:"center"}}>Alle Leistungen & Pakete ansehen →</button>
+      <button onClick={()=>onOpenLegal("leistungen")} style={{...ctaAccent,width:"100%",justifyContent:"center"}}>Alle Leistungen & Pakete ansehen →</button>
 
       <h2 style={h2}>Erweiterungen</h2>
       <div style={{display:"flex",flexDirection:"column",gap:10}}>
@@ -194,7 +199,7 @@ export default function CompanyScreen({onEnterApp,onOpenLegal}){
 
       <h2 style={h2}>Kooperationen & Partnerschaften</h2>
       <p style={p}>{KOOPERATION_TEXT}</p>
-      <a href="mailto:kontakt@it-dart.de" style={{...ghost,width:"100%",justifyContent:"center",textDecoration:"none",boxSizing:"border-box"}}>Partnerschaft anfragen →</a>
+      <a href="mailto:kontakt@it-dart.de" style={{...ctaAccent,width:"100%",justifyContent:"center",textDecoration:"none",boxSizing:"border-box"}}>Partnerschaft anfragen →</a>
 
       <h2 style={h2}>Materialien & Publikationen</h2>
       <p style={p}>Verkaufsstart und Freischaltung erfolgen nach Abschluss unserer Unternehmensgründung.</p>
