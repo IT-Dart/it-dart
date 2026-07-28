@@ -4,7 +4,7 @@ Was erfüllt sein muss, bevor die Selbstregistrierung wieder geöffnet wird (akt
 
 | Bereich | Punkt | Status |
 |---|---|---|
-| Rechtlich | Gewerbeanmeldung abgeschlossen | offen |
+| Rechtlich | Gewerbeanmeldung abgeschlossen | ✅ erledigt (2026-07-28) — Gegenstand siehe `dokumentation/18_Gewerbeanmeldung_Gegenstand.docx` |
 | Rechtlich | AGB/Datenschutz/Impressum/Consent-Checkbox bei Registrierung | ✅ erledigt |
 | Preismodell | Premium-Preis final festgelegt | offen |
 | Infrastruktur | Bezahlte Supabase-/Vercel-Tarife falls für echten Nutzerandrang nötig | Supabase Pro ✅ (2026-07-28) · Vercel weiterhin offen |
