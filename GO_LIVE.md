@@ -7,7 +7,7 @@ Was erfüllt sein muss, bevor die Selbstregistrierung wieder geöffnet wird (akt
 | Rechtlich | Gewerbeanmeldung abgeschlossen | offen |
 | Rechtlich | AGB/Datenschutz/Impressum/Consent-Checkbox bei Registrierung | ✅ erledigt |
 | Preismodell | Premium-Preis final festgelegt | offen |
-| Infrastruktur | Bezahlte Supabase-/Vercel-Tarife falls für echten Nutzerandrang nötig | offen (an Gewerbeanmeldung gekoppelt) |
+| Infrastruktur | Bezahlte Supabase-/Vercel-Tarife falls für echten Nutzerandrang nötig | Supabase Pro ✅ (2026-07-28) · Vercel weiterhin offen |
 | Content | Hero-Bild auf der Unternehmensseite | ✅ erledigt (2026-07-27) |
 | Content | Bereits generiertes 7er-Icon-Set einbinden | ✅ erledigt (2026-07-27) |
 | Content | Alle 8 Kernmodule inhaltlich vollständig und geprüft | zu verifizieren |
