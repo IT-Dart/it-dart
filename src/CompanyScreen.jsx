@@ -25,7 +25,7 @@ const EBOOKS=[
   {
     title:"Claude in der Praxis",
     subtitle:"Der KI-Leitfaden für Fachinformatiker Systemintegration",
-    author:"Coşkun Bulut",
+    author:"Coşkun Selim Bulut",
     languages:["Deutsch","English","Türkçe"],
     cover:bookCoverImg,
     status:"in_preparation",
@@ -171,6 +171,7 @@ export default function CompanyScreen({onEnterApp,onOpenLegal}){
       <p style={p}>{INTRO_TEXT}</p>
 
       <button onClick={handleEnter} style={{...pri,width:"100%",justifyContent:"center",padding:"14px 18px",fontSize:15,marginTop:14}}>{user?"Zum Lerntool „Bleib am Dart!\" →":"Anmelden / Registrieren →"}</button>
+      {!user&&<p style={{fontSize:11,color:C.mu,marginTop:8,marginBottom:0,textAlign:"center"}}>Registrierung und kostenlose Module sind bereits nutzbar. Premium-Käufe sind noch nicht selbstständig möglich, da unsere Zahlungsabwicklung gerade eingerichtet wird — <a href="mailto:kontakt@it-dart.de" style={{color:C.cy}}>kontakt@it-dart.de</a> für Premium-Zugang in der Zwischenzeit.</p>}
 
       <h2 style={h2}>Vision</h2>
       <p style={p}>{VISION_TEXT}</p>
@@ -202,7 +203,7 @@ export default function CompanyScreen({onEnterApp,onOpenLegal}){
       <a href="mailto:kontakt@it-dart.de" style={{...ctaAccent,width:"100%",justifyContent:"center",textDecoration:"none",boxSizing:"border-box"}}>Partnerschaft anfragen →</a>
 
       <h2 style={h2}>Materialien & Publikationen</h2>
-      <p style={p}>Verkaufsstart und Freischaltung erfolgen nach Abschluss unserer Unternehmensgründung.</p>
+      <p style={p}>Der Verkauf startet, sobald die ersten Titel fertiggestellt sind.</p>
 
       <p style={{...p,fontWeight:600,color:C.t,marginBottom:8}}>E-Books</p>
       {EBOOKS.map(book=>(

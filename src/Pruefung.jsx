@@ -3,6 +3,7 @@ import { useAuth } from "./lib/AuthContext";
 import { generateLernnachweis, logLernnachweis } from "./lib/lernnachweis";
 import { describeError } from "./lib/errorText";
 import AuthScreen from "./AuthScreen";
+import { Logo } from "./ITDart";
 import iconHeaderImg from "./assets/icon-pruefung-header.jpg";
 import iconZeitImg from "./assets/icon-pruefung-zeit.jpg";
 import iconAusschlussImg from "./assets/icon-pruefung-ausschluss.jpg";
@@ -231,7 +232,7 @@ export default function Pruefung({onExit}){
     <div style={wrap}><div style={inner}>
       {/* HEADER */}
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:24,paddingBottom:16,borderBottom:`0.5px solid ${C.bd}`}}>
-        <div style={{width:32,height:32,borderRadius:"50%",background:C.bl,display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>🎯</div>
+        <Logo sz={32}/>
         <div>
           <div style={{fontSize:16,fontWeight:700}}>IT-Dart Prüfungsvorbereitung</div>
           <div style={{fontSize:11,color:C.mu}}>Fachinformatiker für Systemintegration · {PRUEFUNG.length} Fragen</div>

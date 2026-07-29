@@ -27,6 +27,7 @@ export default function TodoScreen({onClose}){
   const [todos,setTodos]=useState(null); // null=lädt noch
   const [tools,setTools]=useState([]);
   const [filter,setFilter]=useState("open"); // "open" | "in_progress" | "done" | "all"
+  const [priorityFilter,setPriorityFilter]=useState("all"); // "all" | "low" | "medium" | "high"
   const [busyId,setBusyId]=useState(null);
   const [err,setErr]=useState(null);
   const [form,setForm]=useState({title:"",description:"",priority:"medium",tool_slug:""});
@@ -111,7 +112,19 @@ export default function TodoScreen({onClose}){
     load();
   };
 
-  const visible=(todos||[]).filter(t=>filter==="all"||t.status===filter);
+  const toggleDecisionPending=async(t)=>{
+    setBusyId(t.id);
+    const {error}=await supabase.from("todos").update({decision_pending:!t.decision_pending}).eq("id",t.id);
+    setBusyId(null);
+    if(error){setErr(describeError(error));return;}
+    load();
+  };
+
+  // "Aktualisiert" heißt: nach der Erstellung nochmal bearbeitet -- 1 Minute
+  // Puffer, damit das anfängliche insert()+load() nicht selbst als Update zählt.
+  const wasUpdated=(t)=>new Date(t.updated_at)-new Date(t.created_at)>60000;
+
+  const visible=(todos||[]).filter(t=>(filter==="all"||t.status===filter)&&(priorityFilter==="all"||t.priority===priorityFilter));
   const counts={open:0,in_progress:0,done:0};
   (todos||[]).forEach(t=>{counts[t.status]=(counts[t.status]||0)+1;});
 
@@ -146,9 +159,15 @@ export default function TodoScreen({onClose}){
         </form>
       </div>
 
-      <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+      <div style={{display:"flex",gap:8,marginBottom:8,flexWrap:"wrap"}}>
         {[["open",`Offen (${counts.open||0})`],["in_progress",`In Arbeit (${counts.in_progress||0})`],["done",`Erledigt (${counts.done||0})`],["all","Alle"]].map(([k,label])=>(
           <button key={k} onClick={()=>setFilter(k)} style={{...ghost,fontSize:12,padding:"6px 12px",background:filter===k?C.s2:"transparent",color:filter===k?C.t:C.t2,borderColor:filter===k?C.cy:C.bd}}>{label}</button>
+        ))}
+      </div>
+      <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+        <span style={{fontSize:11,color:C.mu}}>Priorität:</span>
+        {[["all","Alle"],["high",PRIORITY_LABEL.high],["medium",PRIORITY_LABEL.medium],["low",PRIORITY_LABEL.low]].map(([k,label])=>(
+          <button key={k} onClick={()=>setPriorityFilter(k)} style={{...ghost,fontSize:12,padding:"6px 12px",background:priorityFilter===k?C.s2:"transparent",color:priorityFilter===k?C.t:C.t2,borderColor:priorityFilter===k?C.cy:C.bd}}>{label}</button>
         ))}
       </div>
 
@@ -185,14 +204,17 @@ export default function TodoScreen({onClose}){
               </div>
             </div>
           );
+          const updated=wasUpdated(t);
           return(
-            <div key={t.id} style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:10,padding:"12px 14px",opacity:t.status==="done"?.6:1}}>
+            <div key={t.id} style={{background:C.s1,border:`0.5px solid ${t.decision_pending?C.am:C.bd}`,borderRadius:10,padding:"12px 14px",opacity:t.status==="done"?.6:1}}>
               <div style={{display:"flex",alignItems:"baseline",gap:8,marginBottom:t.description?4:8,flexWrap:"wrap"}}>
                 <span style={{fontSize:11,fontWeight:600,color:C.mu}}>#{t.id}</span>
-                <span style={{fontSize:13,fontWeight:600,textDecoration:t.status==="done"?"line-through":"none"}}>{t.title}</span>
+                <span style={{fontSize:13,fontWeight:updated?800:600,color:updated?C.cy:C.t,textDecoration:t.status==="done"?"line-through":"none"}}>{t.title}</span>
                 <span style={{fontSize:10,fontWeight:600,color:PRIORITY_COLOR[t.priority],textTransform:"uppercase",letterSpacing:".03em"}}>{PRIORITY_LABEL[t.priority]}</span>
                 {tool&&<span style={{fontSize:11,color:C.mu}}>· {tool.name}</span>}
                 {created&&<span style={{fontSize:11,color:C.mu}}>· erstellt {created}</span>}
+                {updated&&<span style={{fontSize:10,fontWeight:700,color:C.cy}}>· aktualisiert</span>}
+                {t.decision_pending&&<span style={{fontSize:10,fontWeight:700,color:C.am,background:"rgba(217,119,6,0.15)",padding:"2px 6px",borderRadius:4}}>⚠ Entscheidung ausstehend</span>}
               </div>
               {t.description&&<p style={{fontSize:12,color:C.t2,margin:"0 0 8px",lineHeight:1.5}}>{t.description}</p>}
               <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
@@ -202,6 +224,7 @@ export default function TodoScreen({onClose}){
                   <option value="done">{STATUS_LABEL.done}</option>
                 </select>
                 <button disabled={busy} onClick={()=>startEdit(t)} style={{...ghost,fontSize:12,padding:"6px 12px"}}>✎ Bearbeiten</button>
+                <button disabled={busy} onClick={()=>toggleDecisionPending(t)} title="Entscheidung ausstehend markieren/entfernen" style={{...ghost,fontSize:12,padding:"6px 12px",color:t.decision_pending?C.am:C.t2,borderColor:t.decision_pending?C.am:C.bd}}>⚠ {t.decision_pending?"Entschieden":"Entscheidung offen"}</button>
                 <button disabled={busy||sol?.loading} title="Fragt Claude (mit Websuche bei Bedarf) nach einem Lösungsansatz" onClick={()=>findSolution(t)} style={{...ghost,fontSize:12,padding:"6px 12px",marginLeft:"auto",opacity:busy||sol?.loading?.5:1}}>{sol?.loading?"Sucht…":"🔍 Lösung suchen"}</button>
                 <button disabled={busy} onClick={()=>remove(t.id)} style={{...ghost,fontSize:12,padding:"6px 12px",color:"#fca5a5",borderColor:"#7f1d1d",opacity:busy?.5:1}}>Löschen</button>
               </div>
