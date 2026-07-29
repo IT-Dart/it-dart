@@ -110,6 +110,14 @@ export function AuthProvider({ children }) {
       // (vermutlich tote) Sitzung sofort zu beenden, statt 5 Minuten auf den
       // Herzschlag-Timeout zu warten.
       const sid = crypto.randomUUID();
+      // Sofort setzen, BEVOR der Server-Aufruf läuft: die gerade ausgelöste
+      // Session-Änderung lässt den Herzschlag-Bootstrap-Effect (unten)
+      // ebenfalls sofort anspringen -- findet er hier schon eine ID vor,
+      // generiert er keine eigene, konkurrierende Sitzungs-ID mehr. Ohne
+      // das entsteht ein Wettlauf zwischen zwei claim_session-Aufrufen mit
+      // zwei verschiedenen IDs, bei dem Browser-Speicher und Datenbank am
+      // Ende auseinanderlaufen können.
+      localStorage.setItem(SESSION_ID_KEY, sid);
       let claimed = false;
       let requestFailed = false;
       let failureDetail = "";
@@ -127,15 +135,16 @@ export function AuthProvider({ children }) {
         failureDetail = e?.message || "Netzwerkfehler";
       }
       if (requestFailed) {
+        localStorage.removeItem(SESSION_ID_KEY);
         await supabase.auth.signOut();
         console.error("[AuthContext] claim-session request failed:", failureDetail);
         return { data: { user: null, session: null }, error: { message: `Anmeldung fehlgeschlagen (Sitzungsprüfung nicht erreichbar): ${failureDetail}` } };
       }
       if (!claimed) {
+        localStorage.removeItem(SESSION_ID_KEY);
         await supabase.auth.signOut();
         return { data: { user: null, session: null }, error: { code: "SESSION_CONFLICT", message: "Mit diesen Anmeldedaten existiert bereits eine Sitzung. Weitere Sitzung nicht möglich." } };
       }
-      localStorage.setItem(SESSION_ID_KEY, sid);
       return result;
     },
     signOut: async () => {
