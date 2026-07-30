@@ -1,4 +1,5 @@
 import { supabase } from "./supabaseClient";
+import bullseye100Img from "../assets/lernnachweis-bullseye-100.jpg";
 
 // App palette, as RGB triples (matches src/lib/theme.js). Exported so other
 // jsPDF-based generators (e.g. src/lib/e2eReport.js) reuse the same palette
@@ -344,6 +345,21 @@ export async function generateLernnachweis({ user, kind, title, score, total, to
   }
 
   const percent = total > 0 ? Math.round((score / total) * 100) : 0;
+
+  // Bei exakt 100% ein echtes Glow-Bild statt der Vektor-Zielscheibe -- jsPDF
+  // kann kein Blur/Glow, ein perfektes Ergebnis verdient trotzdem den
+  // "spektakulären" Auftritt (Risse + heller Kern + Schockwelle), den reines
+  // Vektor-Zeichnen nicht leisten kann. Fällt bei Ladefehler still auf die
+  // Vektor-Version zurück.
+  let bullseyeImageData = null;
+  if (percent === 100) {
+    try {
+      bullseyeImageData = await loadImageDataUrl(bullseye100Img);
+    } catch {
+      // Non-critical — certificate falls back to the vector Trefferbild.
+    }
+  }
+
   const zone = zoneForPercent(percent);
   const now = new Date();
   const dateStr = `${now.toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}, ${now.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr`;
@@ -470,12 +486,26 @@ export async function generateLernnachweis({ user, kind, title, score, total, to
   // Right column: die Dartscheibe, auf der der Pfeil passend zum
   // Ergebnis landet — für jeden Lernnachweis, nicht nur die großen
   // Prüfungssimulationen.
-  const badgeCx = 220, badgeCy = 125;
+  const badgeCx = 220, badgeCy = 125, badgeR = 30;
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(...COL.text2);
   doc.text("TREFFERBILD", badgeCx, badgeCy - 60, { align: "center" });
-  drawDartboardTarget(doc, badgeCx, badgeCy, 30, percent, score, total, zone);
+  if (bullseyeImageData) {
+    // Gleiche Fläche wie das Vektor-Backboard (r*1.75), damit die Größe
+    // zwischen beiden Darstellungsformen konsistent bleibt. Rahmen im
+    // selben abgerundeten Karten-Stil wie der Modul-Icon-Badge oben, Bild
+    // etwas eingerückt, damit die runden Ecken des Rahmens sichtbar bleiben
+    // (das quadratische Bild hat scharfe Ecken).
+    const bb = badgeR * 1.75;
+    const imgSize = bb * 2 - 6;
+    doc.setDrawColor(...COL.border);
+    doc.setFillColor(...COL.s2);
+    doc.roundedRect(badgeCx - bb, badgeCy - bb, bb * 2, bb * 2, 6, 6, "FD");
+    doc.addImage(bullseyeImageData, "JPEG", badgeCx - imgSize / 2, badgeCy - imgSize / 2, imgSize, imgSize, undefined, "FAST");
+  } else {
+    drawDartboardTarget(doc, badgeCx, badgeCy, badgeR, percent, score, total, zone);
+  }
 
   // Footer
   doc.setFont("helvetica", "normal");
