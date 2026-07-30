@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "./lib/AuthContext";
 import { generateLernnachweis, logLernnachweis } from "./lib/lernnachweis";
+import { tagestippFuerHeute } from "./lib/tagestipps";
 import { describeError } from "./lib/errorText";
 import AuthScreen from "./AuthScreen";
 import { Logo } from "./ITDart";
@@ -175,6 +176,7 @@ const shuffle=arr=>[...arr].sort(()=>Math.random()-0.5);
 
 export default function Pruefung({onExit}){
   const {user,isPremium}=useAuth();
+  const tagestipp=useMemo(()=>tagestippFuerHeute(),[]);
   const [kat,setKat]=useState("Alle");
   const [modus,setModus]=useState(null); // null=start, "quiz"=läuft, "done"=fertig, "locked"=Premium nötig
   const [fragen,setFragen]=useState([]);
@@ -308,6 +310,12 @@ export default function Pruefung({onExit}){
               ))}
             </div>
           </div>
+
+          {isPremium&&<div style={{textAlign:"left",background:C.s1,border:`0.5px solid ${C.am}`,borderRadius:12,padding:"14px 16px",marginBottom:24,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+            <p style={{fontSize:11,fontWeight:700,color:C.am,textTransform:"uppercase",letterSpacing:".05em",margin:"0 0 6px"}}>⭐ Tipp des Tages · Premium</p>
+            <p style={{fontSize:13,fontWeight:600,color:C.t,margin:"0 0 2px"}}>{tagestipp.t}</p>
+            <p style={{fontSize:12,color:C.t2,margin:0,lineHeight:1.5}}>{tagestipp.s}</p>
+          </div>}
 
           <div style={{display:"flex",flexDirection:"column",gap:8,textAlign:"left"}}>
             {[{icon:iconZeitImg,t:"Zeit einteilen",s:"Beantworte zuerst die einfachen Fragen. Schwierige Fragen die Nummer notieren, überspringen und am Ende zurückkehren — bloß nicht vergessen!"},
