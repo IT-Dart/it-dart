@@ -68,14 +68,9 @@ export function AuthProvider({ children }) {
     const user = session?.user;
     if (!user) return;
     let sid = localStorage.getItem(SESSION_ID_KEY);
-    if (!sid) {
-      sid = crypto.randomUUID();
-      localStorage.setItem(SESSION_ID_KEY, sid);
-      supabase.rpc("claim_session", { new_session_id: sid }).then(({ error }) => {
-        if (error) console.error("[AuthContext] claim_session (bootstrap) failed:", error.message);
-      });
-    }
     let stopped = false;
+    let intervalId = null;
+
     const beat = () => {
       supabase.rpc("heartbeat_session", { session_id: sid }).then(({ data, error }) => {
         if (error) { console.error("[AuthContext] heartbeat_session failed:", error.message); return; }
@@ -91,9 +86,25 @@ export function AuthProvider({ children }) {
         }
       });
     };
-    beat();
-    const id = setInterval(beat, HEARTBEAT_INTERVAL_MS);
-    return () => { stopped = true; clearInterval(id); };
+    // Kein sofortiger Herzschlag mehr direkt nach dem Anspruch: claim_session
+    // (bzw. die claim-session Edge Function bei signIn()) setzt
+    // session_last_seen_at bereits selbst beim Beanspruchen -- ein
+    // synchron direkt danach abgefeuerter Herzschlag konkurrierte mit
+    // genau diesem noch laufenden Anspruch-Request um den DB-Schreibzugriff
+    // und meldete faelschlich "abgemeldet", sobald er zuerst ankam (echter
+    // Bug, hat gerade jeden frischen Login sofort wieder rueckgaengig
+    // gemacht). Der erste echte Herzschlag darf daher erst greifen, wenn
+    // ein etwaiger Bootstrap-Anspruch garantiert abgeschlossen ist.
+    if (!sid) {
+      sid = crypto.randomUUID();
+      localStorage.setItem(SESSION_ID_KEY, sid);
+      supabase.rpc("claim_session", { new_session_id: sid }).then(({ error }) => {
+        if (error) console.error("[AuthContext] claim_session (bootstrap) failed:", error.message);
+      }).finally(() => { if (!stopped) intervalId = setInterval(beat, HEARTBEAT_INTERVAL_MS); });
+    } else {
+      intervalId = setInterval(beat, HEARTBEAT_INTERVAL_MS);
+    }
+    return () => { stopped = true; if (intervalId) clearInterval(intervalId); };
   }, [session?.user?.id]);
 
   const hasTimedPremium = !!profile?.premium_until && new Date(profile.premium_until) > new Date();
