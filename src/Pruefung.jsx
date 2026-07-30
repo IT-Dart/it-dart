@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "./lib/AuthContext";
 import { generateLernnachweis, logLernnachweis } from "./lib/lernnachweis";
 import { tagestippFuerHeute } from "./lib/tagestipps";
+import FeedbackUmfrage from "./FeedbackUmfrage";
 import { describeError } from "./lib/errorText";
 import AuthScreen from "./AuthScreen";
 import { Logo } from "./ITDart";
@@ -190,6 +191,9 @@ export default function Pruefung({onExit}){
   const [dlErr,setDlErr]=useState(null);
   const [lockReason,setLockReason]=useState(null); // "account" | "premium"
   const [startedAt,setStartedAt]=useState(null);
+  const [feedbackDone,setFeedbackDone]=useState(false); // To-Do #68, pro Durchlauf zurückgesetzt
+
+  useEffect(()=>{if(modus!=="done")setFeedbackDone(false);},[modus]);
 
   const starten=(n)=>{
     if(!user){setLockReason("account");setModus("locked");return;}
@@ -414,6 +418,8 @@ export default function Pruefung({onExit}){
             {user&&pct>=50&&(isPremium?<button onClick={downloadNachweis} disabled={nachweisBusy} style={{background:"none",color:C.bl,border:`0.5px solid ${C.bl}`,borderRadius:10,padding:"11px 18px",fontSize:13,cursor:"pointer",fontFamily:ff,opacity:nachweisBusy?.6:1,width:"100%",maxWidth:280,margin:"0 auto",display:"block"}}>{nachweisBusy?"Wird erstellt...":"📄 Lernnachweis herunterladen"}</button>:<p style={{fontSize:12,color:C.mu,margin:0,textAlign:"center"}}>🔒 Lernnachweis-Download ist ein Premium-Feature.</p>)}
           </div>
         </div>
+
+        {user&&!feedbackDone&&<FeedbackUmfrage type="pruefung" question="Wie fandest du den Test?" placeholder="Was war gut, was war schlecht, was wäre besser?" withRating onDone={()=>setFeedbackDone(true)}/>}
 
         {falsch.length>0&&<>
           <p style={{fontSize:13,fontWeight:600,color:C.co,marginBottom:10}}>✗ Falsch beantwortet ({falsch.length} Fragen)</p>

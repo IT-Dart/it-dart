@@ -86,6 +86,7 @@ export function Datenschutz({onClose}){
         <li style={li}>Premium-Status und dessen Gültigkeitsdauer</li>
         <li style={li}>Protokoll erzeugter Lernnachweise (Zeitpunkt, Bereich, Ergebnis)</li>
         <li style={li}>Anfragen an den KI-Chat (werden zur Beantwortung an Anthropic übermittelt, siehe Punkt 4)</li>
+        <li style={li}>Freiwillige Antworten auf kurze Feedback-Fragebögen (z. B. nach der Prüfungsvorbereitung), falls du diese ausfüllst</li>
       </ul>
 
       <h2 style={h2}>3. Zweck und Rechtsgrundlage</h2>

@@ -17,6 +17,7 @@ import DeleteAccountScreen from "./DeleteAccountScreen";
 import StatistikScreen from "./StatistikScreen";
 import TrainerScreen from "./TrainerScreen";
 import HilfeScreen from "./HilfeScreen";
+import FeedbackUmfrage from "./FeedbackUmfrage";
 import coverImg from "./assets/cover.jpg";
 import moduleGImg from "./assets/module-g.jpg";
 import moduleOImg from "./assets/module-o.jpg";
@@ -1226,6 +1227,10 @@ export default function ITDart({onOpenExam,onOpenLegal}){
   const [phase,setPhase]=useState("intro"); // intro|learn|quiz
   const [done,setDone]=useState({});
   const {user,isPremium,premiumUntil,isAdmin,isTrainer,isJuniorAdmin,signOut}=useAuth();
+  // Einmaliger Onboarding-Feedback-Fragebogen (To-Do #68) -- per localStorage
+  // gemerkt, damit er nach dem ersten Ausfüllen/Überspringen nicht erneut nervt.
+  const [showOnboardingFeedback,setShowOnboardingFeedback]=useState(()=>!localStorage.getItem("it_dart_onboarding_feedback_done"));
+  const dismissOnboardingFeedback=()=>{localStorage.setItem("it_dart_onboarding_feedback_done","1");setShowOnboardingFeedback(false);};
   const premiumUntilDate=premiumUntil&&new Date(premiumUntil)>new Date()?new Date(premiumUntil).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"}):null;
   const hydratedFor=useRef(null); // user.id once progress has been loaded from Supabase
 
@@ -1359,6 +1364,7 @@ export default function ITDart({onOpenExam,onOpenLegal}){
           <button onClick={()=>setView("auth")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Anmelden / Registrieren</button>
         )}
       </div>
+      {user&&showOnboardingFeedback&&<FeedbackUmfrage type="onboarding" question="Was erwartest du von dieser Plattform?" placeholder="Kurz in eigenen Worten..." onDone={dismissOnboardingFeedback}/>}
       <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:28}}>
         {MODS.map(m=>{
           const d=doneFor(m.id).size;
