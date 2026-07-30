@@ -18,7 +18,6 @@ export const COL = {
   red: [220, 38, 38],
   coral: [251, 113, 133],
   white: [255, 255, 255],
-  dart: [1, 1, 112], // #010170 — Farbe des Darts im Trefferbild
 };
 
 // Redraws the IT-Dart logo (concentric rings + dart) as vector shapes —
@@ -87,27 +86,29 @@ function drawPreciseDart(doc, landX, landY, dirX, dirY, len) {
   const shaftStart = { x: landX + len * 0.42 * dirX, y: landY + len * 0.42 * dirY };
   const shaftEnd = { x: landX + len * dirX, y: landY + len * dirY };
 
-  // Heller Kontur-Stroke zuerst, etwas breiter als der eigentliche Pfeil --
-  // ohne den ging der dunkle Pfeil auf dem aehnlich dunklen Aussenring
-  // optisch fast unter. Sorgt dafuer, dass er auf jeder Ringfarbe klar
-  // erkennbar bleibt statt mit ihr zu verschmelzen.
+  // Selbe Farbe wie der Pfeil im IT-Dart-Logo (drawMark, COL.blue) -- der
+  // Pfeil im Trefferbild soll klar als "unser" Dart erkennbar sein, nicht
+  // als generische dunkle Form. Nur ein duenner heller Kontur-Saum (nicht
+  // die dicke Halo aus der vorherigen, viel dunkleren Dart-Farbe -- die
+  // hätte hier das Blau optisch komplett überdeckt), reicht aber, damit er
+  // auch auf dem aehnlich blauen Aussenring klar erkennbar bleibt.
   doc.setDrawColor(...COL.text);
-  doc.setLineWidth(len * 0.15);
+  doc.setLineWidth(len * 0.11);
   doc.line(shaftStart.x, shaftStart.y, shaftEnd.x, shaftEnd.y);
 
-  doc.setDrawColor(...COL.dart);
+  doc.setDrawColor(...COL.blue);
   doc.setLineWidth(len * 0.09);
   doc.line(shaftStart.x, shaftStart.y, shaftEnd.x, shaftEnd.y);
 
   const tipLen = len * 0.34, tipWide = len * 0.16;
   doc.setFillColor(...COL.text);
   doc.triangle(
-    landX + tipLen * dirX + perpX * (tipWide * 1.3), landY + tipLen * dirY + perpY * (tipWide * 1.3),
-    landX + tipLen * dirX - perpX * (tipWide * 1.3), landY + tipLen * dirY - perpY * (tipWide * 1.3),
+    landX + tipLen * dirX + perpX * (tipWide * 1.12), landY + tipLen * dirY + perpY * (tipWide * 1.12),
+    landX + tipLen * dirX - perpX * (tipWide * 1.12), landY + tipLen * dirY - perpY * (tipWide * 1.12),
     landX, landY,
     "F"
   );
-  doc.setFillColor(...COL.dart);
+  doc.setFillColor(...COL.blue);
   doc.triangle(
     landX + tipLen * dirX + perpX * tipWide, landY + tipLen * dirY + perpY * tipWide,
     landX + tipLen * dirX - perpX * tipWide, landY + tipLen * dirY - perpY * tipWide,
