@@ -30,6 +30,10 @@ function AppShell(){
     }
   },[loading,user,routed]);
 
+  // Gleicher Grund wie in ITDart.jsx: ohne Router bleibt die Scroll-Position
+  // sonst beim Seitenwechsel erhalten statt von oben zu starten.
+  useEffect(()=>{window.scrollTo(0,0);},[page]);
+
   if(recoveryMode)return <ResetPasswordScreen/>;
   if(loading)return null;
   // Vercel liefert dank vercel.json-Rewrite für jeden unbekannten Pfad diese

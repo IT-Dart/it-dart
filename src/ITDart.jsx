@@ -1243,6 +1243,11 @@ export default function ITDart({onOpenExam,onOpenLegal}){
     return ()=>{cancelled=true;};
   },[user?.id]);
 
+  // Ohne Router merkt sich der Browser beim Wechsel des view-States die
+  // Scroll-Position der vorherigen Ansicht -- neuer Screen soll aber immer
+  // von oben starten, nicht mittendrin.
+  useEffect(()=>{window.scrollTo(0,0);},[view]);
+
   useEffect(()=>{
     if(!user||hydratedFor.current!==user.id)return;
     const plain=Object.fromEntries(Object.entries(done).map(([k,v])=>[k,[...v]]));
