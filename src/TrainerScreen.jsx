@@ -36,6 +36,9 @@ export default function TrainerScreen({onClose,onOpenUser}){
   const [inviteEmail,setInviteEmail]=useState("");
   const [inviteBusy,setInviteBusy]=useState(false);
   const [inviteMsg,setInviteMsg]=useState(null);
+  const [noEmailMode,setNoEmailMode]=useState(false); // Trainee ohne eigenes Postfach (To-Do #67)
+  const [inviteName,setInviteName]=useState("");
+  const [inviteLink,setInviteLink]=useState(null); // manuell weiterzugebender Magic-Link
 
   const load=async()=>{
     if(!user){setTrainees([]);return;}
@@ -72,14 +75,21 @@ export default function TrainerScreen({onClose,onOpenUser}){
 
   const invite=async(e)=>{
     e.preventDefault();
-    if(!inviteEmail.trim())return;
-    setInviteBusy(true);setInviteMsg(null);
+    if(noEmailMode?!inviteName.trim():!inviteEmail.trim())return;
+    setInviteBusy(true);setInviteMsg(null);setInviteLink(null);
     try{
-      const res=await authFetch("invite-user",{email:inviteEmail.trim(),asTrainer:true});
+      const body=noEmailMode?{name:inviteName.trim(),asTrainer:true}:{email:inviteEmail.trim(),asTrainer:true};
+      const res=await authFetch("invite-user",body);
       const d=await res.json();
       if(!res.ok){setInviteMsg({type:"error",text:d.error||"Einladen fehlgeschlagen."});setInviteBusy(false);return;}
-      setInviteMsg({type:d.warning?"error":"info",text:d.warning||`Einladung an ${inviteEmail.trim()} verschickt und dir zugeordnet.`});
-      setInviteEmail("");
+      if(noEmailMode){
+        setInviteMsg({type:d.warning?"error":"info",text:d.warning||`Konto für "${inviteName.trim()}" angelegt und dir zugeordnet — Link unten weitergeben.`});
+        setInviteLink(d.link);
+        setInviteName("");
+      }else{
+        setInviteMsg({type:d.warning?"error":"info",text:d.warning||`Einladung an ${inviteEmail.trim()} verschickt und dir zugeordnet.`});
+        setInviteEmail("");
+      }
       load();
     }catch(e){
       setInviteMsg({type:"error",text:describeError(e)});
@@ -146,13 +156,28 @@ export default function TrainerScreen({onClose,onOpenUser}){
         <p style={{fontSize:12,fontWeight:600,letterSpacing:".04em",textTransform:"uppercase",color:C.cy,marginBottom:10}}>Neuen Trainee einladen</p>
         {atCapacity?(
           <p style={{fontSize:12,color:"#fbbf24",margin:0}}>Kontingent voll ({trainees.length}/{limit}). Bitte wende dich an die Administration, um dein Kontingent zu erweitern.</p>
-        ):(
+        ):(<>
+          <label style={{display:"flex",alignItems:"center",gap:6,fontSize:12,color:C.t2,marginBottom:8,cursor:"pointer"}}>
+            <input type="checkbox" checked={noEmailMode} onChange={e=>{setNoEmailMode(e.target.checked);setInviteMsg(null);setInviteLink(null);}}/>
+            Trainee hat keine eigene E-Mail-Adresse
+          </label>
           <form onSubmit={invite} style={{display:"flex",gap:8}}>
-            <input value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)} type="email" placeholder="schueler@beispiel.de" style={input}/>
+            {noEmailMode?(
+              <input value={inviteName} onChange={e=>setInviteName(e.target.value)} type="text" placeholder="Vorname Nachname" style={input}/>
+            ):(
+              <input value={inviteEmail} onChange={e=>setInviteEmail(e.target.value)} type="email" placeholder="schueler@beispiel.de" style={input}/>
+            )}
             <button type="submit" disabled={inviteBusy} style={{...pri,flexShrink:0,opacity:inviteBusy?.6:1}}>{inviteBusy?"...":"Einladen"}</button>
           </form>
-        )}
+        </>)}
         {inviteMsg&&<p style={{fontSize:12,color:inviteMsg.type==="error"?"#fca5a5":"#86efac",marginTop:8,marginBottom:0}}>{inviteMsg.text}</p>}
+        {inviteLink&&<div style={{marginTop:10,background:C.s2,border:`0.5px solid ${C.cy}`,borderRadius:8,padding:"10px 12px"}}>
+          <p style={{fontSize:11,color:C.mu,margin:"0 0 6px"}}>Diesen Link direkt an den Trainee weitergeben (Bildschirm zeigen, ausdrucken, Messenger) — er ersetzt die fehlende E-Mail:</p>
+          <div style={{display:"flex",gap:8,alignItems:"center"}}>
+            <input readOnly value={inviteLink} onFocus={e=>e.target.select()} style={{...input,fontSize:11,flex:1}}/>
+            <button type="button" onClick={()=>navigator.clipboard.writeText(inviteLink)} style={{...ghost,fontSize:12,padding:"6px 12px",flexShrink:0}}>Kopieren</button>
+          </div>
+        </div>}
       </div>}
 
       {err&&<div style={{background:"#450a0a",border:"0.5px solid #ef4444",borderRadius:10,padding:"10px 14px",marginBottom:16}}>

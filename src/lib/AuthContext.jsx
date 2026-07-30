@@ -40,11 +40,11 @@ export function AuthProvider({ children }) {
     let cancelled = false;
 
     const fetchProfile = () => {
-      supabase.from("profiles").select("is_premium, premium_until, is_admin, is_trainer, is_junior_admin, email").eq("id", user.id).single()
+      supabase.from("profiles").select("is_premium, premium_until, is_admin, is_trainer, is_junior_admin, email, needs_password_setup").eq("id", user.id).single()
         .then(({ data, error }) => {
           if (cancelled) return;
           if (error) console.error("Profil konnte nicht geladen werden:", error.message);
-          setProfile(data ?? { is_premium: false, premium_until: null, is_admin: false, is_trainer: false, is_junior_admin: false });
+          setProfile(data ?? { is_premium: false, premium_until: null, is_admin: false, is_trainer: false, is_junior_admin: false, needs_password_setup: false });
         });
     };
 
@@ -95,6 +95,7 @@ export function AuthProvider({ children }) {
     isAdmin: !!profile?.is_admin,
     isTrainer: !!profile?.is_trainer,
     isJuniorAdmin: !!profile?.is_junior_admin,
+    needsPasswordSetup: !!profile?.needs_password_setup,
     recoveryMode,
     signUp: (email, password) => supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } }),
     signIn: async (email, password, { force = false } = {}) => {
@@ -160,7 +161,14 @@ export function AuthProvider({ children }) {
     resetPassword: (email) => supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin }),
     updatePassword: async (password) => {
       const result = await supabase.auth.updateUser({ password });
-      if (!result.error) setRecoveryMode(false);
+      if (!result.error) {
+        setRecoveryMode(false);
+        if (profile?.needs_password_setup) {
+          const { error } = await supabase.rpc("clear_needs_password_setup");
+          if (error) console.error("[AuthContext] needs_password_setup clear failed:", error.message);
+          else setProfile((p) => p && { ...p, needs_password_setup: false });
+        }
+      }
       return result;
     },
   };

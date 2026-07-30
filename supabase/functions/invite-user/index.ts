@@ -58,7 +58,26 @@ Deno.serve(async (req) => {
       return json({ error: "Nur für Admins, Junior-Admins oder Trainer." }, 403, cors);
     }
 
-    const { email, asTrainer: requestedAsTrainer } = await req.json();
+    const { email: rawEmail, name, asTrainer: requestedAsTrainer } = await req.json();
+
+    // Trainee-Onboarding ohne E-Mail (To-Do #67): manche Azubis haben kein
+    // eigenes Postfach. Statt einer echten Adresse reicht dann ein Name --
+    // daraus wird eine synthetische Platzhalter-Adresse erzeugt, die nie
+    // wirklich Post empfangen muss (Supabase Auth braucht nur irgendeine
+    // eindeutige E-Mail-artige Kennung). Der Trainer bekommt stattdessen
+    // unten den Magic-Link zum manuellen Weitergeben.
+    const noEmail = !rawEmail;
+    let email = rawEmail;
+    if (noEmail) {
+      if (!name || typeof name !== "string" || !name.trim()) {
+        return json({ error: "Bitte einen Namen angeben." }, 400, cors);
+      }
+      const slug = name.trim().toLowerCase()
+        .replace(/[äöüß]/g, (c) => ({ ä: "ae", ö: "oe", ü: "ue", ß: "ss" }[c] || c))
+        .replace(/[^a-z0-9]+/g, ".")
+        .replace(/^\.+|\.+$/g, "");
+      email = `${slug}.${crypto.randomUUID().slice(0, 6)}@azubi.it-dart.de`;
+    }
     if (!email || typeof email !== "string" || !email.includes("@")) {
       return json({ error: "Ungültige E-Mail-Adresse." }, 400, cors);
     }
@@ -105,6 +124,18 @@ Deno.serve(async (req) => {
       return json({ error: msg }, 400, cors);
     }
 
+    if (noEmail && inviteData?.user?.id) {
+      // Kein echtes Postfach -- nach dem ersten Login (per Magic-Link, ohne
+      // Passwort) muss die Person einmalig ein eigenes Passwort setzen,
+      // sonst braeuchte sie fuer jeden weiteren Login erneut einen frischen
+      // Link vom Trainer.
+      const { error: flagErr } = await supabase
+        .from("profiles")
+        .update({ needs_password_setup: true })
+        .eq("id", inviteData.user.id);
+      if (flagErr) console.error("[invite-user] needs_password_setup flag failed:", JSON.stringify(flagErr));
+    }
+
     if (asTrainer && inviteData?.user?.id) {
       const { error: assignErr } = await supabase
         .from("trainer_trainees")
@@ -114,7 +145,7 @@ Deno.serve(async (req) => {
         // wäre für die eingeladene Person verwirrend), aber den Admin
         // sichtbar machen, damit die Zuordnung manuell nachgeholt wird.
         console.error("[invite-user] auto-assign to trainer failed:", JSON.stringify(assignErr));
-        return json({ ok: true, emailed: true, link: null, warning: "Einladung verschickt, aber die automatische Zuordnung zu dir ist fehlgeschlagen — bitte die Administration informieren." }, 200, cors);
+        return json({ ok: true, emailed: !noEmail, link: null, warning: "Einladung verschickt, aber die automatische Zuordnung zu dir ist fehlgeschlagen — bitte die Administration informieren." }, 200, cors);
       }
     }
 
@@ -133,7 +164,7 @@ Deno.serve(async (req) => {
       link = linkData.properties.action_link;
     }
 
-    return json({ ok: true, emailed: true, link }, 200, cors);
+    return json({ ok: true, emailed: !noEmail, link, syntheticEmail: noEmail ? email : null }, 200, cors);
   } catch (e) {
     console.error("[invite-user] unexpected error:", e);
     return json({ error: "Unerwarteter Fehler." }, 500, cors);
