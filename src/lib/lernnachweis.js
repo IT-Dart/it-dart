@@ -130,8 +130,12 @@ export function blendRGB(a, b, t) {
 // somewhere — distance from the bullseye is driven directly by the score.
 // A perfect score gets a soft glow around the bullseye instead of a flat fill.
 function drawDartboardTarget(doc, cx, cy, r, percent, score, total, zone) {
-  const R2 = r * 0.4, R2b = r * 0.55, R3 = r * 0.7, R4 = r;
-  const bb = r * 1.6;
+  // Bullseye deutlich kleiner als vorher (war 0.4r/0.55r — auf einem
+  // echten Dartboard ist der Bull nur ein kleiner Akzent in der Mitte,
+  // kein Drittel der Scheibe). Cyan/Blau übernehmen dafür den Großteil der
+  // Fläche, wie beim echten Board die äußeren Scoring-Ringe.
+  const R2 = r * 0.16, R2b = r * 0.26, R3 = r * 0.5, R4 = r;
+  const bb = r * 1.75;
 
   // Sanfter Glow hinter der Scheibe -- passend zum Cyan/Blau-Akzentstil der
   // restlichen Plattform (Buttons, Karten, Partikeleffekt auf der
@@ -185,7 +189,10 @@ function drawDartboardTarget(doc, cx, cy, r, percent, score, total, zone) {
     { min: 95, max: 100, inner: 0, outer: R2 * 0.6 },
     { min: 85, max: 95, inner: R2 * 0.6, outer: R2 },
     { min: 70, max: 85, inner: R2, outer: R3 },
-    { min: 50, max: 70, inner: R3, outer: R4 },
+    // outer knapp unter R4 statt exakt auf der Kante -- der Pfeil soll auch
+    // beim schwächsten erreichbaren Ergebnis (50%) sichtbar AUF der Scheibe
+    // stecken, nicht genau auf der Randlinie balancieren.
+    { min: 50, max: 70, inner: R3, outer: R4 * 0.94 },
     { min: 0, max: 50, inner: R4 * 1.08, outer: R4 * 1.55 },
   ];
   const band = bands.find((b) => percent >= b.min && (percent < b.max || b.max === 100)) || bands[bands.length - 1];
@@ -435,7 +442,7 @@ export async function generateLernnachweis({ user, kind, title, score, total, to
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(...COL.text2);
-  doc.text("TREFFERBILD", badgeCx, badgeCy - 56, { align: "center" });
+  doc.text("TREFFERBILD", badgeCx, badgeCy - 60, { align: "center" });
   drawDartboardTarget(doc, badgeCx, badgeCy, 30, percent, score, total, zone);
 
   // Footer
