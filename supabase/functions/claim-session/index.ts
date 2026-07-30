@@ -43,7 +43,7 @@ Deno.serve(async (req) => {
     const { data: { user }, error: userErr } = await supabase.auth.getUser(token);
     if (userErr || !user) return json({ error: "Nicht angemeldet." }, 401, cors);
 
-    const { new_session_id, force } = await req.json();
+    const { new_session_id } = await req.json();
     if (!new_session_id) return json({ error: "Ungültige Anfrage." }, 400, cors);
 
     // claim_session ist SECURITY DEFINER und leitet den Aufrufer intern über
@@ -57,9 +57,12 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } }
     );
 
+    // Beansprucht die Sitzung immer sofort und bedingungslos -- der neueste
+    // Login gewinnt immer, eine eventuell noch aktive andere Sitzung wird
+    // ueber den Realtime-Kanal in AuthContext.jsx aktiv abgemeldet. Kein
+    // Konflikt-Dialog, kein "force"-Sonderfall mehr noetig.
     const { data: claimed, error: claimError } = await supabaseAsUser.rpc("claim_session", {
       new_session_id,
-      force: !!force,
     });
     if (claimError) return json({ error: claimError.message }, 500, cors);
 

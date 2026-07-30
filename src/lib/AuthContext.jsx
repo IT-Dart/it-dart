@@ -147,19 +147,17 @@ export function AuthProvider({ children }) {
     kickedOut,
     dismissKickedOut: () => setKickedOut(false),
     signUp: (email, password) => supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } }),
-    signIn: async (email, password, { force = false } = {}) => {
+    signIn: async (email, password) => {
       setKickedOut(false);
       const result = await supabase.auth.signInWithPassword({ email, password });
       if (result.error) return result;
 
-      // Passwort ist bereits von Supabase geprüft -- jetzt zusätzlich
-      // sicherstellen, dass mit diesem Konto nicht schon anderswo eine
-      // aktive Sitzung läuft, bevor der Nutzer tatsächlich hereingelassen wird.
-      // Läuft über eine Edge Function statt direktem RPC, damit die Client-IP
-      // fürs Sicherheits-Audit-Log erfasst werden kann. `force` erlaubt einen
-      // erneuten, bereits passwort-verifizierten Login-Versuch, die alte
-      // (vermutlich tote) Sitzung sofort zu beenden, statt 5 Minuten auf den
-      // Herzschlag-Timeout zu warten.
+      // Passwort ist bereits von Supabase geprüft -- jetzt zusätzlich diese
+      // Sitzung als die aktive beanspruchen (immer sofort, bedingungslos:
+      // der neueste Login gewinnt, eine eventuell noch aktive andere
+      // Sitzung wird per Realtime aktiv abgemeldet, siehe Herzschlag-Effect
+      // unten). Läuft über eine Edge Function statt direktem RPC, damit die
+      // Client-IP fürs Sicherheits-Audit-Log erfasst werden kann.
       const sid = crypto.randomUUID();
       // Sofort setzen, BEVOR der Server-Aufruf läuft: die gerade ausgelöste
       // Session-Änderung lässt den Herzschlag-Bootstrap-Effect (unten)
@@ -169,32 +167,15 @@ export function AuthProvider({ children }) {
       // zwei verschiedenen IDs, bei dem Browser-Speicher und Datenbank am
       // Ende auseinanderlaufen können.
       localStorage.setItem(SESSION_ID_KEY, sid);
-      let claimed = false;
-      let requestFailed = false;
-      let failureDetail = "";
       try {
-        const res = await authFetch("claim-session", { new_session_id: sid, force });
+        const res = await authFetch("claim-session", { new_session_id: sid });
         const d = await res.json().catch(() => ({}));
-        if (res.ok) {
-          claimed = !!d.claimed;
-        } else {
-          requestFailed = true;
-          failureDetail = d.error || `Status ${res.status}`;
-        }
+        if (!res.ok || !d.claimed) throw new Error(d.error || `Status ${res.status}`);
       } catch (e) {
-        requestFailed = true;
-        failureDetail = e?.message || "Netzwerkfehler";
-      }
-      if (requestFailed) {
         localStorage.removeItem(SESSION_ID_KEY);
         await supabase.auth.signOut();
-        console.error("[AuthContext] claim-session request failed:", failureDetail);
-        return { data: { user: null, session: null }, error: { message: `Anmeldung fehlgeschlagen (Sitzungsprüfung nicht erreichbar): ${failureDetail}` } };
-      }
-      if (!claimed) {
-        localStorage.removeItem(SESSION_ID_KEY);
-        await supabase.auth.signOut();
-        return { data: { user: null, session: null }, error: { code: "SESSION_CONFLICT", message: "Mit diesen Anmeldedaten existiert bereits eine Sitzung. Weitere Sitzung nicht möglich." } };
+        console.error("[AuthContext] claim-session failed:", e?.message);
+        return { data: { user: null, session: null }, error: { message: `Anmeldung fehlgeschlagen (Sitzungsprüfung nicht erreichbar): ${e?.message || "Netzwerkfehler"}` } };
       }
       return result;
     },

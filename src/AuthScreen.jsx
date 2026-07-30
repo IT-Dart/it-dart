@@ -44,14 +44,6 @@ export default function AuthScreen({onClose,initialMode="login",onOpenLegal}){
     setBusy(true);setMsg(null);
     const {error}=await signIn(email,password);
     setBusy(false);
-    if(error){setMsg({type:"error",text:describeError(error),sessionConflict:error.code==="SESSION_CONFLICT"});return;}
-    onClose?.();
-  };
-
-  const forceLogin=async()=>{
-    setBusy(true);setMsg(null);
-    const {error}=await signIn(email,password,{force:true});
-    setBusy(false);
     if(error){setMsg({type:"error",text:describeError(error)});return;}
     onClose?.();
   };
@@ -94,7 +86,6 @@ export default function AuthScreen({onClose,initialMode="login",onOpenLegal}){
         </p>}
         {msg&&<div style={{background:msg.type==="error"?"#450a0a":"#052e16",border:`0.5px solid ${msg.type==="error"?"#ef4444":"#22c55e"}`,borderRadius:10,padding:"10px 14px",marginBottom:14}}>
           <p style={{fontSize:13,color:msg.type==="error"?"#fca5a5":"#86efac",margin:0,lineHeight:1.5}}>{msg.text}</p>
-          {msg.sessionConflict&&<button type="button" onClick={forceLogin} disabled={busy} style={{background:"none",border:"none",color:"#fca5a5",cursor:"pointer",fontSize:12,fontFamily:ff,textDecoration:"underline",padding:0,marginTop:8}}>Vorherige Sitzung beenden und hier anmelden</button>}
         </div>}
         <button type="submit" disabled={busy} style={{...pri,width:"100%",justifyContent:"center",opacity:busy?.6:1}}>
           {busy?"Bitte warten...":buttonLabels[mode]}
