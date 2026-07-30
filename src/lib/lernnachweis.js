@@ -87,11 +87,26 @@ function drawPreciseDart(doc, landX, landY, dirX, dirY, len) {
   const shaftStart = { x: landX + len * 0.42 * dirX, y: landY + len * 0.42 * dirY };
   const shaftEnd = { x: landX + len * dirX, y: landY + len * dirY };
 
+  // Heller Kontur-Stroke zuerst, etwas breiter als der eigentliche Pfeil --
+  // ohne den ging der dunkle Pfeil auf dem aehnlich dunklen Aussenring
+  // optisch fast unter. Sorgt dafuer, dass er auf jeder Ringfarbe klar
+  // erkennbar bleibt statt mit ihr zu verschmelzen.
+  doc.setDrawColor(...COL.text);
+  doc.setLineWidth(len * 0.15);
+  doc.line(shaftStart.x, shaftStart.y, shaftEnd.x, shaftEnd.y);
+
   doc.setDrawColor(...COL.dart);
-  doc.setLineWidth(len * 0.1);
+  doc.setLineWidth(len * 0.09);
   doc.line(shaftStart.x, shaftStart.y, shaftEnd.x, shaftEnd.y);
 
   const tipLen = len * 0.34, tipWide = len * 0.16;
+  doc.setFillColor(...COL.text);
+  doc.triangle(
+    landX + tipLen * dirX + perpX * (tipWide * 1.3), landY + tipLen * dirY + perpY * (tipWide * 1.3),
+    landX + tipLen * dirX - perpX * (tipWide * 1.3), landY + tipLen * dirY - perpY * (tipWide * 1.3),
+    landX, landY,
+    "F"
+  );
   doc.setFillColor(...COL.dart);
   doc.triangle(
     landX + tipLen * dirX + perpX * tipWide, landY + tipLen * dirY + perpY * tipWide,
@@ -118,6 +133,14 @@ function drawDartboardTarget(doc, cx, cy, r, percent, score, total, zone) {
   const R2 = r * 0.4, R2b = r * 0.55, R3 = r * 0.7, R4 = r;
   const bb = r * 1.6;
 
+  // Sanfter Glow hinter der Scheibe -- passend zum Cyan/Blau-Akzentstil der
+  // restlichen Plattform (Buttons, Karten, Partikeleffekt auf der
+  // Unternehmensseite), statt einer komplett flachen Flaeche.
+  doc.setFillColor(...blendRGB(COL.bg, COL.blue, 0.14));
+  doc.circle(cx, cy, R4 * 1.24, "F");
+  doc.setFillColor(...blendRGB(COL.bg, COL.cyan, 0.12));
+  doc.circle(cx, cy, R4 * 1.1, "F");
+
   doc.setDrawColor(...COL.border);
   doc.setFillColor(...COL.s2);
   doc.roundedRect(cx - bb, cy - bb, bb * 2, bb * 2, 6, 6, "FD");
@@ -140,9 +163,21 @@ function drawDartboardTarget(doc, cx, cy, r, percent, score, total, zone) {
   doc.setFillColor(...COL.red);
   doc.circle(cx, cy, R2, "F");
 
+  // Dünne dunkle Trennringe an jeder Zonengrenze -- vorher gingen die
+  // Farbbänder konturlos ineinander über und wirkten flach; ein echtes
+  // Dartboard hat an jedem Ring einen sichtbaren Draht.
+  doc.setDrawColor(...COL.bg);
+  doc.setLineWidth(r * 0.018);
+  [R2, R2b, R3].forEach((rr) => doc.circle(cx, cy, rr, "S"));
+
   doc.setDrawColor(...COL.border);
   doc.setLineWidth(r * 0.045);
   doc.circle(cx, cy, R4, "S");
+  // Dünner heller Akzentring knapp außerhalb -- derselbe Cyan-Rahmen-Stil
+  // wie Karten/Buttons im Rest der Plattform (siehe theme.js).
+  doc.setDrawColor(...COL.cyan);
+  doc.setLineWidth(r * 0.015);
+  doc.circle(cx, cy, R4 * 1.035, "S");
 
   // Landing radius: find the band for this percent, then interpolate
   // within that band by exactly how far into it the score falls.
@@ -161,7 +196,14 @@ function drawDartboardTarget(doc, cx, cy, r, percent, score, total, zone) {
   const dirX = Math.cos(angle), dirY = Math.sin(angle);
   const landX = cx + landR * dirX, landY = cy + landR * dirY;
 
-  drawPreciseDart(doc, landX, landY, dirX, dirY, r * 0.75); // 150% der bisherigen Größe (war r * 0.5)
+  // Der Schaft verlaeuft vom Landepunkt aus nach aussen (physikalisch
+  // korrekt -- die Fluegel zeigen zum Werfer). Landet der Pfeil nah am
+  // Scheibenrand, wuerde ein fester Laenge von r*0.75 ueber die Backboard-
+  // Kante hinausragen -- deshalb hier auf den tatsaechlich verfuegbaren
+  // Platz bis zum Backboard-Rand begrenzen.
+  const maxLen = Math.max(r * 0.35, bb - landR - 2);
+  const dartLen = Math.min(r * 0.75, maxLen); // 150% der urspruenglichen Groesse (war r * 0.5)
+  drawPreciseDart(doc, landX, landY, dirX, dirY, dartLen);
 }
 
 // Small vector target icon (a static version of the dartboard, no dart) —
@@ -290,7 +332,9 @@ export async function generateLernnachweis({ user, kind, title, score, total, to
   doc.text("Bleib am Dart!", 40, 29);
 
   if (moduleIconData) {
-    const iconSize = 18, iconX = W - 20 - iconSize, iconY = 10;
+    // Groß genug, dass die abgebildete Hardware auf dem Modul-Cover
+    // tatsächlich erkennbar bleibt statt nur ein unscharfer Fleck zu sein.
+    const iconSize = 28, iconX = W - 20 - iconSize, iconY = 8;
     doc.setDrawColor(...COL.border);
     doc.setFillColor(...COL.s1);
     doc.roundedRect(iconX - 2, iconY - 2, iconSize + 4, iconSize + 4, 2, 2, "FD");
