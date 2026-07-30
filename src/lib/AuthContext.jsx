@@ -24,6 +24,7 @@ export function AuthProvider({ children }) {
   const [session, setSession] = useState(undefined); // undefined = loading, null = logged out
   const [profile, setProfile] = useState(null);
   const [recoveryMode, setRecoveryMode] = useState(inviteFromUrl);
+  const [kickedOut, setKickedOut] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -74,14 +75,25 @@ export function AuthProvider({ children }) {
         if (error) console.error("[AuthContext] claim_session (bootstrap) failed:", error.message);
       });
     }
+    let stopped = false;
     const beat = () => {
-      supabase.rpc("heartbeat_session", { session_id: sid }).then(({ error }) => {
-        if (error) console.error("[AuthContext] heartbeat_session failed:", error.message);
+      supabase.rpc("heartbeat_session", { session_id: sid }).then(({ data, error }) => {
+        if (error) { console.error("[AuthContext] heartbeat_session failed:", error.message); return; }
+        // false heisst: ein anderes Geraet hat diese Sitzung per force
+        // uebernommen (aktiver_session_id in der DB ist nicht mehr diese
+        // hier) -- sofort lokal abmelden statt bis zum naechsten Reload
+        // unbemerkt weiterzulaufen.
+        if (data === false && !stopped) {
+          stopped = true;
+          localStorage.removeItem(SESSION_ID_KEY);
+          setKickedOut(true);
+          supabase.auth.signOut();
+        }
       });
     };
     beat();
     const id = setInterval(beat, HEARTBEAT_INTERVAL_MS);
-    return () => clearInterval(id);
+    return () => { stopped = true; clearInterval(id); };
   }, [session?.user?.id]);
 
   const hasTimedPremium = !!profile?.premium_until && new Date(profile.premium_until) > new Date();
@@ -97,8 +109,11 @@ export function AuthProvider({ children }) {
     isJuniorAdmin: !!profile?.is_junior_admin,
     needsPasswordSetup: !!profile?.needs_password_setup,
     recoveryMode,
+    kickedOut,
+    dismissKickedOut: () => setKickedOut(false),
     signUp: (email, password) => supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } }),
     signIn: async (email, password, { force = false } = {}) => {
+      setKickedOut(false);
       const result = await supabase.auth.signInWithPassword({ email, password });
       if (result.error) return result;
 

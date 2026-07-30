@@ -3,13 +3,14 @@ import ITDart from "./ITDart";
 import Pruefung from "./Pruefung";
 import ResetPasswordScreen from "./ResetPasswordScreen";
 import PasswordSetupScreen from "./PasswordSetupScreen";
+import KickedOutScreen from "./KickedOutScreen";
 import CompanyScreen from "./CompanyScreen";
 import NotFoundScreen from "./NotFoundScreen";
 import { Impressum, Datenschutz, Leistungen, AGB } from "./LegalPages";
 import { AuthProvider, useAuth } from "./lib/AuthContext";
 
 function AppShell(){
-  const {recoveryMode,needsPasswordSetup,user,loading}=useAuth();
+  const {recoveryMode,needsPasswordSetup,kickedOut,dismissKickedOut,user,loading}=useAuth();
   // "company" | "app" | "pruefung" | "impressum" | "datenschutz" | "leistungen" | "agb"
   // ?mode=login/register kommt vom "Anmelden / Registrieren"-Button auf der
   // Unternehmensseite selbst (CompanyScreen.jsx) sowie von Einladungslinks —
@@ -37,6 +38,7 @@ function AppShell(){
 
   if(recoveryMode)return <ResetPasswordScreen/>;
   if(loading)return null;
+  if(kickedOut)return <KickedOutScreen onDismiss={()=>{dismissKickedOut();setPage("company");}}/>;
   if(user&&needsPasswordSetup)return <PasswordSetupScreen/>;
   // Vercel liefert dank vercel.json-Rewrite für jeden unbekannten Pfad diese
   // SPA aus, statt selbst ein 404 zu werfen — die App entscheidet also hier,
