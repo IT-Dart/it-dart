@@ -71,21 +71,45 @@ export function AuthProvider({ children }) {
     let stopped = false;
     let intervalId = null;
 
+    const kickOut = () => {
+      if (stopped) return;
+      stopped = true;
+      localStorage.removeItem(SESSION_ID_KEY);
+      setKickedOut(true);
+      supabase.auth.signOut();
+    };
+
     const beat = () => {
       supabase.rpc("heartbeat_session", { session_id: sid }).then(({ data, error }) => {
         if (error) { console.error("[AuthContext] heartbeat_session failed:", error.message); return; }
         // false heisst: ein anderes Geraet hat diese Sitzung per force
         // uebernommen (aktiver_session_id in der DB ist nicht mehr diese
         // hier) -- sofort lokal abmelden statt bis zum naechsten Reload
-        // unbemerkt weiterzulaufen.
-        if (data === false && !stopped) {
-          stopped = true;
-          localStorage.removeItem(SESSION_ID_KEY);
-          setKickedOut(true);
-          supabase.auth.signOut();
-        }
+        // unbemerkt weiterzulaufen. Dient hier nur noch als Ausfallsicherung
+        // fuer den Realtime-Kanal unten (z.B. bei getrennter Verbindung).
+        if (data === false) kickOut();
       });
     };
+
+    // Realtime: sobald sich die eigene profiles-Zeile aendert (z.B. weil ein
+    // anderes Geraet die Sitzung per force uebernommen hat), sofort reagieren
+    // statt bis zu 2 Minuten auf den naechsten Herzschlag zu warten -- genau
+    // das war mit "aktivem" Kick-out (Task #6) gemeint, ein reines Polling
+    // liess ein verdraengtes Geraet sonst kurzzeitig weiter "angemeldet"
+    // wirken. RLS ("Users can read own profile") filtert automatisch auf
+    // die eigene Zeile.
+    const channel = supabase
+      .channel(`profile-session-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${user.id}` },
+        (payload) => {
+          const newActive = payload.new?.active_session_id;
+          if (newActive && newActive !== sid) kickOut();
+        }
+      )
+      .subscribe();
+
     // Kein sofortiger Herzschlag mehr direkt nach dem Anspruch: claim_session
     // (bzw. die claim-session Edge Function bei signIn()) setzt
     // session_last_seen_at bereits selbst beim Beanspruchen -- ein
@@ -104,7 +128,7 @@ export function AuthProvider({ children }) {
     } else {
       intervalId = setInterval(beat, HEARTBEAT_INTERVAL_MS);
     }
-    return () => { stopped = true; if (intervalId) clearInterval(intervalId); };
+    return () => { stopped = true; if (intervalId) clearInterval(intervalId); supabase.removeChannel(channel); };
   }, [session?.user?.id]);
 
   const hasTimedPremium = !!profile?.premium_until && new Date(profile.premium_until) > new Date();
