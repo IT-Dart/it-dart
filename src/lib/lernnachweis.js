@@ -184,6 +184,37 @@ function drawDartboardTarget(doc, cx, cy, r, percent, score, total, zone) {
   doc.setLineWidth(r * 0.015);
   doc.circle(cx, cy, R4 * 1.035, "S");
 
+  // Futuristische "Platinen"-Speichen + Knotenpunkte oben auf den
+  // Farbbändern -- rein dekorativ, ändert nichts an der Zonen-Farblogik
+  // (die bleibt für die Lesbarkeit wichtiger als der Stil), gibt der
+  // Scheibe aber den gewünschten technischeren Look statt einer reinen
+  // Flachfarben-Fläche.
+  const spokeAngles = [15, 60, 105, 150, 195, 240, 285, 330].map((d) => (d * Math.PI) / 180);
+  doc.setDrawColor(...blendRGB(COL.s2, COL.cyan, 0.55));
+  doc.setLineWidth(r * 0.007);
+  spokeAngles.forEach((a, i) => {
+    const dx = Math.cos(a), dy = Math.sin(a);
+    doc.line(cx + R2b * dx, cy + R2b * dy, cx + R4 * dx, cy + R4 * dy);
+    if (i % 2 === 0) {
+      // Kurzer Seitenzweig an jeder zweiten Speiche, wie eine Platinenspur.
+      const midR = (R3 + R4) / 2;
+      const mx = cx + midR * dx, my = cy + midR * dy;
+      const perpX = -dy, perpY = dx;
+      doc.line(mx, my, mx + perpX * r * 0.06, my + perpY * r * 0.06);
+    }
+  });
+  const nodeR = r * 0.014;
+  [R2b, R3, R4].forEach((rr, ringIdx) => {
+    const count = 6 + ringIdx * 4;
+    doc.setFillColor(...COL.s1);
+    doc.setDrawColor(...blendRGB(COL.s2, COL.cyan, 0.6));
+    doc.setLineWidth(r * 0.006);
+    for (let i = 0; i < count; i++) {
+      const a = (i / count) * Math.PI * 2 + ringIdx * 0.2;
+      doc.circle(cx + rr * Math.cos(a), cy + rr * Math.sin(a), nodeR, "FD");
+    }
+  });
+
   // Landing radius: find the band for this percent, then interpolate
   // within that band by exactly how far into it the score falls.
   const bands = [
