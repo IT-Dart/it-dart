@@ -8,8 +8,16 @@ import AuthErrorScreen from "./AuthErrorScreen";
 import CompanyScreen from "./CompanyScreen";
 import NotFoundScreen from "./NotFoundScreen";
 import EinladungScreen from "./EinladungScreen";
+import WartungScreen from "./WartungScreen";
 import { Impressum, Datenschutz, Leistungen, AGB } from "./LegalPages";
 import { AuthProvider, useAuth } from "./lib/AuthContext";
+
+// Temporärer Schalter: solange true, sehen anonyme Besucher statt der
+// Unternehmensseite eine "Im Aufbau"-Seite (WartungScreen.jsx). Bereits
+// eingeloggte Nutzer sind komplett unbetroffen -- sie werden weiter unten
+// automatisch direkt zu "app" geroutet, bevor page==="company" je greift.
+// Einfach auf false setzen, um wieder auf die normale Unternehmensseite umzuschalten.
+const WARTUNGSMODUS=true;
 
 function AppShell(){
   const {recoveryMode,needsPasswordSetup,kickedOut,dismissKickedOut,authError,dismissAuthError,user,loading}=useAuth();
@@ -64,7 +72,7 @@ function AppShell(){
   // ob der aufgerufene Pfad überhaupt bekannt ist (die App kennt sonst nur "/",
   // da es keinen Router gibt und alle Screens über view/page-State laufen).
   if(window.location.pathname!=="/")return <NotFoundScreen/>;
-  if(page==="company")return <CompanyScreen onEnterApp={()=>setPage("app")} onOpenLegal={setPage}/>;
+  if(page==="company")return WARTUNGSMODUS?<WartungScreen onOpenLegal={setPage}/>:<CompanyScreen onEnterApp={()=>setPage("app")} onOpenLegal={setPage}/>;
   const backHome=()=>setPage(user?"app":"company");
   if(page==="impressum")return <Impressum onClose={backHome}/>;
   if(page==="datenschutz")return <Datenschutz onClose={backHome}/>;
@@ -74,7 +82,7 @@ function AppShell(){
   return (
     <>
       <div style={{display:page==="pruefung"?"none":"block"}}>
-        <ITDart onOpenExam={()=>setPage("pruefung")} onOpenLegal={setPage}/>
+        <ITDart onOpenExam={()=>setPage("pruefung")} onOpenLegal={setPage} wartungsmodus={WARTUNGSMODUS}/>
       </div>
       {page==="pruefung"&&<Pruefung onExit={()=>setPage("app")}/>}
     </>

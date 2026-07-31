@@ -1220,7 +1220,7 @@ const authModeRequested=typeof window!=="undefined"?new URLSearchParams(window.l
 const registerLinkRequested=authModeRequested==="register";
 const loginLinkRequested=authModeRequested==="login";
 
-export default function ITDart({onOpenExam,onOpenLegal}){
+export default function ITDart({onOpenExam,onOpenLegal,wartungsmodus}){
   const [view,setView]=useState(()=>(registerLinkRequested||loginLinkRequested)?"auth":"cover");
   const [statTarget,setStatTarget]=useState(null); // Trainee {id,email}, wenn ein Trainer dessen Statistik ansieht
   const [mod,setMod]=useState(null);
@@ -1276,7 +1276,11 @@ export default function ITDart({onOpenExam,onOpenLegal}){
     setMod(m);setIdx(0);setPhase(doneFor(m.id).size>0?"learn":"intro");setView("mod");
   };
 
-  if(view==="auth")return <AuthScreen onClose={()=>setView("overview")} initialMode={registerLinkRequested?"register":"login"} onOpenLegal={onOpenLegal}/>;
+  // Im Wartungsmodus soll "Zurück" auf dem Login-Screen wirklich zur
+  // Wartungsseite zurückführen statt in die (sonst als Vorschau gedachte)
+  // Modulübersicht -- das gibt es sonst nirgends, da App.jsx's page-State
+  // hier bereits "app" ist und von ITDarts eigenem view-State nichts weiß.
+  if(view==="auth")return <AuthScreen onClose={()=>{(wartungsmodus&&!user)?(window.location.href="/"):setView("overview");}} initialMode={registerLinkRequested?"register":"login"} onOpenLegal={onOpenLegal}/>;
   if(view==="admin"||view==="junior-admin")return (isAdmin||isJuniorAdmin)?<AdminScreen onClose={()=>setView("overview")}/>:null;
   if(view==="e2e-tests")return isAdmin?<E2ETestScreen onClose={()=>setView("overview")}/>:null;
   if(view==="website-check")return isAdmin?<WebsiteCheckScreen onClose={()=>setView("overview")}/>:null;
