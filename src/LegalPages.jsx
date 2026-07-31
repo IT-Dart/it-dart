@@ -103,6 +103,7 @@ export function Datenschutz({onClose}){
 
       <h2 style={h2}>5. Speicherdauer</h2>
       <p style={p}>Deine Daten werden gespeichert, solange dein Konto besteht. Du kannst dein Konto und alle damit verbundenen Daten jederzeit selbst und vollständig löschen (siehe Punkt 6).</p>
+      <p style={p}>Eine Ausnahme betrifft deine Fragen an den KI-Chat: Der Frage- und Antworttext selbst wird von uns nicht gespeichert — er existiert nur während der aktiven Sitzung in deinem Browser. Zur Beantwortung wird der Text an Anthropic übermittelt; dort wird er gemäß Anthropics eigener Aufbewahrungsrichtlinie automatisch innerhalb von 30 Tagen gelöscht und nicht zum Training von KI-Modellen verwendet. Bei uns gespeichert werden lediglich anonyme Nutzungsmetadaten (Zeitpunkt, Modell, Token-Anzahl, Kosten — kein Frage-/Antworttext), solange dein Konto besteht.</p>
 
       <h2 style={h2}>6. Deine Rechte</h2>
       <p style={p}>Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch. Dein Konto kannst du direkt in der App unter "Konto löschen" endgültig entfernen — das löscht automatisch auch deinen Lernfortschritt, Premium-Status und alle Protokolle. Für alle anderen Anliegen erreichst du uns unter der oben genannten E-Mail-Adresse. Außerdem hast du das Recht, dich bei einer Datenschutz-Aufsichtsbehörde zu beschweren.</p>
