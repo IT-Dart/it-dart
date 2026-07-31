@@ -10,7 +10,7 @@ Was erfüllt sein muss, bevor die Selbstregistrierung wieder geöffnet wird (akt
 | Infrastruktur | Bezahlte Supabase-/Vercel-Tarife falls für echten Nutzerandrang nötig | Supabase Pro ✅ (2026-07-28) · Vercel weiterhin offen |
 | Content | Hero-Bild auf der Unternehmensseite | ✅ erledigt (2026-07-27) |
 | Content | Bereits generiertes 7er-Icon-Set einbinden | ✅ erledigt (2026-07-27) |
-| Content | Alle 8 Kernmodule inhaltlich vollständig und geprüft | zu verifizieren |
+| Content | Alle 8 Kernmodule inhaltlich vollständig und geprüft | ✅ erledigt (2026-08-01) — Item-Zahlen gegen `totalItems` verifiziert, keine Platzhalter, ein doppelter `intro`-Key bereinigt |
 | Compliance | Unit-Tests für `lernnachweis.js`/`websiteCheckReport.js`/`e2eReport.js` | ✅ erledigt (2026-07-27) |
 | Compliance | Markenklassen-Frage IT-Dart-Kids (DPMA) | offen, liegt beim Anwalt/Anmelder |
 
