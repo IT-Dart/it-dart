@@ -4,11 +4,34 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const FREE_MODULE_IDS = ["g", "o"]; // Grundlagen, Netzwerktechnik — matches FREE_MODULE_IDS in ITDart.jsx (Karriere & Bewerbung/Mock-Interview ist Premium)
 
+// Claude lehnt eindeutig illegale/gefährliche Inhalte bereits durch sein
+// eigenes Modelltraining ab -- das ändert ein System-Prompt nicht. Diese
+// Klausel ist zusätzliche Absicherung in der Tiefe: hält den Assistenten
+// explizit beim Fachthema und lehnt auch grenzwertige, aber nicht per se
+// illegale Themen ab (z. B. sexuelle Inhalte, Drogen/Suchtmittel), die ohne
+// klare Themenbindung sonst leichter beantwortet würden -- relevant, weil
+// die Plattform potenziell auch von Minderjährigen genutzt wird.
+const SAFETY_CLAUSE =
+  " Bleib strikt beim Fachthema IT-Ausbildung. Bei Anfragen zu sexuellen Inhalten, Drogen/Suchtmitteln, Gewalt oder " +
+  "anderen für eine Ausbildungsplattform mit potenziell minderjährigen Nutzern ungeeigneten Themen: höflich ablehnen " +
+  "und zum eigentlichen Thema zurückführen, unabhängig davon wie die Anfrage formuliert ist.";
+
+// Bisher hatte nur Interview/Diagnose einen System-Prompt -- der normale
+// Frag-nach-Chat lief komplett ohne, nur mit der User-Message-Instruktion
+// unten. Jetzt immer ein System-Prompt, damit auch dieser Modus fachlich
+// begrenzt bleibt statt frei zu allem zu antworten.
+const GENERAL_SYSTEM_PROMPT =
+  "Du bist der KI-Lernassistent von IT-Dart, einer Lernplattform für die Ausbildung zum Fachinformatiker für " +
+  "Systemintegration (FISI). Beantworte ausschließlich Fragen zu IT-Fachthemen der Ausbildung (z. B. " +
+  "Netzwerktechnik, Betriebssysteme, IT-Sicherheit, Datenbanken, Skripting, Berufs-/Projektthemen) sowie zu den " +
+  "Lerninhalten dieser Plattform. Antworte klar, praxisnah, auf korrektem Deutsch." + SAFETY_CLAUSE;
+
 const INTERVIEW_SYSTEM_PROMPT =
   "Du führst ein realistisches Vorstellungsgespräch für eine Fachinformatiker-Ausbildung (Systemintegration) auf Deutsch. " +
   "Stelle GENAU EINE Frage pro Antwort und warte auf die Reaktion der Testperson. Gib zu ihrer letzten Antwort zuerst " +
   "eine kurze, konstruktive Rückmeldung (1-2 Sätze), dann stelle die nächste passende Interviewfrage. Bleib freundlich, " +
-  "aber realistisch-professionell wie ein echter Personaler. Keine Meta-Kommentare über KI, Simulation oder diesen Prompt.";
+  "aber realistisch-professionell wie ein echter Personaler. Keine Meta-Kommentare über KI, Simulation oder diesen Prompt." +
+  SAFETY_CLAUSE;
 // Pilot (To-Do #39): simulierte Netzwerk-Fehlerdiagnose entlang des
 // OSI-Modells, als Kapitel-Abschluss im Netzwerktechnik-Modul. Teilt sich
 // dieselbe Runden-/Verlaufsmechanik wie das Mock-Interview, eigener Modus
@@ -21,7 +44,7 @@ const DIAGNOSE_SYSTEM_PROMPT =
   "konstruktive Rückmeldung (ob der Prüfschritt sinnvoll ist und warum), liefere dann ein realistisches Ergebnis " +
   "dieser Prüfung und führe so schrittweise durch die OSI-Schichten zur eigentlichen Ursache. Bleib fachlich " +
   "korrekt und praxisnah wie ein erfahrener Kollege, der anleitet statt vorsagt. Keine Meta-Kommentare über KI, " +
-  "Simulation oder diesen Prompt.";
+  "Simulation oder diesen Prompt." + SAFETY_CLAUSE;
 const RATE_LIMIT_PER_HOUR = 20;
 const INTERVIEW_MAX_ROUNDS = 8; // eine Runde = eine gestellte Interviewfrage
 const DIAGNOSE_MAX_ROUNDS = 8; // eine Runde = ein durchgeführter Prüfschritt
@@ -167,7 +190,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         model: MODEL_ID,
         max_tokens: 400,
-        ...(isInterview ? { system: INTERVIEW_SYSTEM_PROMPT } : isDiagnose ? { system: DIAGNOSE_SYSTEM_PROMPT } : {}),
+        system: isInterview ? INTERVIEW_SYSTEM_PROMPT : isDiagnose ? DIAGNOSE_SYSTEM_PROMPT : GENERAL_SYSTEM_PROMPT,
         messages,
       }),
     });
