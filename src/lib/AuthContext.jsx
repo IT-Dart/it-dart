@@ -20,11 +20,25 @@ const HEARTBEAT_INTERVAL_MS = 2 * 60 * 1000;
 // own session detection consumes and strips it.
 const inviteFromUrl = typeof window !== "undefined" && window.location.hash.includes("type=invite");
 
+// Ein abgelaufener oder bereits verwendeter Magic-Link (z.B. nach der
+// Einladungs-Zwischenseite in EinladungScreen.jsx) schickt Supabase
+// ebenfalls per URL-Hash zurück, aber als Fehler statt als Session:
+// `#error=access_denied&error_code=otp_expired&error_description=...`.
+// Muss aus demselben Grund wie inviteFromUrl oben VOR Supabases eigener
+// Session-Erkennung ausgelesen werden.
+const authErrorFromUrl = (() => {
+  if (typeof window === "undefined") return null;
+  const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+  if (hash.get("error") !== "access_denied") return null;
+  return { code: hash.get("error_code"), description: hash.get("error_description") };
+})();
+
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(undefined); // undefined = loading, null = logged out
   const [profile, setProfile] = useState(null);
   const [recoveryMode, setRecoveryMode] = useState(inviteFromUrl);
   const [kickedOut, setKickedOut] = useState(false);
+  const [authError, setAuthError] = useState(authErrorFromUrl);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -146,6 +160,8 @@ export function AuthProvider({ children }) {
     recoveryMode,
     kickedOut,
     dismissKickedOut: () => setKickedOut(false),
+    authError,
+    dismissAuthError: () => setAuthError(null),
     signUp: (email, password) => supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } }),
     signIn: async (email, password) => {
       setKickedOut(false);

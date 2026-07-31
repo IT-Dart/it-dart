@@ -4,6 +4,7 @@ import Pruefung from "./Pruefung";
 import ResetPasswordScreen from "./ResetPasswordScreen";
 import PasswordSetupScreen from "./PasswordSetupScreen";
 import KickedOutScreen from "./KickedOutScreen";
+import AuthErrorScreen from "./AuthErrorScreen";
 import CompanyScreen from "./CompanyScreen";
 import NotFoundScreen from "./NotFoundScreen";
 import EinladungScreen from "./EinladungScreen";
@@ -11,7 +12,7 @@ import { Impressum, Datenschutz, Leistungen, AGB } from "./LegalPages";
 import { AuthProvider, useAuth } from "./lib/AuthContext";
 
 function AppShell(){
-  const {recoveryMode,needsPasswordSetup,kickedOut,dismissKickedOut,user,loading}=useAuth();
+  const {recoveryMode,needsPasswordSetup,kickedOut,dismissKickedOut,authError,dismissAuthError,user,loading}=useAuth();
   // "company" | "app" | "pruefung" | "impressum" | "datenschutz" | "leistungen" | "agb"
   // ?mode=login/register kommt vom "Anmelden / Registrieren"-Button auf der
   // Unternehmensseite selbst (CompanyScreen.jsx) sowie von Einladungslinks —
@@ -53,6 +54,7 @@ function AppShell(){
   useEffect(()=>{window.scrollTo(0,0);},[page]);
 
   if(einladungLink)return <EinladungScreen link={einladungLink}/>;
+  if(authError)return <AuthErrorScreen authError={authError} onDismiss={()=>{dismissAuthError();setPage("company");}}/>;
   if(recoveryMode)return <ResetPasswordScreen/>;
   if(loading)return null;
   if(kickedOut)return <KickedOutScreen onDismiss={()=>{dismissKickedOut();setPage("company");}}/>;

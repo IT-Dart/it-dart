@@ -19,6 +19,20 @@ function translate(message) {
   return hit ? hit[1] : null;
 }
 
+// Fehlgeschlagene Magic-Links/OTP-Logins landen als `error_code` im
+// URL-Hash statt als geworfener Error (siehe authError in AuthContext.jsx)
+// -- eigene, kleine Übersetzungstabelle statt describeError() oben, das auf
+// Error-Objekte mit .message zugeschnitten ist. Andere von Supabase für
+// diesen Redirect-Fall bekannte error_code-Werte (z.B. bei manuell
+// zurückgezogenen Links) landen im generischen Fallback unten.
+const HASH_ERROR_CODE_TRANSLATIONS = {
+  otp_expired: "Dieser Link ist abgelaufen oder wurde bereits verwendet. Bitte fordere einen neuen Link an.",
+};
+
+export function describeHashError(errorCode) {
+  return HASH_ERROR_CODE_TRANSLATIONS[errorCode] || "Dieser Link ist ungültig oder abgelaufen. Bitte fordere einen neuen Link an.";
+}
+
 // Turns whatever Supabase (or a network failure) hands back into a
 // readable German message, and always logs the raw error so the real
 // cause is visible in devtools instead of getting lost.
