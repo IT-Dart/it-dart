@@ -1294,7 +1294,7 @@ export default function ITDart({onOpenExam,onOpenLegal,wartungsmodus}){
   if(view==="feedback")return isAdmin?<FeedbackScreen onClose={()=>setView("overview")}/>:null;
   if(view==="delete-account")return <DeleteAccountScreen onClose={()=>setView("overview")}/>;
   if(view==="statistik")return <StatistikScreen viewUser={statTarget} onClose={()=>{setView(statTarget?"trainer":"overview");setStatTarget(null);}}/>;
-  if(view==="trainer")return isTrainer?<TrainerScreen onClose={()=>setView("overview")} onOpenUser={(u)=>{setStatTarget(u);setView("statistik");}}/>:null;
+  if(view==="trainer")return isTrainer?<TrainerScreen onClose={()=>setView("overview")} onOpenUser={(u)=>{setStatTarget(u);setView("statistik");}} onOpenLegal={onOpenLegal}/>:null;
   if(view==="hilfe")return <HilfeScreen onClose={()=>setView(user?"overview":"cover")}/>;
 
   if(view==="locked"&&mod)return(

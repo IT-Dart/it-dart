@@ -130,7 +130,7 @@ export function AGB({onClose}){
       <p style={p}>IT-Dart bietet eine digitale Lernplattform für die Ausbildung zum Fachinformatiker für Systemintegration (FISI) — Lernmodule, Praxisfälle, ein KI-gestützter Lernassistent und eine Prüfungssimulation mit Lernnachweis. Details zum Funktionsumfang und den Konten-/Preisstufen: siehe „Leistungen & Pakete".</p>
 
       <h2 style={h2}>3. Registrierung und Nutzerkonto</h2>
-      <p style={p}>Der Zugang erfolgt aktuell auf Einladung. Bei der Registrierung sind wahrheitsgemäße Angaben zu machen. Zugangsdaten sind vertraulich zu behandeln und nicht an Dritte weiterzugeben. Für Aktivitäten unter dem eigenen Konto ist die registrierte Person verantwortlich, soweit sie diese zu vertreten hat.</p>
+      <p style={p}>Der Zugang erfolgt aktuell auf Einladung. Bei der Registrierung sind wahrheitsgemäße Angaben zu machen. Zugangsdaten sind vertraulich zu behandeln und nicht an Dritte weiterzugeben. Für Aktivitäten unter dem eigenen Konto ist die registrierte Person verantwortlich, soweit sie diese zu vertreten hat. Welche Daten dabei erhoben werden, ist in der Datenschutzerklärung (Punkt 2) aufgeführt; erfolgt die Registrierung im Rahmen eines Ausbildungsverhältnisses, gilt zusätzlich der dort in Punkt 8 beschriebene Einblick des einladenden Ausbildungsbetriebs.</p>
 
       <h2 style={h2}>4. Nutzungsrechte und Pflichten</h2>
       <p style={p}>Die Plattform darf ausschließlich für den persönlichen Lernzweck genutzt werden. Nicht gestattet sind insbesondere: die Weitergabe von Zugangsdaten an Dritte, automatisierte Zugriffe (z. B. Scraping) sowie Versuche, Sicherheitsmechanismen zu umgehen.</p>
@@ -139,7 +139,7 @@ export function AGB({onClose}){
       <p style={p}>Premium-Zugänge werden aktuell manuell vergeben; eine automatisierte Zahlungsabwicklung findet derzeit nicht statt. Konditionen für Einzel-, Gruppen- und Unternehmenszugänge werden individuell vereinbart (siehe „Leistungen & Pakete").</p>
 
       <h2 style={h2}>6. Verfügbarkeit</h2>
-      <p style={p}>Wir bemühen uns um eine hohe Verfügbarkeit der Plattform, können diese aber nicht garantieren — etwa bei Wartungsarbeiten oder Störungen bei vorgelagerten Dienstleistern (Hosting, Datenbank).</p>
+      <p style={p}>Wir bemühen uns um eine hohe Verfügbarkeit der Plattform, können diese aber nicht garantieren — etwa bei Wartungsarbeiten oder Störungen bei vorgelagerten Dienstleistern (Hosting, Datenbank). Die eingesetzten Dienstleister sind in der Datenschutzerklärung (Punkt 4) benannt.</p>
 
       <h2 style={h2}>7. Haftung</h2>
       <p style={p}>Wir haften unbeschränkt für Vorsatz und grobe Fahrlässigkeit sowie nach Maßgabe des Produkthaftungsgesetzes. Bei leicht fahrlässiger Verletzung wesentlicher Vertragspflichten (Kardinalpflichten) ist die Haftung auf den vertragstypisch vorhersehbaren Schaden begrenzt. Im Übrigen ist die Haftung für leichte Fahrlässigkeit ausgeschlossen.</p>
@@ -148,13 +148,36 @@ export function AGB({onClose}){
       <p style={p}>Das Nutzungsverhältnis kann jederzeit durch Löschung des eigenen Kontos beendet werden (siehe Datenschutzerklärung, Punkt 6). Wir behalten uns vor, Konten bei einem Verstoß gegen diese AGB zu sperren oder zu löschen. Bereits gezahlte Gebühren für Premium-Zugänge werden bei einer Kontolöschung nicht erstattet; der Zugang bleibt bis zum Ende des bereits bezahlten Zeitraums nutzbar.</p>
 
       <h2 style={h2}>9. Minderjährige Nutzer</h2>
-      <p style={p}>Ein Teil unserer Nutzer befindet sich in einer Berufsausbildung und kann minderjährig sein. Bei einer Registrierung im Rahmen eines Ausbildungsverhältnisses gehen wir davon aus, dass die Nutzung im Einvernehmen mit dem Ausbildungsbetrieb erfolgt. Bei Fragen zur Nutzung durch minderjährige Personen außerhalb eines Ausbildungsverhältnisses bitten wir um vorherige Kontaktaufnahme.</p>
+      <p style={p}>Ein Teil unserer Nutzer befindet sich in einer Berufsausbildung und kann minderjährig sein. Bei einer Registrierung im Rahmen eines Ausbildungsverhältnisses gehen wir davon aus, dass die Nutzung im Einvernehmen mit dem Ausbildungsbetrieb erfolgt. Bei Fragen zur Nutzung durch minderjährige Personen außerhalb eines Ausbildungsverhältnisses bitten wir um vorherige Kontaktaufnahme. Weitere Einzelheiten zum Datenumgang mit minderjährigen Nutzern finden sich in der Datenschutzerklärung, Punkt 8.</p>
 
       <h2 style={h2}>10. Änderungen dieser AGB</h2>
       <p style={p}>Diese AGB können bei Weiterentwicklung des Angebots angepasst werden. Es gilt die jeweils aktuelle, hier abrufbare Fassung. Über wesentliche Änderungen informieren wir registrierte Nutzer in geeigneter Form.</p>
 
       <h2 style={h2}>11. Schlussbestimmungen</h2>
       <p style={p}>Es gilt deutsches Recht. Sollte eine Bestimmung dieser AGB unwirksam sein, bleibt die Wirksamkeit der übrigen Bestimmungen unberührt.</p>
+    </LegalLayout>
+  );
+}
+
+export function TrainerVereinbarung({onClose}){
+  return(
+    <LegalLayout title="Trainer-Vereinbarung" onClose={onClose}>
+      <p style={p}>Diese Vereinbarung ergänzt die AGB und gilt zusätzlich für Konten mit Trainer-Rolle — sie regelt den Umgang mit den Daten eingeladener Auszubildender (Trainees), auf die ein Trainer-Konto Einblick erhält.</p>
+
+      <h2 style={h2}>1. Umfang des Einblicks</h2>
+      <p style={p}>Ein Trainer-Konto sieht zu den von ihm eingeladenen Trainees: E-Mail-Adresse, Bestätigungsstatus, Premium-Status und dessen Gültigkeit, KI-Chat-/Mock-Interview-Freischaltung, Kontoerstellungsdatum sowie die Ergebnisse abgeschlossener Lernnachweise (Prozentwert, Art, Titel, Zeitpunkt) — nicht jedoch einzelne Quiz-Antworten oder sonstige Inhalte.</p>
+
+      <h2 style={h2}>2. Zweckbindung</h2>
+      <p style={p}>Diese Daten dürfen ausschließlich zur Begleitung der Ausbildung genutzt werden — etwa um Lernfortschritt einzuschätzen oder gezielt zu unterstützen. Eine Nutzung für andere Zwecke ist nicht gestattet.</p>
+
+      <h2 style={h2}>3. Vertraulichkeit</h2>
+      <p style={p}>Die eingesehenen Daten sind vertraulich zu behandeln und dürfen nicht an Personen außerhalb des eigenen Ausbildungsbetriebs weitergegeben werden, insbesondere nicht an andere Trainees oder externe Dritte.</p>
+
+      <h2 style={h2}>4. Beendigung des Einblicks</h2>
+      <p style={p}>Endet das Ausbildungs- bzw. Betreuungsverhältnis zu einer eingeladenen Person, ist die Verknüpfung über die Funktion „Entfernen" im Trainer-Bereich zeitnah aufzulösen — der Einblick in die betreffenden Daten endet damit.</p>
+
+      <h2 style={h2}>5. Verhältnis zu Datenschutzerklärung und AGB</h2>
+      <p style={p}>Einzelheiten zur Datenverarbeitung insgesamt regelt die Datenschutzerklärung (insbesondere Punkt 8), allgemeine Nutzungsbedingungen die AGB. Bei Widersprüchen geht die speziellere Regelung dieser Trainer-Vereinbarung für den hier geregelten Sachverhalt vor.</p>
     </LegalLayout>
   );
 }

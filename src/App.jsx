@@ -9,7 +9,7 @@ import CompanyScreen from "./CompanyScreen";
 import NotFoundScreen from "./NotFoundScreen";
 import EinladungScreen from "./EinladungScreen";
 import WartungScreen from "./WartungScreen";
-import { Impressum, Datenschutz, Leistungen, AGB } from "./LegalPages";
+import { Impressum, Datenschutz, Leistungen, AGB, TrainerVereinbarung } from "./LegalPages";
 import { AuthProvider, useAuth } from "./lib/AuthContext";
 
 // Temporärer Schalter: solange true, sehen anonyme Besucher statt der
@@ -78,6 +78,7 @@ function AppShell(){
   if(page==="datenschutz")return <Datenschutz onClose={backHome}/>;
   if(page==="leistungen")return <Leistungen onClose={backHome}/>;
   if(page==="agb")return <AGB onClose={backHome}/>;
+  if(page==="trainer-vereinbarung")return <TrainerVereinbarung onClose={backHome}/>;
 
   return (
     <>

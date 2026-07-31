@@ -27,7 +27,7 @@ const fmtRelative=(iso)=>{
   return `vor ${mo} Monat${mo===1?"":"en"}`;
 };
 
-export default function TrainerScreen({onClose,onOpenUser}){
+export default function TrainerScreen({onClose,onOpenUser,onOpenLegal}){
   const {user}=useAuth();
   const [trainees,setTrainees]=useState(null); // null = lädt
   const [limit,setLimit]=useState(null);
@@ -149,7 +149,8 @@ export default function TrainerScreen({onClose,onOpenUser}){
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:24,paddingBottom:16,borderBottom:`0.5px solid ${C.bd}`}}>
         <span style={{fontSize:16,fontWeight:700}}>🎓 Trainer-Ansicht</span>
         {trainees!==null&&limit!==null&&<span style={{fontSize:12,color:C.mu}}>Testende: {trainees.length} / {limit}</span>}
-        <button onClick={onClose} style={{...ghost,marginLeft:"auto",fontSize:13,padding:"6px 12px"}}>← Zurück</button>
+        {onOpenLegal&&<button onClick={()=>onOpenLegal("trainer-vereinbarung")} style={{marginLeft:"auto",background:"none",border:"none",color:C.mu,cursor:"pointer",fontSize:11,textDecoration:"underline",padding:0,fontFamily:ff}}>Trainer-Vereinbarung</button>}
+        <button onClick={onClose} style={{...ghost,marginLeft:onOpenLegal?8:"auto",fontSize:13,padding:"6px 12px"}}>← Zurück</button>
       </div>
 
       {user&&<div style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:12,padding:"14px 16px",marginBottom:20}}>
