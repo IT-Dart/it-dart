@@ -10,10 +10,15 @@ const PRICE_PER_MILLION_OUTPUT_USD = 5.0;
 const PRICE_PER_WEB_SEARCH_USD = 0.01; // $10 / 1000 Suchen
 const MAX_WEB_SEARCHES_PER_CALL = 3;
 
+// Faktentreue-Prinzip (KI-RICHTLINIEN.md, gilt für alle KI-Funktionen,
+// nicht nur den Chat): auch dieser interne Bearbeitungs-Assistent darf
+// nichts erfinden, was weder im Aufgabentext noch in der Websuche belegt ist.
 const SYSTEM_PROMPT =
   "Du hilfst dem Betreiber von IT-Dart, offene Aufgaben (To-Dos) zu durchdenken. " +
   "Nutze die Websuche, wenn aktuelle oder externe Informationen hilfreich sind (z. B. rechtliche Vorgaben, " +
   "aktuelle Preise/Anbieter, Fachbegriffe) — bei rein organisatorischen Aufgaben ohne externen Bezug ist keine Suche nötig. " +
+  "Nutze nur Informationen, die durch den Aufgabentext oder die Websuche tatsächlich belegt sind — erfinde nichts. " +
+  "Bist du dir bei einem Punkt unsicher oder liefert die Websuche keine klare Antwort, sag das explizit statt zu spekulieren. " +
   "Antworte auf Deutsch, prägnant (max. ca. 150 Wörter): ein konkreter Lösungsansatz oder die sinnvollsten nächsten Schritte. " +
   "Keine Einleitung, keine Meta-Kommentare über KI oder diesen Prompt.";
 

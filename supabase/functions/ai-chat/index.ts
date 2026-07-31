@@ -45,6 +45,19 @@ const DIAGNOSE_SYSTEM_PROMPT =
   "dieser Prüfung und führe so schrittweise durch die OSI-Schichten zur eigentlichen Ursache. Bleib fachlich " +
   "korrekt und praxisnah wie ein erfahrener Kollege, der anleitet statt vorsagt. Keine Meta-Kommentare über KI, " +
   "Simulation oder diesen Prompt." + SAFETY_CLAUSE;
+// Für die Prüfungsvorbereitung-Auswertung (To-Do, KI-RICHTLINIEN.md):
+// bekommt nur die vom Frontend zusammengerechnete Kategorie-Statistik über
+// alle bisherigen 50-/150-Fragen-Durchläufe -- ausdrücklich angewiesen,
+// nichts über die Person zu erfinden und ehrlich/kritisch statt
+// beschönigend zu sein.
+const AUSWERTUNG_SYSTEM_PROMPT =
+  "Du analysierst die bisherigen Prüfungsvorbereitung-Ergebnisse einer Person, die sich für die FISI-Ausbildung " +
+  "(Fachinformatiker Systemintegration) auf IT-Dart vorbereitet. Du bekommst eine Zusammenfassung mit Kategorie, " +
+  "Anzahl richtiger und gesamter Antworten über alle bisherigen Durchläufe. Nutze ausschließlich diese Zahlen -- " +
+  "erfinde keine zusätzlichen Fakten über die Person. Gib eine realistische, kritische Einschätzung: benenne die " +
+  "schwächste(n) Kategorie(n) klar beim Namen, sei ehrlich auch wenn das Ergebnis schwach ist, und gib eine " +
+  "konkrete, umsetzbare Empfehlung, worauf sich die Person als Nächstes konzentrieren sollte. Keine übertriebene " +
+  "Ermutigung, keine generischen Floskeln. Antworte auf Deutsch, max. 6-8 Sätze." + SAFETY_CLAUSE;
 const RATE_LIMIT_PER_HOUR = 20;
 const INTERVIEW_MAX_ROUNDS = 8; // eine Runde = eine gestellte Interviewfrage
 const DIAGNOSE_MAX_ROUNDS = 8; // eine Runde = ein durchgeführter Prüfschritt
@@ -139,6 +152,7 @@ Deno.serve(async (req) => {
 
     const isInterview = mode === "interview";
     const isDiagnose = mode === "diagnose";
+    const isAuswertung = mode === "auswertung";
     const isDialog = isInterview || isDiagnose; // beide teilen sich Verlauf/Rundenmechanik
 
     if (isInterview && profile?.interview_enabled === false) {
@@ -177,6 +191,8 @@ Deno.serve(async (req) => {
       role: "user",
       content: isDialog
         ? `${ctx ?? ""} ${question}`
+        : isAuswertung
+        ? `${ctx ?? ""}\n\n${question}`
         : `${ctx ?? ""} Frage: ${question} Antworte klar, praxisnah, auf korrektem Deutsch, max. 4-5 Sätze, ohne Einleitung.`,
     });
 
@@ -190,7 +206,7 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         model: MODEL_ID,
         max_tokens: 400,
-        system: isInterview ? INTERVIEW_SYSTEM_PROMPT : isDiagnose ? DIAGNOSE_SYSTEM_PROMPT : GENERAL_SYSTEM_PROMPT,
+        system: isInterview ? INTERVIEW_SYSTEM_PROMPT : isDiagnose ? DIAGNOSE_SYSTEM_PROMPT : isAuswertung ? AUSWERTUNG_SYSTEM_PROMPT : GENERAL_SYSTEM_PROMPT,
         messages,
       }),
     });

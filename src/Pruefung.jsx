@@ -1,5 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "./lib/AuthContext";
+import { supabase } from "./lib/supabaseClient";
+import { authFetch } from "./lib/authFetch";
 import { generateLernnachweis, logLernnachweis } from "./lib/lernnachweis";
 import { tagestippFuerHeute } from "./lib/tagestipps";
 import FeedbackUmfrage from "./FeedbackUmfrage";
@@ -192,8 +194,54 @@ export default function Pruefung({onExit}){
   const [lockReason,setLockReason]=useState(null); // "account" | "premium"
   const [startedAt,setStartedAt]=useState(null);
   const [feedbackDone,setFeedbackDone]=useState(false); // To-Do #68, pro Durchlauf zurückgesetzt
+  // KI-Einschätzung auf Basis bisheriger 50-/150-Fragen-Lernzertifikate
+  // (KI-RICHTLINIEN.md): erst die reinen Historien-Daten laden (billiger
+  // DB-Read, kein KI-Aufruf), die eigentliche KI-Auswertung läuft erst auf
+  // Klick, damit nicht bei jedem Seitenaufruf unnötig Kosten entstehen.
+  const [auswertungSummary,setAuswertungSummary]=useState(null); // null=lädt/keine Historie, [] oder Array=vorhanden
+  const [auswertung,setAuswertung]=useState(null);
+  const [auswertungBusy,setAuswertungBusy]=useState(false);
+  const [auswertungErr,setAuswertungErr]=useState(null);
 
   useEffect(()=>{if(modus!=="done")setFeedbackDone(false);},[modus]);
+
+  useEffect(()=>{
+    if(!user||!isPremium){setAuswertungSummary(null);return;}
+    let cancelled=false;
+    supabase.from("lernnachweise").select("topics,total").eq("user_id",user.id).eq("kind","pruefung").gt("total",20)
+      .then(({data})=>{
+        if(cancelled||!data?.length)return;
+        const stats={};
+        data.forEach(row=>{
+          (row.topics||[]).forEach(t=>{
+            stats[t.name]=stats[t.name]||{name:t.name,correct:0,total:0};
+            stats[t.name].correct+=t.correct||0;
+            stats[t.name].total+=t.total||0;
+          });
+        });
+        setAuswertungSummary({count:data.length,topics:Object.values(stats)});
+      });
+    return ()=>{cancelled=true;};
+  },[user?.id,isPremium]);
+
+  const auswerten=async()=>{
+    setAuswertungBusy(true);setAuswertungErr(null);
+    try{
+      const res=await authFetch("ai-chat",{
+        ctx:`Bisherige Prüfungsvorbereitung-Ergebnisse über ${auswertungSummary.count} Durchläufe (Halb-/Vollprüfung), pro Kategorie zusammengerechnet: ${JSON.stringify(auswertungSummary.topics)}`,
+        question:"Wie sollte ich mich als Nächstes auf die Prüfung vorbereiten?",
+        moduleId:"pruefung-auswertung",
+        mode:"auswertung",
+      });
+      const d=await res.json();
+      if(!res.ok)throw new Error(d.error||`Fehler (${res.status}).`);
+      setAuswertung(d.answer);
+    }catch(e){
+      setAuswertungErr(describeError(e));
+    }finally{
+      setAuswertungBusy(false);
+    }
+  };
 
   const starten=(n)=>{
     if(!user){setLockReason("account");setModus("locked");return;}
@@ -319,6 +367,17 @@ export default function Pruefung({onExit}){
             <p style={{fontSize:11,fontWeight:700,color:C.am,textTransform:"uppercase",letterSpacing:".05em",margin:"0 0 6px"}}>⭐ Tipp des Tages · Premium</p>
             <p style={{fontSize:13,fontWeight:600,color:C.t,margin:"0 0 2px"}}>{tagestipp.t}</p>
             <p style={{fontSize:12,color:C.t2,margin:0,lineHeight:1.5}}>{tagestipp.s}</p>
+          </div>}
+
+          {auswertungSummary&&<div style={{textAlign:"left",background:C.s1,border:`0.5px solid ${C.bl}`,borderRadius:12,padding:"14px 16px",marginBottom:24,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
+            <p style={{fontSize:11,fontWeight:700,color:C.bl,textTransform:"uppercase",letterSpacing:".05em",margin:"0 0 6px"}}>🧠 KI-Einschätzung</p>
+            {!auswertung&&!auswertungBusy&&<>
+              <p style={{fontSize:12,color:C.t2,margin:"0 0 10px",lineHeight:1.5}}>Basierend auf deinen bisherigen {auswertungSummary.count} Halb-/Vollprüfungen — eine realistische Einschätzung, worauf du dich als Nächstes konzentrieren solltest.</p>
+              <button onClick={auswerten} style={{background:C.bl,color:"#fff",border:"none",borderRadius:8,padding:"9px 14px",fontSize:13,fontWeight:500,cursor:"pointer",fontFamily:ff}}>Jetzt auswerten →</button>
+            </>}
+            {auswertungBusy&&<p style={{fontSize:13,color:C.t2,margin:0}}>Wird ausgewertet …</p>}
+            {auswertung&&<p style={{fontSize:13,color:C.t,margin:0,lineHeight:1.6}}>{auswertung}</p>}
+            {auswertungErr&&<p style={{fontSize:12,color:C.co,margin:"8px 0 0"}}>{auswertungErr}</p>}
           </div>}
 
           <div style={{display:"flex",flexDirection:"column",gap:8,textAlign:"left"}}>

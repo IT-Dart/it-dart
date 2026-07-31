@@ -97,7 +97,7 @@ Bei größeren oder unklaren Änderungen zuerst analysieren, dann implementieren
 3. Kurzen Plan formulieren (bei Unklarheit: nachfragen, gebündelt statt einzeln).
 4. Erst dann Änderungen vornehmen.
 
-**Compliance-Prüfung:** Berührt eine neue Funktion eine dieser Kategorien — neue Datenerhebung, KI-/Chat-Funktionen, potenziell minderjährige Nutzer, Bild-/Content-Lizenzfragen, Konten/Rollen/Zahlungen — zuerst den Prüfkatalog in [COMPLIANCE.md](COMPLIANCE.md) durchgehen und Befunde benennen, bevor implementiert wird. `COMPLIANCE.md` ersetzt keine anwaltliche Prüfung, bereitet sie nur vor.
+**Compliance-Prüfung:** Berührt eine neue Funktion eine dieser Kategorien — neue Datenerhebung, KI-/Chat-Funktionen, potenziell minderjährige Nutzer, Bild-/Content-Lizenzfragen, Konten/Rollen/Zahlungen — zuerst den Prüfkatalog in [COMPLIANCE.md](COMPLIANCE.md) durchgehen und Befunde benennen, bevor implementiert wird. Bei KI-/Chat-Funktionen zusätzlich [KI-RICHTLINIEN.md](KI-RICHTLINIEN.md) konsultieren (Datenschutz/Jugendschutz/AGG-Prinzipien speziell für KI, inkl. Tabelle aller KI-Einsatzorte — bei neuer KI-Funktion dort ergänzen). Beide Dokumente ersetzen keine anwaltliche Prüfung, bereiten sie nur vor.
 
 ## Arbeitsteilung bei mehreren gleichzeitigen Claude-Code-Sessions
 

@@ -97,7 +97,7 @@ export function Datenschutz({onClose}){
       <ul style={{paddingLeft:20,marginBottom:10}}>
         <li style={li}><strong style={{color:C.t}}>Supabase</strong> (Datenbank, Login) — verarbeitet alle unter Punkt 2 genannten Daten</li>
         <li style={li}><strong style={{color:C.t}}>Vercel Inc.</strong> (USA) — Hosting der Webanwendung</li>
-        <li style={li}><strong style={{color:C.t}}>Anthropic PBC</strong> (USA) — zum einen Verarbeitung deiner Frage beim KI-Chat, um eine Antwort zu erzeugen (es werden keine Konto- oder Kontaktdaten übermittelt, nur die gestellte Frage und der Lernkontext); zum anderen intern für Admin-Werkzeuge zur Plattformpflege (z. B. Lösungsvorschläge für interne Aufgaben inkl. Websuche) — hierbei werden keine Nutzerdaten verarbeitet</li>
+        <li style={li}><strong style={{color:C.t}}>Anthropic PBC</strong> (USA) — zum einen Verarbeitung deiner Frage beim KI-Chat, um eine Antwort zu erzeugen (es werden keine Konto- oder Kontaktdaten übermittelt, nur die gestellte Frage und der Lernkontext); für Premium-Nutzer optional auch eine Auswertung deiner bisherigen Prüfungsvorbereitung-Ergebnisse (nur die von dir selbst erzielten Punktzahlen je Themenbereich, keine Konto- oder Kontaktdaten); zum anderen intern für Admin-Werkzeuge zur Plattformpflege (z. B. Lösungsvorschläge für interne Aufgaben inkl. Websuche) — hierbei werden keine Nutzerdaten verarbeitet</li>
       </ul>
       <p style={p}>Bei Übermittlung in die USA erfolgt dies auf Grundlage von Standardvertragsklauseln der jeweiligen Anbieter.</p>
 
