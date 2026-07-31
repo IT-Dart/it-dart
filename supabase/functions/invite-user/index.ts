@@ -161,7 +161,13 @@ Deno.serve(async (req) => {
     if (linkErr) {
       console.error("[invite-user] generateLink (magiclink) failed:", JSON.stringify(linkErr));
     } else {
-      link = linkData.properties.action_link;
+      // Nie den rohen Supabase-Magic-Link direkt herausgeben -- Messenger
+      // wie WhatsApp rufen geteilte Links oft serverseitig ab, um eine
+      // Vorschaukarte zu bauen. Bei einem Einmal-Link würde genau dieser
+      // automatische Abruf den Token schon verbrauchen, bevor der Empfänger
+      // ihn selbst anklickt. EinladungScreen.jsx zeigt stattdessen erst
+      // eine normale Seite an und navigiert nur nach einem echten Klick.
+      link = `${redirectTo}/?mode=einladung&link=${encodeURIComponent(linkData.properties.action_link)}`;
     }
 
     return json({ ok: true, emailed: !noEmail, link, syntheticEmail: noEmail ? email : null }, 200, cors);
