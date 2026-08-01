@@ -28,9 +28,15 @@ import moduleDbImg from "./assets/module-db.jpg";
 import moduleSkImg from "./assets/module-sk.jpg";
 import modulePrImg from "./assets/module-pr.jpg";
 import moduleBwImg from "./assets/module-bw.jpg";
+import lernnachweisBadgeGImg from "./assets/lernnachweis-badge-g.jpg";
 
 const MODULE_IMAGES={g:moduleGImg,o:moduleOImg,b:moduleBImg,si:moduleSiImg,db:moduleDbImg,sk:moduleSkImg,pr:modulePrImg,bw:moduleBwImg};
 const MODULE_IMAGE_ALT={g:"PC Komponenten",o:"Sechs leuchtende Netzwerk-Symbole in Blau und Cyan: WLAN-Router, Switch mit nummerierten Ports, VPN-Schloss, WLAN-Signal, Server-Rack, DHCP-Tag",b:"Betriebssysteme",si:"IT-Sicherheit",db:"Datenbanken",sk:"Skripting",pr:"Beruf und Projekt",bw:"Illustration einer Bewerberin mit Lebenslauf, umgeben von Symbolen für Telefon-Interview, Zertifikat und KI-gestütztes Mock-Interview am Laptop"};
+// Eigene, reduzierte Icons speziell für den kleinen Lernnachweis-Badge
+// (28mm) -- das volle Modul-Cover (MODULE_IMAGES) ist dafür zu detailreich
+// und wirkt bei der Größe unruhig. Fällt auf das Cover zurück, solange ein
+// Modul noch kein eigenes Badge-Icon hat.
+const LERNNACHWEIS_BADGE_IMAGES={...MODULE_IMAGES,g:lernnachweisBadgeGImg};
 
 const FREE_MODULE_IDS=["g","o"]; // Grundlagen frei zugänglich, Netzwerktechnik als Vorschau — Rest inkl. Karriere & Bewerbung (Mock-Interview) ist Premium
 const INTERVIEW_MAX_ROUNDS=8; // muss mit INTERVIEW_MAX_ROUNDS in supabase/functions/ai-chat/index.ts übereinstimmen
@@ -939,7 +945,7 @@ const Quiz=({qs,onDone,title,mid})=>{
     setNachweisBusy(true);
     setDlErr(null);
     try{
-      await generateLernnachweis({user,kind:"modul",title,score:sc,total:qs.length,topics:[{name:title,correct:sc,total:qs.length}],startedAt,finishedAt:new Date(),skipLog:true,moduleIconUrl:MODULE_IMAGES[mid]});
+      await generateLernnachweis({user,kind:"modul",title,score:sc,total:qs.length,topics:[{name:title,correct:sc,total:qs.length}],startedAt,finishedAt:new Date(),skipLog:true,moduleIconUrl:LERNNACHWEIS_BADGE_IMAGES[mid]});
     }catch(e){
       setDlErr(describeError(e));
     }finally{
