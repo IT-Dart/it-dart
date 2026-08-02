@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { C, pri, ghost, wrap, inner, ff } from "./lib/theme";
 import { useAuth } from "./lib/AuthContext";
+import { canonicalUrl } from "./lib/nav";
 import { Logo } from "./ITDart";
 import bookCoverImg from "./assets/book-claude-praxis-cover.png";
 import heroImg from "./assets/company-hero.jpg";
@@ -153,10 +154,10 @@ export default function CompanyScreen({onEnterApp,onOpenLegal}){
   // Anonyme Besucher haben noch kein Konto zum Betreten der App — führt sie
   // stattdessen direkt zum Login (?mode=login, dasselbe Muster wie die
   // bestehende ?mode=register-Einladungslink-Logik in ITDart.jsx).
-  const handleEnter=user?onEnterApp:()=>{window.location.href="/?mode=login";};
+  const handleEnter=user?onEnterApp:()=>{window.location.href=canonicalUrl("/?mode=login");};
   // Nach dem Abmelden direkt zurück zum Login-Screen navigieren, gleiches
   // Muster wie handleEnter oben.
-  const handleSignOut=async()=>{await signOut();window.location.href="/?mode=login";};
+  const handleSignOut=async()=>{await signOut();window.location.href=canonicalUrl("/?mode=login");};
 
   return (
     <div style={wrap}><div style={{...inner,paddingTop:40,paddingBottom:40}}>

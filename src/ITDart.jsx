@@ -5,6 +5,7 @@ import { supabase } from "./lib/supabaseClient";
 import { authFetch } from "./lib/authFetch";
 import { generateLernnachweis, logLernnachweis } from "./lib/lernnachweis";
 import { describeError } from "./lib/errorText";
+import { canonicalUrl } from "./lib/nav";
 import { MODS } from "./lib/modules";
 import AuthScreen from "./AuthScreen";
 import AdminScreen from "./AdminScreen";
@@ -1263,7 +1264,7 @@ export default function ITDart({onOpenExam,onOpenLegal,wartungsmodus}){
   // einer entrechteten Ansicht derselben Seite zu landen, die im
   // Wartungsmodus dann die Baustellenseite zeigt) -- gleiches ?mode=login-
   // Muster wie der Login-Link auf WartungScreen.jsx.
-  const handleSignOut=async()=>{await signOut();window.location.href="/?mode=login";};
+  const handleSignOut=async()=>{await signOut();window.location.href=canonicalUrl("/?mode=login");};
   // Einmaliger Onboarding-Feedback-Fragebogen (To-Do #68) -- per localStorage
   // gemerkt, damit er nach dem ersten Ausfüllen/Überspringen nicht erneut nervt.
   const [showOnboardingFeedback,setShowOnboardingFeedback]=useState(()=>!localStorage.getItem("it_dart_onboarding_feedback_done"));
@@ -1316,7 +1317,7 @@ export default function ITDart({onOpenExam,onOpenLegal,wartungsmodus}){
   // Wartungsseite zurückführen statt in die (sonst als Vorschau gedachte)
   // Modulübersicht -- das gibt es sonst nirgends, da App.jsx's page-State
   // hier bereits "app" ist und von ITDarts eigenem view-State nichts weiß.
-  if(view==="auth")return <AuthScreen onClose={()=>{(wartungsmodus&&!user)?(window.location.href="/"):setView("overview");}} initialMode={registerLinkRequested?"register":"login"} onOpenLegal={onOpenLegal}/>;
+  if(view==="auth")return <AuthScreen onClose={()=>{(wartungsmodus&&!user)?(window.location.href=canonicalUrl("/")):setView("overview");}} initialMode={registerLinkRequested?"register":"login"} onOpenLegal={onOpenLegal}/>;
   if(view==="admin"||view==="junior-admin")return (isAdmin||isJuniorAdmin)?<AdminScreen onClose={()=>setView("overview")}/>:null;
   if(view==="e2e-tests")return isAdmin?<E2ETestScreen onClose={()=>setView("overview")}/>:null;
   if(view==="website-check")return isAdmin?<WebsiteCheckScreen onClose={()=>setView("overview")}/>:null;

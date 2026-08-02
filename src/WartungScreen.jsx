@@ -1,5 +1,6 @@
 import { C, pri, ghost, wrap, inner, ff } from "./lib/theme";
 import { Logo } from "./ITDart";
+import { canonicalUrl } from "./lib/nav";
 
 // Temporäre Ersatzseite für anonyme Besucher (Wartungsmodus-Schalter in
 // App.jsx, WARTUNGSMODUS). Bereits eingeloggte Nutzer sehen diese Seite nie
@@ -16,7 +17,7 @@ export default function WartungScreen({ onOpenLegal }) {
           IT-Dart wird derzeit überarbeitet. Schau in Kürze wieder vorbei.
         </p>
         <a
-          href="/?mode=login"
+          href={canonicalUrl("/?mode=login")}
           style={{ ...pri, width: "100%", justifyContent: "center", padding: "14px 18px", fontSize: 15, textDecoration: "none", boxSizing: "border-box" }}
         >
           Bereits Zugang? Hier anmelden →
