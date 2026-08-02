@@ -35,6 +35,8 @@ export default function TodoScreen({onClose}){
   const [solutions,setSolutions]=useState({}); // todoId -> {loading, answer, sources, error}
   const [editingId,setEditingId]=useState(null);
   const [editForm,setEditForm]=useState({title:"",description:"",priority:"medium",tool_slug:""});
+  const [addingSubtaskFor,setAddingSubtaskFor]=useState(null); // parent id, oder null
+  const [subtaskTitle,setSubtaskTitle]=useState("");
 
   const load=async()=>{
     const {data,error}=await supabase.from("todos").select("*");
@@ -60,6 +62,21 @@ export default function TodoScreen({onClose}){
     setAddBusy(false);
     if(error){setErr(describeError(error));return;}
     setForm({title:"",description:"",priority:"medium",tool_slug:""});
+    load();
+  };
+
+  const addSubtask=async(parentId)=>{
+    if(!subtaskTitle.trim())return;
+    setAddBusy(true);setErr(null);
+    const {error}=await supabase.from("todos").insert({
+      title:subtaskTitle.trim(),
+      priority:"medium",
+      parent_id:parentId,
+    });
+    setAddBusy(false);
+    if(error){setErr(describeError(error));return;}
+    setSubtaskTitle("");
+    setAddingSubtaskFor(null);
     load();
   };
 
@@ -124,9 +141,107 @@ export default function TodoScreen({onClose}){
   // Puffer, damit das anfängliche insert()+load() nicht selbst als Update zählt.
   const wasUpdated=(t)=>new Date(t.updated_at)-new Date(t.created_at)>60000;
 
-  const visible=(todos||[]).filter(t=>(filter==="all"||t.status===filter)&&(priorityFilter==="all"||t.priority===priorityFilter));
+  const topLevel=(todos||[]).filter(t=>!t.parent_id);
+  const subtasksOf=(id)=>(todos||[]).filter(t=>t.parent_id===id);
+  // Der Status-/Prioritätsfilter greift nur auf Elterneinträge -- einmal
+  // sichtbar, zeigt ein Eintrag immer ALLE seine Unteraufgaben ungefiltert,
+  // damit die Checkliste als Ganzes erkennbar bleibt statt einzelne
+  // Unterpunkte je nach Filter zu verlieren.
+  const visible=topLevel.filter(t=>(filter==="all"||t.status===filter)&&(priorityFilter==="all"||t.priority===priorityFilter));
   const counts={open:0,in_progress:0,done:0};
   (todos||[]).forEach(t=>{counts[t.status]=(counts[t.status]||0)+1;});
+
+  // Eine Zeile rendern -- gemeinsam für Elterneinträge und Unteraufgaben
+  // genutzt, damit Bearbeiten/Löschen/Status/Lösung-suchen überall gleich
+  // funktionieren, statt die komplette Zeilen-Logik zu duplizieren.
+  const renderTodo=(t,{indent=false}={})=>{
+    const busy=busyId===t.id;
+    const tool=tools.find(x=>x.slug===t.tool_slug);
+    const created=fmtDate(t.created_at);
+    const sol=solutions[t.id];
+    const editing=editingId===t.id;
+    const children=indent?[]:subtasksOf(t.id);
+    const childDone=children.filter(c=>c.status==="done").length;
+    if(editing)return(
+      <div key={t.id} style={{background:C.s1,border:`0.5px solid ${C.cy}`,borderRadius:10,padding:"12px 14px",marginLeft:indent?24:0}}>
+        <div style={{display:"flex",flexDirection:"column",gap:8}}>
+          <input placeholder="Titel" value={editForm.title} onChange={e=>setEditForm(f=>({...f,title:e.target.value}))} style={input}/>
+          <textarea placeholder="Beschreibung (optional)" value={editForm.description} onChange={e=>setEditForm(f=>({...f,description:e.target.value}))} rows={2} style={{...input,resize:"vertical",fontFamily:"inherit"}}/>
+          <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
+            <select value={editForm.priority} onChange={e=>setEditForm(f=>({...f,priority:e.target.value}))} style={{...input,flex:"1 1 110px"}}>
+              <option value="low">Niedrig</option>
+              <option value="medium">Mittel</option>
+              <option value="high">Hoch</option>
+            </select>
+            <select value={editForm.tool_slug} onChange={e=>setEditForm(f=>({...f,tool_slug:e.target.value}))} style={{...input,flex:"1 1 140px"}}>
+              <option value="">Kein Tool-Bezug</option>
+              {tools.map(x=><option key={x.slug} value={x.slug}>{x.name}</option>)}
+            </select>
+          </div>
+          <div style={{display:"flex",gap:8}}>
+            <button disabled={busy} onClick={()=>saveEdit(t.id)} style={{...pri,opacity:busy?.6:1}}>{busy?"...":"Speichern"}</button>
+            <button disabled={busy} onClick={cancelEdit} style={{...ghost,fontSize:13}}>Abbrechen</button>
+          </div>
+        </div>
+      </div>
+    );
+    const updated=wasUpdated(t);
+    return(
+      <div key={t.id}>
+        <div style={{background:C.s1,border:`0.5px solid ${t.decision_pending?C.am:C.bd}`,borderRadius:10,padding:"12px 14px",opacity:t.status==="done"?.6:1,marginLeft:indent?24:0}}>
+          <div style={{display:"flex",alignItems:"baseline",gap:8,marginBottom:t.description?4:8,flexWrap:"wrap"}}>
+            <span style={{fontSize:11,fontWeight:600,color:C.mu}}>#{t.id}</span>
+            <span style={{fontSize:13,fontWeight:updated?800:600,color:updated?C.cy:C.t,textDecoration:t.status==="done"?"line-through":"none"}}>{t.title}</span>
+            <span style={{fontSize:10,fontWeight:600,color:PRIORITY_COLOR[t.priority],textTransform:"uppercase",letterSpacing:".03em"}}>{PRIORITY_LABEL[t.priority]}</span>
+            {tool&&<span style={{fontSize:11,color:C.mu}}>· {tool.name}</span>}
+            {created&&<span style={{fontSize:11,color:C.mu}}>· erstellt {created}</span>}
+            {updated&&<span style={{fontSize:10,fontWeight:700,color:C.cy}}>· aktualisiert</span>}
+            {t.decision_pending&&<span style={{fontSize:10,fontWeight:700,color:C.am,background:"rgba(217,119,6,0.15)",padding:"2px 6px",borderRadius:4}}>⚠ Entscheidung ausstehend</span>}
+            {!indent&&children.length>0&&<span style={{fontSize:10,fontWeight:700,color:childDone===children.length?"#4ade80":C.t2,background:C.s2,padding:"2px 6px",borderRadius:4}}>☑ {childDone}/{children.length} Unteraufgaben</span>}
+          </div>
+          {t.description&&<p style={{fontSize:12,color:C.t2,margin:"0 0 8px",lineHeight:1.5}}>{t.description}</p>}
+          <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
+            <select disabled={busy} value={t.status} onChange={e=>setStatus(t.id,e.target.value)} style={{...input,width:"auto",padding:"5px 10px",fontSize:12}}>
+              <option value="open">{STATUS_LABEL.open}</option>
+              <option value="in_progress">{STATUS_LABEL.in_progress}</option>
+              <option value="done">{STATUS_LABEL.done}</option>
+            </select>
+            <button disabled={busy} onClick={()=>startEdit(t)} style={{...ghost,fontSize:12,padding:"6px 12px"}}>✎ Bearbeiten</button>
+            <button disabled={busy} onClick={()=>toggleDecisionPending(t)} title="Entscheidung ausstehend markieren/entfernen" style={{...ghost,fontSize:12,padding:"6px 12px",color:t.decision_pending?C.am:C.t2,borderColor:t.decision_pending?C.am:C.bd}}>⚠ {t.decision_pending?"Entschieden":"Entscheidung offen"}</button>
+            {!indent&&<button disabled={busy} onClick={()=>setAddingSubtaskFor(addingSubtaskFor===t.id?null:t.id)} style={{...ghost,fontSize:12,padding:"6px 12px"}}>+ Unteraufgabe</button>}
+            <button disabled={busy||sol?.loading} title="Fragt Claude (mit Websuche bei Bedarf) nach einem Lösungsansatz" onClick={()=>findSolution(t)} style={{...ghost,fontSize:12,padding:"6px 12px",marginLeft:indent?0:"auto",opacity:busy||sol?.loading?.5:1}}>{sol?.loading?"Sucht…":"🔍 Lösung suchen"}</button>
+            <button disabled={busy} onClick={()=>remove(t.id)} style={{...ghost,fontSize:12,padding:"6px 12px",color:"#fca5a5",borderColor:"#7f1d1d",opacity:busy?.5:1}}>Löschen</button>
+          </div>
+          {sol&&!sol.loading&&(
+            <div style={{marginTop:10,paddingTop:10,borderTop:`0.5px solid ${C.bd}`}}>
+              {sol.error?(
+                <p style={{fontSize:12,color:"#fca5a5",margin:0}}>{sol.error}</p>
+              ):(<>
+                <p style={{fontSize:12,color:C.t2,margin:"0 0 6px",lineHeight:1.6,whiteSpace:"pre-wrap"}}>{sol.answer}</p>
+                {sol.sources?.length>0&&<div style={{display:"flex",flexDirection:"column",gap:2}}>
+                  {sol.sources.map((src,i)=>(
+                    <a key={i} href={src.url} target="_blank" rel="noopener noreferrer" style={{fontSize:11,color:C.cy}}>{src.title||src.url}</a>
+                  ))}
+                </div>}
+              </>)}
+            </div>
+          )}
+        </div>
+        {!indent&&addingSubtaskFor===t.id&&(
+          <div style={{display:"flex",gap:8,marginTop:6,marginLeft:24}}>
+            <input autoFocus placeholder="Titel der Unteraufgabe" value={subtaskTitle} onChange={e=>setSubtaskTitle(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")addSubtask(t.id);}} style={{...input,fontSize:13}}/>
+            <button disabled={addBusy} onClick={()=>addSubtask(t.id)} style={{...pri,fontSize:12,padding:"6px 12px",opacity:addBusy?.6:1}}>{addBusy?"...":"Hinzufügen"}</button>
+            <button disabled={addBusy} onClick={()=>{setAddingSubtaskFor(null);setSubtaskTitle("");}} style={{...ghost,fontSize:12,padding:"6px 12px"}}>Abbrechen</button>
+          </div>
+        )}
+        {!indent&&children.length>0&&(
+          <div style={{display:"flex",flexDirection:"column",gap:8,marginTop:8}}>
+            {children.map(c=>renderTodo(c,{indent:true}))}
+          </div>
+        )}
+      </div>
+    );
+  };
 
   return(
     <div style={wrap}><div style={inner}>
@@ -175,76 +290,7 @@ export default function TodoScreen({onClose}){
       {todos!==null&&visible.length===0&&<p style={{fontSize:13,color:C.mu,textAlign:"center",padding:"20px 0"}}>Keine Einträge.</p>}
 
       <div style={{display:"flex",flexDirection:"column",gap:10}}>
-        {visible.map(t=>{
-          const busy=busyId===t.id;
-          const tool=tools.find(x=>x.slug===t.tool_slug);
-          const created=fmtDate(t.created_at);
-          const sol=solutions[t.id];
-          const editing=editingId===t.id;
-          if(editing)return(
-            <div key={t.id} style={{background:C.s1,border:`0.5px solid ${C.cy}`,borderRadius:10,padding:"12px 14px"}}>
-              <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                <input placeholder="Titel" value={editForm.title} onChange={e=>setEditForm(f=>({...f,title:e.target.value}))} style={input}/>
-                <textarea placeholder="Beschreibung (optional)" value={editForm.description} onChange={e=>setEditForm(f=>({...f,description:e.target.value}))} rows={2} style={{...input,resize:"vertical",fontFamily:"inherit"}}/>
-                <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-                  <select value={editForm.priority} onChange={e=>setEditForm(f=>({...f,priority:e.target.value}))} style={{...input,flex:"1 1 110px"}}>
-                    <option value="low">Niedrig</option>
-                    <option value="medium">Mittel</option>
-                    <option value="high">Hoch</option>
-                  </select>
-                  <select value={editForm.tool_slug} onChange={e=>setEditForm(f=>({...f,tool_slug:e.target.value}))} style={{...input,flex:"1 1 140px"}}>
-                    <option value="">Kein Tool-Bezug</option>
-                    {tools.map(x=><option key={x.slug} value={x.slug}>{x.name}</option>)}
-                  </select>
-                </div>
-                <div style={{display:"flex",gap:8}}>
-                  <button disabled={busy} onClick={()=>saveEdit(t.id)} style={{...pri,opacity:busy?.6:1}}>{busy?"...":"Speichern"}</button>
-                  <button disabled={busy} onClick={cancelEdit} style={{...ghost,fontSize:13}}>Abbrechen</button>
-                </div>
-              </div>
-            </div>
-          );
-          const updated=wasUpdated(t);
-          return(
-            <div key={t.id} style={{background:C.s1,border:`0.5px solid ${t.decision_pending?C.am:C.bd}`,borderRadius:10,padding:"12px 14px",opacity:t.status==="done"?.6:1}}>
-              <div style={{display:"flex",alignItems:"baseline",gap:8,marginBottom:t.description?4:8,flexWrap:"wrap"}}>
-                <span style={{fontSize:11,fontWeight:600,color:C.mu}}>#{t.id}</span>
-                <span style={{fontSize:13,fontWeight:updated?800:600,color:updated?C.cy:C.t,textDecoration:t.status==="done"?"line-through":"none"}}>{t.title}</span>
-                <span style={{fontSize:10,fontWeight:600,color:PRIORITY_COLOR[t.priority],textTransform:"uppercase",letterSpacing:".03em"}}>{PRIORITY_LABEL[t.priority]}</span>
-                {tool&&<span style={{fontSize:11,color:C.mu}}>· {tool.name}</span>}
-                {created&&<span style={{fontSize:11,color:C.mu}}>· erstellt {created}</span>}
-                {updated&&<span style={{fontSize:10,fontWeight:700,color:C.cy}}>· aktualisiert</span>}
-                {t.decision_pending&&<span style={{fontSize:10,fontWeight:700,color:C.am,background:"rgba(217,119,6,0.15)",padding:"2px 6px",borderRadius:4}}>⚠ Entscheidung ausstehend</span>}
-              </div>
-              {t.description&&<p style={{fontSize:12,color:C.t2,margin:"0 0 8px",lineHeight:1.5}}>{t.description}</p>}
-              <div style={{display:"flex",alignItems:"center",gap:8,flexWrap:"wrap"}}>
-                <select disabled={busy} value={t.status} onChange={e=>setStatus(t.id,e.target.value)} style={{...input,width:"auto",padding:"5px 10px",fontSize:12}}>
-                  <option value="open">{STATUS_LABEL.open}</option>
-                  <option value="in_progress">{STATUS_LABEL.in_progress}</option>
-                  <option value="done">{STATUS_LABEL.done}</option>
-                </select>
-                <button disabled={busy} onClick={()=>startEdit(t)} style={{...ghost,fontSize:12,padding:"6px 12px"}}>✎ Bearbeiten</button>
-                <button disabled={busy} onClick={()=>toggleDecisionPending(t)} title="Entscheidung ausstehend markieren/entfernen" style={{...ghost,fontSize:12,padding:"6px 12px",color:t.decision_pending?C.am:C.t2,borderColor:t.decision_pending?C.am:C.bd}}>⚠ {t.decision_pending?"Entschieden":"Entscheidung offen"}</button>
-                <button disabled={busy||sol?.loading} title="Fragt Claude (mit Websuche bei Bedarf) nach einem Lösungsansatz" onClick={()=>findSolution(t)} style={{...ghost,fontSize:12,padding:"6px 12px",marginLeft:"auto",opacity:busy||sol?.loading?.5:1}}>{sol?.loading?"Sucht…":"🔍 Lösung suchen"}</button>
-                <button disabled={busy} onClick={()=>remove(t.id)} style={{...ghost,fontSize:12,padding:"6px 12px",color:"#fca5a5",borderColor:"#7f1d1d",opacity:busy?.5:1}}>Löschen</button>
-              </div>
-              {sol&&!sol.loading&&(
-                <div style={{marginTop:10,paddingTop:10,borderTop:`0.5px solid ${C.bd}`}}>
-                  {sol.error?(
-                    <p style={{fontSize:12,color:"#fca5a5",margin:0}}>{sol.error}</p>
-                  ):(<>
-                    <p style={{fontSize:12,color:C.t2,margin:"0 0 6px",lineHeight:1.6,whiteSpace:"pre-wrap"}}>{sol.answer}</p>
-                    {sol.sources?.length>0&&<div style={{display:"flex",flexDirection:"column",gap:2}}>
-                      {sol.sources.map((src,i)=>(
-                        <a key={i} href={src.url} target="_blank" rel="noopener noreferrer" style={{fontSize:11,color:C.cy}}>{src.title||src.url}</a>
-                      ))}
-                    </div>}
-                  </>)}
-                </div>
-              )}
-            </div>
-          );
-        })}
+        {visible.map(t=>renderTodo(t))}
       </div>
     </div></div>
   );
