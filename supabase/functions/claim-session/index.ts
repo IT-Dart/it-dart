@@ -121,6 +121,7 @@ async function notifyNewSession(toEmail: string) {
       from,
       to: toEmail,
       subject: "Neue Anmeldung bei IT-Dart",
+      html: newSessionEmailHtml(),
       text:
         "Hallo,\n\nsoeben hat sich jemand mit deinen Zugangsdaten bei IT-Dart angemeldet.\n\n" +
         "Warst das du selbst, kannst du diese Mail ignorieren.\n\n" +
@@ -132,6 +133,50 @@ async function notifyNewSession(toEmail: string) {
     const body = await res.text().catch(() => "");
     throw new Error(`Resend-API antwortete mit ${res.status}: ${body}`);
   }
+}
+
+// Gleiche Karten-/Farbgebung wie die 5 Supabase-Auth-Vorlagen unter
+// supabase/email-templates/*.html -- dort per Dashboard hochgeladen, hier
+// inline noetig, weil diese Mail nicht ueber Supabase Auth, sondern direkt
+// per Resend-HTTP-API versendet wird.
+function newSessionEmailHtml(): string {
+  return `
+<div style="background:#0f1623;padding:32px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
+  <table role="presentation" width="100%" style="max-width:480px;margin:0 auto;border-collapse:collapse;">
+    <tr>
+      <td style="background:#1a2535;border:1px solid #2d3f5a;border-radius:14px;padding:36px 32px;">
+        <table role="presentation">
+          <tr>
+            <td style="width:40px;height:40px;border-radius:50%;background:#2563eb;text-align:center;vertical-align:middle;font-size:20px;">🎯</td>
+            <td style="padding-left:12px;">
+              <div style="font-size:18px;font-weight:700;color:#f1f5f9;line-height:1.3;">IT-Dart</div>
+              <div style="font-size:11px;font-weight:500;color:#38bdf8;line-height:1.3;">Bleib am Dart!</div>
+            </td>
+          </tr>
+        </table>
+        <h1 style="font-size:20px;color:#f1f5f9;margin:28px 0 10px;">Neue Anmeldung erkannt</h1>
+        <p style="font-size:14px;color:#94a3b8;line-height:1.7;margin:0 0 8px;">
+          Soeben hat sich jemand mit deinen Zugangsdaten bei IT-Dart angemeldet.
+        </p>
+        <p style="font-size:14px;color:#94a3b8;line-height:1.7;margin:0 0 22px;">
+          Warst das du selbst, kannst du diese E-Mail ignorieren.
+        </p>
+        <table role="presentation" width="100%" style="margin:0 0 24px;">
+          <tr>
+            <td style="background:rgba(217,119,6,0.12);border:1px solid #92400e;border-radius:10px;padding:14px 16px;">
+              <p style="font-size:13px;color:#fbbf24;line-height:1.6;margin:0;font-weight:600;">⚠ Warst du das nicht?</p>
+              <p style="font-size:13px;color:#fcd34d;line-height:1.6;margin:6px 0 0;">Ändere umgehend dein Passwort über „Passwort vergessen" auf der IT-Dart-Anmeldeseite: <a href="https://it-dart.de" style="color:#38bdf8;">it-dart.de</a></p>
+            </td>
+          </tr>
+        </table>
+        <p style="font-size:11px;color:#64748b;line-height:1.6;margin:0;border-top:1px solid #2d3f5a;padding-top:16px;">
+          Diese Benachrichtigung dient deiner Kontosicherheit und wird bei jeder neuen Anmeldung automatisch versendet.
+        </p>
+      </td>
+    </tr>
+    <tr><td style="text-align:center;padding-top:18px;font-size:11px;color:#475569;">IT-Dart · Coskun Selim Bulut</td></tr>
+  </table>
+</div>`;
 }
 
 function json(body: unknown, status = 200, cors: Record<string, string>) {
