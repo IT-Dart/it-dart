@@ -21,21 +21,25 @@ const randomPassword = () => crypto.randomBytes(18).toString("base64url");
 // Bereitschaft warten") bestaetigt nur, dass die Postgres-Instanz des neuen
 // Branches laeuft -- PostgREST (die REST-Schicht, ueber die supabase-js
 // .from()-Aufrufe laufen) braucht danach noch ein paar Sekunden, um seinen
-// Schema-Cache neu zu laden und die gerade per Migrations-Replay neu
-// entstandenen Tabellen ueberhaupt zu kennen. Ohne diese Wartefunktion
-// schlaegt der allererste .from()-Aufruf zuverlaessig mit "Could not find
-// the table 'public.profiles' in the schema cache" fehl (real aufgetreten,
-// erster scharfer Testlauf dieser Pipeline 2026-08-02).
-async function waitForPostgrestSchema(maxAttempts = 10, delayMs = 3000) {
+// Schema-Cache neu zu laden. Das passiert offenbar nicht atomar: ein erster
+// scharfer Lauf scheiterte mit "Could not find the table 'public.profiles'",
+// ein zweiter (nach einem einmaligen Vorab-Check auf genau diese Tabelle)
+// dann stattdessen mit "Could not find the 'is_trainer' column" -- der Cache
+// kann also eine Tabelle schon kennen, aber einzelne Spalten noch nicht.
+// Deshalb hier NICHT nur ein einmaliger Vorab-Check, sondern jeder einzelne
+// .from()-Aufruf mit eigener Wiederholung bei genau diesem Fehlerbild
+// ("schema cache" in der Meldung, PostgREST-Code PGRST205/PGRST204).
+async function withSchemaCacheRetry(label, fn, maxAttempts = 8, delayMs = 3000) {
   for (let i = 1; i <= maxAttempts; i++) {
-    const { error } = await supabase.from("profiles").select("id").limit(1);
-    if (!error) return;
-    console.log(`PostgREST-Schema-Cache noch nicht bereit (Versuch ${i}/${maxAttempts}): ${error.message}`);
-    if (i < maxAttempts) await new Promise((r) => setTimeout(r, delayMs));
+    const result = await fn();
+    if (!result.error) return result;
+    const isSchemaCacheIssue = /schema cache/i.test(result.error.message || "");
+    if (!isSchemaCacheIssue || i === maxAttempts) return result;
+    console.log(`${label}: Schema-Cache noch nicht vollständig bereit (Versuch ${i}/${maxAttempts}): ${result.error.message}`);
+    await new Promise((r) => setTimeout(r, delayMs));
   }
-  throw new Error("PostgREST-Schema-Cache wurde nach mehreren Versuchen nicht bereit.");
+  return fn();
 }
-await waitForPostgrestSchema();
 
 async function createTestUser(localPart, profileUpdates = null) {
   const email = `e2e-${localPart}-${Date.now()}@sandbox.it-dart.de`;
@@ -44,7 +48,10 @@ async function createTestUser(localPart, profileUpdates = null) {
   if (error) throw new Error(`createUser(${localPart}) fehlgeschlagen: ${error.message}`);
   const userId = data.user.id;
   if (profileUpdates) {
-    const { error: updErr } = await supabase.from("profiles").update(profileUpdates).eq("id", userId);
+    const { error: updErr } = await withSchemaCacheRetry(
+      `profiles-Update(${localPart})`,
+      () => supabase.from("profiles").update(profileUpdates).eq("id", userId)
+    );
     if (updErr) throw new Error(`profiles-Update(${localPart}) fehlgeschlagen: ${updErr.message}`);
   }
   return { email, password, userId };
@@ -57,9 +64,10 @@ const juniorAdmin = await createTestUser("junioradmin", { is_junior_admin: true 
 
 // Rolle B (roleB.trainee.spec.js) prueft die "Dein Trainer"-Ansicht im
 // Hilfe-Bereich -- braucht dafuer eine echte trainer_trainees-Zuordnung.
-const { error: linkErr } = await supabase
-  .from("trainer_trainees")
-  .insert({ trainer_id: trainer.userId, trainee_id: trainee.userId });
+const { error: linkErr } = await withSchemaCacheRetry(
+  "trainer_trainees-Verknuepfung",
+  () => supabase.from("trainer_trainees").insert({ trainer_id: trainer.userId, trainee_id: trainee.userId })
+);
 if (linkErr) throw new Error(`trainer_trainees-Verknuepfung fehlgeschlagen: ${linkErr.message}`);
 
 // Reine key=value-Zeilen auf stdout -- der Workflow-Schritt liest sie ein und
