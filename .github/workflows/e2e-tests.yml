@@ -129,10 +129,18 @@ jobs:
           npm run build
 
       - name: App lokal bereitstellen
+        # Port 5173, nicht Vites 4173-Standard: jede Edge Function (claim-session,
+        # ai-chat, ...) prüft den Origin-Header gegen eine feste ALLOWED_ORIGINS-
+        # Liste, die für lokale Tests nur localhost:5173 (den normalen Dev-Server-
+        # Port) enthält. Ein anderer Port hier würde jeden Edge-Function-Aufruf
+        # aus dem Browser heraus per CORS blockieren -- real aufgetreten: alle
+        # 6 Tests scheiterten am Login, weil claim-session den Origin
+        # localhost:4173 stillschweigend ablehnte (kein Access-Control-Allow-
+        # Origin-Header in der Preflight-Antwort).
         run: |
-          npx vite preview --port 4173 --strictPort &
+          npx vite preview --port 5173 --strictPort &
           for i in $(seq 1 30); do
-            if curl -sf http://localhost:4173 > /dev/null; then echo "Bereit."; break; fi
+            if curl -sf http://localhost:5173 > /dev/null; then echo "Bereit."; break; fi
             sleep 1
           done
 
@@ -142,7 +150,7 @@ jobs:
         id: run_tests
         working-directory: e2e
         env:
-          BASE_URL: http://localhost:4173
+          BASE_URL: http://localhost:5173
           E2E_SUITE: ${{ inputs.suite }}
         # continue-on-error, damit fehlgeschlagene Tests trotzdem einen
         # Bericht erzeugen und melden, statt den Job stillschweigend rot
