@@ -84,6 +84,21 @@ jobs:
             echo "::error::Branch wurde nach ~400s nicht bereit (letzter Status: $status)."
             exit 1
           fi
+          # ACTIVE_HEALTHY bestätigt nur die Postgres-Instanz selbst -- der
+          # Rest des API-Stacks (PostgREST-Schema-Cache, Connection-Pooler)
+          # braucht danach noch unvorhersehbar lange, um vollständig
+          # konsistent zu sein. Real durchlaufene Fehlerbilder direkt
+          # nacheinander: fehlende Tabelle, fehlende Spalte, dann eine
+          # Fremdschlüssel-Verletzung beim Insert auf eine Sekunden zuvor
+          # erstellte Zeile -- ein direkter SQL-Test bestätigte, dass Trigger
+          # und Fremdschlüssel bei reinem Datenbankzugriff sofort korrekt
+          # funktionieren, das Problem sitzt also spezifisch auf der
+          # API-Schicht. Fixe zusätzliche Wartezeit hier, weil das per-Aufruf-
+          # Retry im Seed-Skript diese Verzögerung allein nicht zuverlässig
+          # abfängt (real beobachtet: nach 8 Versuchen à 3s immer noch nicht
+          # bereit).
+          echo "Zusätzliche 20s, bis der API-Stack (PostgREST/Pooler) nachgezogen hat..."
+          sleep 20
 
       - name: Branch-Zugangsdaten ermitteln
         id: branch_keys
