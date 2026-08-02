@@ -37,6 +37,7 @@ export default function TodoScreen({onClose}){
   const [editForm,setEditForm]=useState({title:"",description:"",priority:"medium",tool_slug:""});
   const [addingSubtaskFor,setAddingSubtaskFor]=useState(null); // parent id, oder null
   const [subtaskTitle,setSubtaskTitle]=useState("");
+  const [assigningParentFor,setAssigningParentFor]=useState(null); // todo id, dessen Parent gerade gewählt wird
   const [expandedIds,setExpandedIds]=useState(()=>new Set()); // welche Einträge (Parent oder Child) aufgeklappt sind
   const toggleExpanded=(id)=>setExpandedIds(prev=>{
     const next=new Set(prev);
@@ -83,6 +84,15 @@ export default function TodoScreen({onClose}){
     if(error){setErr(describeError(error));return;}
     setSubtaskTitle("");
     setAddingSubtaskFor(null);
+    load();
+  };
+
+  const setParentId=async(id,parentId)=>{
+    setBusyId(id);
+    const {error}=await supabase.from("todos").update({parent_id:parentId}).eq("id",id);
+    setBusyId(null);
+    if(error){setErr(describeError(error));return;}
+    setAssigningParentFor(null);
     load();
   };
 
@@ -217,6 +227,7 @@ export default function TodoScreen({onClose}){
               <button disabled={busy} onClick={()=>startEdit(t)} style={{...ghost,fontSize:12,padding:"6px 12px"}}>✎ Bearbeiten</button>
               <button disabled={busy} onClick={()=>toggleDecisionPending(t)} title="Entscheidung ausstehend markieren/entfernen" style={{...ghost,fontSize:12,padding:"6px 12px",color:t.decision_pending?C.am:C.t2,borderColor:t.decision_pending?C.am:C.bd}}>⚠ {t.decision_pending?"Entschieden":"Entscheidung offen"}</button>
               {!indent&&<button disabled={busy} onClick={()=>setAddingSubtaskFor(addingSubtaskFor===t.id?null:t.id)} style={{...ghost,fontSize:12,padding:"6px 12px"}}>+ Unteraufgabe</button>}
+              {children.length===0&&<button disabled={busy} onClick={()=>setAssigningParentFor(assigningParentFor===t.id?null:t.id)} style={{...ghost,fontSize:12,padding:"6px 12px"}}>→ Parent zuweisen</button>}
               <button disabled={busy||sol?.loading} title="Fragt Claude (mit Websuche bei Bedarf) nach einem Lösungsansatz" onClick={()=>findSolution(t)} style={{...ghost,fontSize:12,padding:"6px 12px",marginLeft:indent?0:"auto",opacity:busy||sol?.loading?.5:1}}>{sol?.loading?"Sucht…":"🔍 Lösung suchen"}</button>
               <button disabled={busy} onClick={()=>remove(t.id)} style={{...ghost,fontSize:12,padding:"6px 12px",color:"#fca5a5",borderColor:"#7f1d1d",opacity:busy?.5:1}}>Löschen</button>
             </div>
@@ -241,6 +252,15 @@ export default function TodoScreen({onClose}){
             <input autoFocus placeholder="Titel der Unteraufgabe" value={subtaskTitle} onChange={e=>setSubtaskTitle(e.target.value)} onKeyDown={e=>{if(e.key==="Enter")addSubtask(t.id);}} style={{...input,fontSize:13}}/>
             <button disabled={addBusy} onClick={()=>addSubtask(t.id)} style={{...pri,fontSize:12,padding:"6px 12px",opacity:addBusy?.6:1}}>{addBusy?"...":"Hinzufügen"}</button>
             <button disabled={addBusy} onClick={()=>{setAddingSubtaskFor(null);setSubtaskTitle("");}} style={{...ghost,fontSize:12,padding:"6px 12px"}}>Abbrechen</button>
+          </div>
+        )}
+        {expanded&&assigningParentFor===t.id&&(
+          <div style={{display:"flex",gap:8,marginTop:6,marginLeft:indent?24:0,alignItems:"center",flexWrap:"wrap"}}>
+            <select autoFocus disabled={busy} value={t.parent_id||""} onChange={e=>setParentId(t.id,e.target.value?Number(e.target.value):null)} style={{...input,width:"auto",fontSize:13}}>
+              <option value="">— Keine (oberste Ebene) —</option>
+              {topLevel.filter(x=>x.id!==t.id).map(x=><option key={x.id} value={x.id}>#{x.id} {x.title}</option>)}
+            </select>
+            <button disabled={busy} onClick={()=>setAssigningParentFor(null)} style={{...ghost,fontSize:12,padding:"6px 12px"}}>Abbrechen</button>
           </div>
         )}
         {expanded&&!indent&&children.length>0&&(
