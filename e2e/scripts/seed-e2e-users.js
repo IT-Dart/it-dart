@@ -17,6 +17,26 @@ if (!url || !serviceKey) {
 const supabase = createClient(url, serviceKey);
 const randomPassword = () => crypto.randomBytes(18).toString("base64url");
 
+// ACTIVE_HEALTHY (siehe .github/workflows/e2e-tests.yml, "Auf Branch-
+// Bereitschaft warten") bestaetigt nur, dass die Postgres-Instanz des neuen
+// Branches laeuft -- PostgREST (die REST-Schicht, ueber die supabase-js
+// .from()-Aufrufe laufen) braucht danach noch ein paar Sekunden, um seinen
+// Schema-Cache neu zu laden und die gerade per Migrations-Replay neu
+// entstandenen Tabellen ueberhaupt zu kennen. Ohne diese Wartefunktion
+// schlaegt der allererste .from()-Aufruf zuverlaessig mit "Could not find
+// the table 'public.profiles' in the schema cache" fehl (real aufgetreten,
+// erster scharfer Testlauf dieser Pipeline 2026-08-02).
+async function waitForPostgrestSchema(maxAttempts = 10, delayMs = 3000) {
+  for (let i = 1; i <= maxAttempts; i++) {
+    const { error } = await supabase.from("profiles").select("id").limit(1);
+    if (!error) return;
+    console.log(`PostgREST-Schema-Cache noch nicht bereit (Versuch ${i}/${maxAttempts}): ${error.message}`);
+    if (i < maxAttempts) await new Promise((r) => setTimeout(r, delayMs));
+  }
+  throw new Error("PostgREST-Schema-Cache wurde nach mehreren Versuchen nicht bereit.");
+}
+await waitForPostgrestSchema();
+
 async function createTestUser(localPart, profileUpdates = null) {
   const email = `e2e-${localPart}-${Date.now()}@sandbox.it-dart.de`;
   const password = randomPassword();
