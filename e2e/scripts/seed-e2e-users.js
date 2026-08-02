@@ -61,6 +61,23 @@ const trainer = await createTestUser("trainer", { is_trainer: true });
 const trainee = await createTestUser("trainee");
 const juniorAdmin = await createTestUser("junioradmin", { is_junior_admin: true });
 
+// roleD.junior-admin.spec.js prueft die zentrale Sicherheitsgrenze des
+// geschuetzten Hauptkontos (is_protected_account() in den Migrationen,
+// PROTECTED_USER_ID in den Edge Functions) -- dessen UUID ist fest im
+// Code verdrahtet, nicht rollenbasiert. Auf einem frischen Branch gibt es
+// dieses Konto nicht (Branches kopieren bewusst keine echten Nutzerdaten),
+// deshalb hier ein Platzhalter mit EXAKT derselben UUID + E-Mail, damit der
+// Test die reale Schutzregel trotzdem sinnvoll pruefen kann -- keine
+// echten Zugangsdaten, nur die ID stimmt ueberein.
+const PROTECTED_USER_ID = "33271bc9-6b8a-456f-9cf1-a5c564218b07";
+const { error: protectedErr } = await supabase.auth.admin.createUser({
+  id: PROTECTED_USER_ID,
+  email: "coskunselimbulut@gmail.com",
+  password: randomPassword(),
+  email_confirm: true,
+});
+if (protectedErr) throw new Error(`Platzhalter fuer geschuetztes Hauptkonto fehlgeschlagen: ${protectedErr.message}`);
+
 // Rolle B (roleB.trainee.spec.js) prueft die "Dein Trainer"-Ansicht im
 // Hilfe-Bereich -- braucht dafuer eine echte trainer_trainees-Zuordnung.
 const { error: linkErr } = await withStartupRetry(
