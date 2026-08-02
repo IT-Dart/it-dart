@@ -14,6 +14,12 @@ const ALLOWED_ORIGINS = new Set([
 
 const AUDIT_LOG_RETENTION_DAYS = 7;
 
+// Geschütztes Hauptkonto (siehe CLAUDE.md Sicherheitsprinzipien) -- der
+// Sofort-Push aufs Handy löst absichtlich NUR bei diesem Konto aus, nicht
+// bei jeder Nutzer-Anmeldung, sonst skaliert das nicht und ist auch
+// datenschutzmäßig fragwürdig.
+const PROTECTED_USER_ID = "33271bc9-6b8a-456f-9cf1-a5c564218b07";
+
 function corsHeaders(origin: string | null) {
   const headers: Record<string, string> = {
     "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -88,6 +94,14 @@ Deno.serve(async (req) => {
       } catch (e) {
         console.error("[claim-session] notifyNewSession failed:", e);
       }
+
+      if (user.id === PROTECTED_USER_ID) {
+        try {
+          await notifyOwnerPush();
+        } catch (e) {
+          console.error("[claim-session] notifyOwnerPush failed:", e);
+        }
+      }
     }
 
     return json({ claimed: !!claimed }, 200, cors);
@@ -132,6 +146,33 @@ async function notifyNewSession(toEmail: string) {
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     throw new Error(`Resend-API antwortete mit ${res.status}: ${body}`);
+  }
+}
+
+// Sofort-Push aufs Handy nur fuers eigene, geschuetzte Konto -- ueber
+// ntfy.sh, bewusst zustandslos: kein neuer Datenbank-Eintrag, kein
+// Anwachsen. NTFY_TOPIC ist ein geheimer, zufaellig generierter Themenname
+// (Secret in den Edge-Function-Settings), da ntfy-Themen ohne eigenen
+// Account allein ueber den Namen erreichbar sind -- wer den Namen kennt,
+// kann mitlesen oder faelschen.
+async function notifyOwnerPush() {
+  const topic = Deno.env.get("NTFY_TOPIC");
+  if (!topic) {
+    console.warn("[claim-session] NTFY_TOPIC nicht gesetzt, überspringe Push.");
+    return;
+  }
+  const res = await fetch(`https://ntfy.sh/${topic}`, {
+    method: "POST",
+    headers: {
+      "Title": "Neue Anmeldung bei IT-Dart",
+      "Priority": "urgent",
+      "Tags": "warning",
+    },
+    body: "Soeben wurde sich mit deinen Zugangsdaten bei IT-Dart angemeldet. Falls das nicht du warst: sofort Passwort ändern.",
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`ntfy.sh antwortete mit ${res.status}: ${body}`);
   }
 }
 
