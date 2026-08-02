@@ -7,11 +7,13 @@ import { credentialsFor } from "../roles.config.js";
 // "Anmelden →").
 export async function loginAs(page, role) {
   const { email, password } = credentialsFor(role);
-  await page.goto("/");
-  // .first() — CompanyScreen.jsx zeigt denselben Button oben und unten auf
-  // der Seite (identischer Ziel-Flow), Playwrights Strict Mode verlangt
-  // sonst genau einen Treffer.
-  await page.getByRole("button", { name: /Anmelden \/ Registrieren/ }).first().click();
+  // Direkt zum Login-Screen statt über den "Anmelden / Registrieren"-Button
+  // auf der Unternehmensseite -- solange WARTUNGSMODUS in App.jsx aktiv ist
+  // (aktuell der Fall), zeigt "/" für anonyme Besucher WartungScreen.jsx
+  // statt CompanyScreen.jsx, die dort keinen solchen Button hat. ?mode=login
+  // ist derselbe Weg, den auch der reale "Hier anmelden"-Link auf der
+  // Wartungsseite nutzt.
+  await page.goto("/?mode=login");
   await page.getByPlaceholder("E-Mail").fill(email);
   await page.getByPlaceholder("Passwort").fill(password);
   await page.getByRole("button", { name: /^Anmelden/ }).click();

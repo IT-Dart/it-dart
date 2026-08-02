@@ -1,12 +1,14 @@
 name: E2E-Tests
 
-# Führt echte Browser-End-to-End-Tests (Playwright) gegen die Live-App aus.
-# Weder das React-Frontend noch eine Supabase Edge Function können selbst
-# einen Browser steuern — GitHub Actions ist dafür der einzige Ort in diesem
-# Stack (wie beim bestehenden db-backup.yml-Workflow). Wird ausschließlich
-# über das Admin-Dashboard ausgelöst (supabase/functions/e2e-trigger-run),
-# nie automatisch per Zeitplan, da echte Testkonten echte Schreibvorgänge
-# gegen die Produktivdatenbank auslösen.
+# Führt echte Browser-End-to-End-Tests (Playwright) aus. Läuft seit 2026-08-02
+# gegen einen frisch angelegten, wegwerfbaren Supabase-Branch statt gegen die
+# Live-Produktivdatenbank: kein Aufräumen von Test-Accounts mehr nötig (siehe
+# To-Do #74-Historie), der Branch wird am Ende jedes Laufs gelöscht, egal ob
+# die Tests bestehen oder nicht. Weder das React-Frontend noch eine Supabase
+# Edge Function können selbst einen Browser steuern — GitHub Actions ist dafür
+# der einzige Ort in diesem Stack (wie beim bestehenden db-backup.yml-Workflow).
+# Wird ausschließlich über das Admin-Dashboard ausgelöst
+# (supabase/functions/e2e-trigger-run), nie automatisch per Zeitplan.
 
 on:
   workflow_dispatch:
@@ -22,6 +24,9 @@ on:
         required: true
         type: string
 
+env:
+  SUPABASE_PROJECT_REF: vukqjpqawzhfvpjjpipp
+
 jobs:
   e2e:
     runs-on: ubuntu-latest
@@ -34,30 +39,118 @@ jobs:
         with:
           node-version: 22
 
-      - name: Playwright installieren
+      # --- Wegwerfbaren Supabase-Branch als Testumgebung anlegen ---------
+
+      - name: Sandbox-Branch anlegen
+        id: create_branch
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          branch_name="e2e-run-${{ inputs.run_id }}"
+          resp=$(curl -sf -X POST "https://api.supabase.com/v1/projects/${SUPABASE_PROJECT_REF}/branches" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "{\"branch_name\":\"$branch_name\"}")
+          branch_id=$(echo "$resp" | jq -r '.id')
+          branch_ref=$(echo "$resp" | jq -r '.project_ref')
+          if [ -z "$branch_id" ] || [ "$branch_id" = "null" ]; then
+            echo "::error::Branch-Erstellung lieferte keine ID zurück: $resp"
+            exit 1
+          fi
+          echo "branch_id=$branch_id" >> "$GITHUB_OUTPUT"
+          echo "branch_ref=$branch_ref" >> "$GITHUB_OUTPUT"
+          echo "Branch $branch_name angelegt (id=$branch_id, ref=$branch_ref)."
+
+      - name: Auf Branch-Bereitschaft warten
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          branch_id="${{ steps.create_branch.outputs.branch_id }}"
+          status="UNKNOWN"
+          for i in $(seq 1 40); do
+            status=$(curl -sf "https://api.supabase.com/v1/branches/$branch_id" \
+              -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" | jq -r '.status')
+            echo "Versuch $i: Status=$status"
+            if [ "$status" = "ACTIVE_HEALTHY" ]; then break; fi
+            case "$status" in
+              INIT_FAILED|RESTORE_FAILED|PAUSE_FAILED)
+                echo "::error::Branch-Erstellung endgültig fehlgeschlagen (Status $status)."
+                exit 1
+                ;;
+            esac
+            sleep 10
+          done
+          if [ "$status" != "ACTIVE_HEALTHY" ]; then
+            echo "::error::Branch wurde nach ~400s nicht bereit (letzter Status: $status)."
+            exit 1
+          fi
+
+      - name: Branch-Zugangsdaten ermitteln
+        id: branch_keys
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          branch_ref="${{ steps.create_branch.outputs.branch_ref }}"
+          keys=$(curl -sf "https://api.supabase.com/v1/projects/$branch_ref/api-keys?reveal=true" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN")
+          anon_key=$(echo "$keys" | jq -r '[.[] | select(.name=="anon")][0].api_key')
+          service_key=$(echo "$keys" | jq -r '[.[] | select(.name=="service_role")][0].api_key')
+          if [ -z "$service_key" ] || [ "$service_key" = "null" ]; then
+            echo "::error::Kein service_role-Key für den Branch gefunden."
+            exit 1
+          fi
+          echo "::add-mask::$service_key"
+          echo "branch_url=https://$branch_ref.supabase.co" >> "$GITHUB_OUTPUT"
+          echo "anon_key=$anon_key" >> "$GITHUB_OUTPUT"
+          echo "service_key=$service_key" >> "$GITHUB_OUTPUT"
+
+      - name: Test-Nutzer auf dem Branch anlegen
         working-directory: e2e
+        env:
+          BRANCH_URL: ${{ steps.branch_keys.outputs.branch_url }}
+          SERVICE_KEY: ${{ steps.branch_keys.outputs.service_key }}
+        run: |
+          npm install @supabase/supabase-js --no-save --no-audit --no-fund
+          node scripts/seed-e2e-users.js > seed_output.txt
+          while IFS='=' read -r key val; do
+            [ -z "$key" ] && continue
+            case "$key" in *_PASSWORD) echo "::add-mask::$val" ;; esac
+            echo "$key=$val" >> "$GITHUB_ENV"
+          done < seed_output.txt
+
+      # --- App gegen den Sandbox-Branch bauen und lokal bereitstellen ----
+
+      - name: App gegen Sandbox-Branch bauen
+        env:
+          VITE_SUPABASE_URL: ${{ steps.branch_keys.outputs.branch_url }}
+          VITE_SUPABASE_ANON_KEY: ${{ steps.branch_keys.outputs.anon_key }}
         run: |
           npm ci
-          npx playwright install --with-deps chromium
+          npm run build
+
+      - name: App lokal bereitstellen
+        run: |
+          npx vite preview --port 4173 --strictPort &
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:4173 > /dev/null; then echo "Bereit."; break; fi
+            sleep 1
+          done
+
+      # --- Playwright gegen die lokal bereitgestellte Sandbox-App ausführen
 
       - name: Tests ausführen
         id: run_tests
         working-directory: e2e
         env:
-          BASE_URL: https://www.it-dart.de
+          BASE_URL: http://localhost:4173
           E2E_SUITE: ${{ inputs.suite }}
-          E2E_TEST_FREE_EMAIL: ${{ secrets.E2E_TEST_FREE_EMAIL }}
-          E2E_TEST_FREE_PASSWORD: ${{ secrets.E2E_TEST_FREE_PASSWORD }}
-          E2E_TEST_TRAINEE_EMAIL: ${{ secrets.E2E_TEST_TRAINEE_EMAIL }}
-          E2E_TEST_TRAINEE_PASSWORD: ${{ secrets.E2E_TEST_TRAINEE_PASSWORD }}
-          E2E_TEST_TRAINER_EMAIL: ${{ secrets.E2E_TEST_TRAINER_EMAIL }}
-          E2E_TEST_TRAINER_PASSWORD: ${{ secrets.E2E_TEST_TRAINER_PASSWORD }}
-          E2E_TEST_JUNIORADMIN_EMAIL: ${{ secrets.E2E_TEST_JUNIORADMIN_EMAIL }}
-          E2E_TEST_JUNIORADMIN_PASSWORD: ${{ secrets.E2E_TEST_JUNIORADMIN_PASSWORD }}
         # continue-on-error, damit fehlgeschlagene Tests trotzdem einen
         # Bericht erzeugen und melden, statt den Job stillschweigend rot
         # abbrechen zu lassen, ohne dass das Dashboard je etwas erfährt.
-        run: npx playwright test || echo "tests_failed=1" >> "$GITHUB_OUTPUT"
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npx playwright test || echo "tests_failed=1" >> "$GITHUB_OUTPUT"
         continue-on-error: true
 
       - name: Ergebnisse in Ingest-Format übersetzen
@@ -126,4 +219,23 @@ jobs:
           cat response.txt 2>/dev/null || true
           if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
             echo "::warning::Auch die Notfall-Meldung wurde abgelehnt (Status $http_code) — die e2e_runs-Zeile bleibt auf 'queued' hängen. Manuell per SQL korrigieren, siehe dokumentation/13_SQL_Admin_Notfallreferenz, Abschnitt 6."
+          fi
+
+      # --- Aufräumen: Branch immer löschen, egal ob Tests bestanden haben -
+
+      - name: Sandbox-Branch löschen
+        if: always()
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          branch_id="${{ steps.create_branch.outputs.branch_id }}"
+          if [ -z "$branch_id" ]; then
+            echo "Kein Branch angelegt worden, nichts zu löschen."
+            exit 0
+          fi
+          http_code=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE "https://api.supabase.com/v1/branches/$branch_id" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN")
+          echo "Löschen von Branch $branch_id: Status $http_code"
+          if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+            echo "::warning::Branch $branch_id konnte nicht automatisch gelöscht werden (Status $http_code) — manuell im Supabase-Dashboard prüfen, damit keine laufenden Kosten übersehen werden."
           fi

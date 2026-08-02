@@ -3,8 +3,10 @@
 // browser automation engine itself, neither in this Deno function nor in
 // the Vite/React frontend). Admin-only: no is_junior_admin_user() path,
 // this is more sensitive than the invite/AI-toggle actions Junior-Admins
-// already have (it triggers real writes against production via real test
-// accounts).
+// already have. Since 2026-08-02 the workflow runs against a freshly
+// created, disposable Supabase branch (not production) with throwaway test
+// accounts — still admin-gated, since it costs real money per run
+// (Supabase branch compute) and consumes GitHub Actions minutes.
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const ALLOWED_ORIGINS = new Set([
