@@ -19,26 +19,25 @@ const randomPassword = () => crypto.randomBytes(18).toString("base64url");
 
 // ACTIVE_HEALTHY (siehe .github/workflows/e2e-tests.yml, "Auf Branch-
 // Bereitschaft warten") bestaetigt nur, dass die Postgres-Instanz des neuen
-// Branches laeuft -- PostgREST (die REST-Schicht, ueber die supabase-js
-// .from()-Aufrufe laufen) braucht danach noch ein paar Sekunden, um seinen
-// Schema-Cache neu zu laden. Das passiert offenbar nicht atomar: ein erster
-// scharfer Lauf scheiterte mit "Could not find the table 'public.profiles'",
-// ein zweiter (nach einem einmaligen Vorab-Check auf genau diese Tabelle)
-// dann stattdessen mit "Could not find the 'is_trainer' column" -- der Cache
-// kann also eine Tabelle schon kennen, aber einzelne Spalten noch nicht.
-// Deshalb hier NICHT nur ein einmaliger Vorab-Check, sondern jeder einzelne
-// .from()-Aufruf mit eigener Wiederholung bei genau diesem Fehlerbild
-// ("schema cache" in der Meldung, PostgREST-Code PGRST205/PGRST204).
-async function withSchemaCacheRetry(label, fn, maxAttempts = 8, delayMs = 3000) {
+// Branches laeuft -- der gesamte uebrige Stack (PostgREST-Schema-Cache,
+// Connection-Pooler) bootet daneben offenbar noch nach und ist kurz danach
+// noch nicht vollstaendig konsistent. Real durchlaufene Fehlerbilder direkt
+// nacheinander: "Could not find the table 'public.profiles'", dann "Could
+// not find the 'is_trainer' column", dann eine Fremdschluessel-Verletzung
+// bei einem Insert auf eine gerade erst erstellte Zeile (vermutlich
+// Pooler-Verzoegerung, kein Schema-Cache-Fehlerbild im engeren Sinn). Daher
+// hier bewusst NICHT auf eine bestimmte Fehlermeldung filtern, sondern jeden
+// .from()-Aufruf in dieser fruehen Bootstrap-Phase pauschal wiederholen.
+async function withStartupRetry(label, fn, maxAttempts = 8, delayMs = 3000) {
+  let lastResult;
   for (let i = 1; i <= maxAttempts; i++) {
-    const result = await fn();
-    if (!result.error) return result;
-    const isSchemaCacheIssue = /schema cache/i.test(result.error.message || "");
-    if (!isSchemaCacheIssue || i === maxAttempts) return result;
-    console.log(`${label}: Schema-Cache noch nicht vollständig bereit (Versuch ${i}/${maxAttempts}): ${result.error.message}`);
+    lastResult = await fn();
+    if (!lastResult.error) return lastResult;
+    if (i === maxAttempts) return lastResult;
+    console.log(`${label}: noch fehlgeschlagen, vermutlich Branch-Bootstrap-Verzögerung (Versuch ${i}/${maxAttempts}): ${lastResult.error.message}`);
     await new Promise((r) => setTimeout(r, delayMs));
   }
-  return fn();
+  return lastResult;
 }
 
 async function createTestUser(localPart, profileUpdates = null) {
@@ -48,7 +47,7 @@ async function createTestUser(localPart, profileUpdates = null) {
   if (error) throw new Error(`createUser(${localPart}) fehlgeschlagen: ${error.message}`);
   const userId = data.user.id;
   if (profileUpdates) {
-    const { error: updErr } = await withSchemaCacheRetry(
+    const { error: updErr } = await withStartupRetry(
       `profiles-Update(${localPart})`,
       () => supabase.from("profiles").update(profileUpdates).eq("id", userId)
     );
@@ -64,7 +63,7 @@ const juniorAdmin = await createTestUser("junioradmin", { is_junior_admin: true 
 
 // Rolle B (roleB.trainee.spec.js) prueft die "Dein Trainer"-Ansicht im
 // Hilfe-Bereich -- braucht dafuer eine echte trainer_trainees-Zuordnung.
-const { error: linkErr } = await withSchemaCacheRetry(
+const { error: linkErr } = await withStartupRetry(
   "trainer_trainees-Verknuepfung",
   () => supabase.from("trainer_trainees").insert({ trainer_id: trainer.userId, trainee_id: trainee.userId })
 );
