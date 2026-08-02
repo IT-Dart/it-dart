@@ -161,6 +161,21 @@ jobs:
           npx playwright test || echo "tests_failed=1" >> "$GITHUB_OUTPUT"
         continue-on-error: true
 
+      - name: Screenshots/Traces gescheiterter Tests sichern
+        # playwright.config.js erzeugt bei Fehlschlägen Screenshots
+        # ("screenshot: only-on-failure") und Traces ("trace: retain-on-
+        # failure") in e2e/test-results/ -- bisher landete nur report.json
+        # (reiner Text) als Artefakt, ohne visuellen Beweis, WAS auf dem
+        # Bildschirm tatsächlich zu sehen war. if-no-files-found: ignore,
+        # da dieser Ordner bei einem komplett grünen Lauf gar nicht entsteht.
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-failures-${{ inputs.run_id }}
+          path: e2e/test-results/
+          retention-days: 14
+          if-no-files-found: ignore
+
       - name: Ergebnisse in Ingest-Format übersetzen
         # if: always() — läuft auch, wenn ein früherer Schritt (z. B. npm ci,
         # Playwright-Installation) fehlgeschlagen ist. build-report.js kommt
