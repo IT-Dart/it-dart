@@ -18,4 +18,12 @@ export async function loginAs(page, role) {
   await page.getByPlaceholder("Passwort").fill(password);
   await page.getByRole("button", { name: /^Anmelden/ }).click();
   await expect(page.getByText(email, { exact: false })).toBeVisible({ timeout: 10_000 });
+
+  // Nach dem Login landet man auf dem Cover-Screen (Marketing-Text,
+  // "Lernpfad starten →"-Button) -- die eigentliche Übersicht mit
+  // Modulliste und den rollenspezifischen Kopfzeilen-Buttons (Trainer-
+  // Ansicht, Junior-Admin, Admin, ...) erscheint erst nach diesem Klick
+  // (src/ITDart.jsx, setView("overview")). Alle Rollen-Spezifikationen
+  // brauchen das, deshalb zentral hier statt in jedem Test einzeln.
+  await page.getByRole("button", { name: /Lernpfad starten/ }).click();
 }
