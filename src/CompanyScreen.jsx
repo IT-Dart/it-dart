@@ -154,6 +154,9 @@ export default function CompanyScreen({onEnterApp,onOpenLegal}){
   // stattdessen direkt zum Login (?mode=login, dasselbe Muster wie die
   // bestehende ?mode=register-Einladungslink-Logik in ITDart.jsx).
   const handleEnter=user?onEnterApp:()=>{window.location.href="/?mode=login";};
+  // Nach dem Abmelden direkt zurück zum Login-Screen navigieren, gleiches
+  // Muster wie handleEnter oben.
+  const handleSignOut=async()=>{await signOut();window.location.href="/?mode=login";};
 
   return (
     <div style={wrap}><div style={{...inner,paddingTop:40,paddingBottom:40}}>
@@ -229,7 +232,7 @@ export default function CompanyScreen({onEnterApp,onOpenLegal}){
       <button onClick={handleEnter} style={{...pri,width:"100%",justifyContent:"center",padding:"14px 18px",fontSize:15,marginTop:28}}>{user?"Zum Lerntool „Bleib am Dart!\" →":"Anmelden / Registrieren →"}</button>
 
       {user&&<div style={{marginTop:14,textAlign:"center"}}>
-        <span style={{fontSize:12,color:C.mu}}>Angemeldet als {user.email} · <button onClick={signOut} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Abmelden</button></span>
+        <span style={{fontSize:12,color:C.mu}}>Angemeldet als {user.email} · <button onClick={handleSignOut} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Abmelden</button></span>
       </div>}
 
       <div style={{marginTop:20,textAlign:"center",display:"flex",gap:14,justifyContent:"center",flexWrap:"wrap"}}>
