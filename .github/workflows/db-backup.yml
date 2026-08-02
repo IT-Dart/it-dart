@@ -54,7 +54,7 @@ jobs:
           rm backup.dump
 
       - name: Verschlüsseltes Backup hochladen
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: db-backup-${{ github.run_id }}
           path: backup.dump.gpg
