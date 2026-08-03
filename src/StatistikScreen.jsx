@@ -4,6 +4,7 @@ import { useAuth } from "./lib/AuthContext";
 import { supabase } from "./lib/supabaseClient";
 import { describeError } from "./lib/errorText";
 import { generateLernnachweis } from "./lib/lernnachweis";
+import { exportMyData } from "./lib/dataExport";
 import { MODS } from "./lib/modules";
 
 const ZONE_INFO = {
@@ -35,6 +36,8 @@ export default function StatistikScreen({onClose,viewUser}){
   const [err,setErr]=useState(null);
   const [busyId,setBusyId]=useState(null);
   const [dlErr,setDlErr]=useState(null);
+  const [exportBusy,setExportBusy]=useState(false);
+  const [exportErr,setExportErr]=useState(null);
   const [progress,setProgress]=useState(null); // null = lädt, sonst {modId: [Themennummern]}
   const [progressErr,setProgressErr]=useState(null);
 
@@ -84,12 +87,37 @@ export default function StatistikScreen({onClose,viewUser}){
     }
   };
 
+  const handleExport=async()=>{
+    setExportBusy(true);
+    setExportErr(null);
+    try{
+      await exportMyData(user);
+    }catch(e){
+      setExportErr(describeError(e));
+    }finally{
+      setExportBusy(false);
+    }
+  };
+
   return(
     <div style={wrap}><div style={inner}>
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:24,paddingBottom:16,borderBottom:`0.5px solid ${C.bd}`}}>
         <span style={{fontSize:16,fontWeight:700}}>📊 {viewUser?`Statistik von ${viewUser.email}`:"Meine Statistik"}</span>
         <button onClick={onClose} style={{...ghost,marginLeft:"auto",fontSize:13,padding:"6px 12px"}}>← Zurück</button>
       </div>
+
+      {!viewUser&&<div style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:12,padding:"14px 16px",marginBottom:24,display:"flex",alignItems:"center",gap:12,flexWrap:"wrap"}}>
+        <div style={{flex:1,minWidth:200}}>
+          <p style={{fontSize:13,fontWeight:600,margin:0,marginBottom:2}}>Meine Daten exportieren</p>
+          <p style={{fontSize:11,color:C.mu,margin:0}}>Alle bei IT-Dart zu deinem Konto gespeicherten Daten als Datei herunterladen (Art. 20 DSGVO).</p>
+        </div>
+        <button onClick={handleExport} disabled={exportBusy} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:exportBusy?.6:1,flexShrink:0}}>
+          {exportBusy?"Wird erstellt...":"📦 Daten exportieren"}
+        </button>
+      </div>}
+      {exportErr&&<div style={{background:"#450a0a",border:"0.5px solid #ef4444",borderRadius:10,padding:"10px 14px",marginBottom:16}}>
+        <p style={{fontSize:13,color:"#fca5a5",margin:0}}>Export fehlgeschlagen: {exportErr}</p>
+      </div>}
 
       {err&&<div style={{background:"#450a0a",border:"0.5px solid #ef4444",borderRadius:10,padding:"10px 14px",marginBottom:16}}>
         <p style={{fontSize:13,color:"#fca5a5",margin:0}}>{err}</p>

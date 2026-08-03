@@ -25,8 +25,9 @@ Bevor eine neue Funktion umgesetzt wird, die eine dieser Kategorien berührt (er
 | Eigenständiger Lösch-Pfad für Nutzerdaten | ✅ Ja | `DeleteAccountScreen.jsx` + `delete-account` Edge Function |
 | Einwilligungs-Checkbox bei Registrierung (AGB/Datenschutz) | ✅ Ja | `AuthScreen.jsx`, Pflichtfeld, blockiert Absenden bis angehakt (2026-07-26, in-Browser verifiziert) |
 | Eigenständiges AGB/Nutzungsbedingungen-Dokument | ✅ Ja | `LegalPages.jsx` exportiert jetzt auch `AGB` (2026-07-26) |
+| Self-Service-Datenexport (Art. 20 DSGVO, Datenübertragbarkeit) | ✅ Ja | `src/lib/dataExport.js` + `StatistikScreen.jsx`, JSON+CSV-Download, kein Premium-Feature (2026-08-03) |
 
-**Zwischenstand: 5/5**
+**Zwischenstand: 6/6**
 
 ### Sicherheit
 
@@ -36,8 +37,10 @@ Bevor eine neue Funktion umgesetzt wird, die eine dieser Kategorien berührt (er
 | Geschütztes Hauptkonto in allen Schreibpfaden abgesichert | ✅ Ja | 4 Fundstellen (`admin-delete-user`, `delete-account`, `trainer-manage-invite`, Migration) |
 | CORS/Shared-Secret korrekt je Edge Function | ✅ Ja | 7/9 mit `ALLOWED_ORIGINS`, die übrigen 2 begründet per Shared-Secret (CI/Webhook, kein Browser-Origin) |
 | Unit-Tests für sicherheitsrelevante Kernlogik (PDF/Report-Erzeugung) | ✅ Ja | Vitest hinzugefügt (`npm test`), 16 Tests über `lernnachweis.js` (Zonen-/Winkel-/Farb-Logik, echte Log-Berechnung), `websiteCheckReport.js` und `e2eReport.js` (Fehlertoleranz bei fehlenden/fehlgeformten Report-Daten) — 2026-07-27 |
+| Automatisierte Abhängigkeits-Sicherheitsüberwachung | ✅ Ja | GitHub Dependabot Vulnerability Alerts + Automated Security Fixes aktiviert, `.github/dependabot.yml` für wöchentliche Versions-PRs (npm + GitHub Actions) — 2026-08-03 |
+| CSP-Verstoßmeldungen (blockierte Fremdinhalte) sichtbar statt nur clientseitig verworfen | ✅ Ja | `csp-report` Edge Function + `csp_reports`-Tabelle (RLS: nur Admin liest), `vercel.json` `report-to`/`report-uri`, Panel in `MonitoringScreen.jsx`, Ende-zu-Ende live getestet — 2026-08-03 |
 
-**Zwischenstand: 4/4**
+**Zwischenstand: 6/6**
 
 ### Jugendschutz
 
@@ -70,7 +73,7 @@ Bevor eine neue Funktion umgesetzt wird, die eine dieser Kategorien berührt (er
 
 ## Gesamt-Score (rein faktenbasiert, kein Rechtsurteil)
 
-**15 / 17 erfüllt ≈ 88 %** (Stand 2026-07-27, nach Behebung der Punkte 1–3, 4 und 5 unten)
+**18 / 20 erfüllt ≈ 90 %** (Stand 2026-08-03, nach Behebung der Punkte 1–3, 4, 5, 7 sowie Dependabot/CSP-Reporting unten)
 
 Dieser Score ist ein internes Diagnose-Werkzeug. **Er wird nicht extern gegenüber Partnern, Schulen oder Ausbildungsbetrieben als Compliance-Nachweis verwendet** — eine unabhängig geprüfte Aussage wäre etwas anderes als eine selbst erhobene technische Checkliste.
 
@@ -82,5 +85,7 @@ Dieser Score ist ein internes Diagnose-Werkzeug. **Er wird nicht extern gegenüb
 4. ~~Keine Unit-Tests~~ — **behoben 2026-07-27**, Vitest + 16 Tests über alle drei Dateien, siehe `src/lib/__tests__/`.
 5. ~~Kein Copyright-Hinweis (`©`)~~ — **behoben 2026-07-26**, siehe Footer + `Impressum`.
 6. **Markenklassen-Frage für „IT-Dart-Kids"** — ob eine „IT-Dart"-Eintragung die Nutzung für Druckerzeugnisse/Malbücher mitabdeckt, ist offen und nur durch die anmeldende Person/Fachperson zu klären, nicht durch uns.
+7. ~~Kein Self-Service-Datenexport~~ — **behoben 2026-08-03**, siehe `src/lib/dataExport.js`, Button in `StatistikScreen.jsx`.
+8. ~~Keine automatisierte Abhängigkeits-/CSP-Überwachung~~ — **behoben 2026-08-03**, siehe Dependabot + `csp-report` Edge Function oben.
 
 Die Texte zu Punkt 1–3 (AGB, Minderjährigen-Passage) sind erste Entwürfe. **Vor einem tatsächlichen Verlassen darauf sollte weiterhin eine echte anwaltliche Prüfung erfolgen** (Formulierung, Rechtsgrundlage im Detail) — dieser Katalog bereitet das vor, ersetzt es nicht.
