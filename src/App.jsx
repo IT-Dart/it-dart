@@ -28,7 +28,16 @@ function AppShell(){
   // reicht die Präsenz. Bestandskonten ohne aktive Sitzung landen über die
   // reine Domain automatisch in der App (siehe useEffect unten).
   const params=new URLSearchParams(window.location.search);
-  const [page,setPage]=useState(()=>params.has("mode")?"app":"company");
+  // Direkte Links auf Rechtstexte (z. B. aus E-Mail-Footern) sollen sofort
+  // die passende Seite öffnen statt nur generisch in die App zu routen --
+  // alle anderen mode-Werte (login/register/einladung/...) verhalten sich
+  // unverändert wie zuvor.
+  const LEGAL_MODES=["impressum","datenschutz","agb","leistungen","trainer-vereinbarung"];
+  const [page,setPage]=useState(()=>{
+    const mode=params.get("mode");
+    if(LEGAL_MODES.includes(mode))return mode;
+    return params.has("mode")?"app":"company";
+  });
   const [routed,setRouted]=useState(false);
 
   // Einladungs-Wrapper (siehe EinladungScreen.jsx): der eigentliche
