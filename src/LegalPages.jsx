@@ -106,15 +106,27 @@ export function Datenschutz({onClose}){
       <p style={p}>Eine Ausnahme betrifft deine Fragen an den KI-Chat: Der Frage- und Antworttext selbst wird von uns nicht gespeichert — er existiert nur während der aktiven Sitzung in deinem Browser. Zur Beantwortung wird der Text an Anthropic übermittelt; dort wird er gemäß Anthropics eigener Aufbewahrungsrichtlinie automatisch innerhalb von 30 Tagen gelöscht und nicht zum Training von KI-Modellen verwendet. Bei uns gespeichert werden lediglich anonyme Nutzungsmetadaten (Zeitpunkt, Modell, Token-Anzahl, Kosten — kein Frage-/Antworttext), solange dein Konto besteht.</p>
 
       <h2 style={h2}>6. Deine Rechte</h2>
-      <p style={p}>Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch. Dein Konto kannst du direkt in der App unter "Konto löschen" endgültig entfernen — das löscht automatisch auch deinen Lernfortschritt, Premium-Status und alle Protokolle. Für alle anderen Anliegen erreichst du uns unter der oben genannten E-Mail-Adresse. Außerdem hast du das Recht, dich bei einer Datenschutz-Aufsichtsbehörde zu beschweren.</p>
+      <p style={p}>Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch. Dein Konto kannst du direkt in der App unter "Konto löschen" endgültig entfernen — das löscht automatisch auch deinen Lernfortschritt, Premium-Status und alle Protokolle. Unter "Meine Statistik" kannst du außerdem jederzeit selbst alle zu deinem Konto gespeicherten Daten als Datei herunterladen: Die Datei wird direkt in deinem Browser aus deinen eigenen, bereits über dein Konto abrufbaren Daten erzeugt — dabei werden keine zusätzlichen Daten an uns oder Dritte übermittelt, und wir erhalten weder eine Kopie der Datei noch Kenntnis davon, ob oder wann du sie herunterlädst. Nach dem Download liegt die Datei ausschließlich auf deinem eigenen Gerät; für ihre weitere Aufbewahrung oder Löschung bist ab diesem Zeitpunkt du selbst verantwortlich. Für alle anderen Anliegen erreichst du uns unter der oben genannten E-Mail-Adresse. Außerdem hast du das Recht, dich bei einer Datenschutz-Aufsichtsbehörde zu beschweren.</p>
 
-      <h2 style={h2}>7. Speicherung im Browser</h2>
+      <h2 style={h2}>7. Datensicherheit</h2>
+      <p style={p}>Wir setzen folgende technische und organisatorische Maßnahmen ein, um deine Daten vor unbefugtem Zugriff, Verlust und Missbrauch zu schützen:</p>
+      <ul style={{paddingLeft:20,marginBottom:10}}>
+        <li style={li}>Verschlüsselte Datenübertragung zwischen deinem Gerät und unseren Servern (HTTPS/TLS)</li>
+        <li style={li}>Passwörter werden ausschließlich verschlüsselt gespeichert — auch wir selbst können sie nicht im Klartext einsehen</li>
+        <li style={li}>Zeilenbasierte Zugriffsbeschränkung auf Datenbankebene (Row-Level-Security), sodass jedes Konto ausschließlich auf die eigenen Daten zugreifen kann</li>
+        <li style={li}>Zwei-Faktor-Authentifizierung und ein dedizierter Passwort-Manager für alle betrieblichen Verwaltungszugänge (schützt vor einer Konto-Übernahme durch Dritte als Einfallstor zu deinen Daten)</li>
+        <li style={li}>Tägliche, verschlüsselte Datenbank-Sicherung sowie ein dokumentierter Notfall-Wiederherstellungsplan</li>
+        <li style={li}>Regelmäßige technische Sicherheitsüberprüfung der Plattform</li>
+        <li style={li}>Automatisierte Überwachung auf bekannt gewordene Sicherheitslücken in eingesetzten Software-Bausteinen sowie automatisierte Erkennung blockierter, potenziell schädlicher Fremdinhalte (Content-Security-Policy-Meldungen)</li>
+      </ul>
+
+      <h2 style={h2}>8. Speicherung im Browser</h2>
       <p style={p}>Zur Aufrechterhaltung deiner Anmeldung wird ein Sitzungs-Token im lokalen Speicher (localStorage) deines Browsers abgelegt. Es werden keine Marketing- oder Tracking-Cookies eingesetzt.</p>
 
-      <h2 style={h2}>8. Minderjährige Nutzer</h2>
+      <h2 style={h2}>9. Minderjährige Nutzer</h2>
       <p style={p}>Ein Teil unserer Nutzer befindet sich in einer Berufsausbildung und kann minderjährig sein. Die Registrierung erfolgt aktuell ausschließlich auf Einladung, häufig im Rahmen eines Ausbildungsverhältnisses über den Ausbildungsbetrieb (Trainer-Rolle). Trainer sehen dabei ohnehin Status und Lernfortschritt der von ihnen eingeladenen Auszubildenden — dieselbe Übersicht besteht unabhängig vom Alter der Person. Es werden keine über den in Punkt 2 genannten Umfang hinausgehenden Daten erhoben, unabhängig vom Alter der nutzenden Person.</p>
 
-      <h2 style={h2}>9. Änderungen</h2>
+      <h2 style={h2}>10. Änderungen</h2>
       <p style={p}>Diese Datenschutzerklärung kann bei Weiterentwicklung des Angebots angepasst werden. Es gilt die jeweils aktuelle, hier abrufbare Fassung.</p>
     </LegalLayout>
   );
@@ -188,7 +200,7 @@ export function Leistungen({onClose}){
       <p style={p}>IT-Dart ist eine digitale Lernplattform mit einem skalierbaren Account-Modell und flexibel anpassbaren Preis- und Lizenzstrukturen — von der einzelnen Auszubildenden-Person bis zum ganzen Ausbildungsbetrieb.</p>
 
       <h2 style={h2}>1. IT-Dart Lernplattform</h2>
-      <p style={p}>Digitale Bildung und strukturierte Prüfungsvorbereitung für angehende Fachinformatiker/-innen für Systemintegration und Auszubildende: acht aufeinander aufbauende Lernmodule, praxisnahe Fallbeispiele, ein kontextbezogener KI-Lernassistent sowie eine IHK-nahe Prüfungssimulation mit automatischer Auswertung und Lernnachweis.</p>
+      <p style={p}>Digitale Bildung und strukturierte Prüfungsvorbereitung für angehende Fachinformatiker/-innen für Systemintegration und Auszubildende: acht aufeinander aufbauende Lernmodule, praxisnahe Fallbeispiele, ein kontextbezogener KI-Lernassistent sowie eine Prüfungssimulation im Format der Abschlussprüfung mit automatischer Auswertung und Lernnachweis.</p>
 
       <h2 style={h2}>2. Skalierbares Account- & Benutzermodell</h2>
       <p style={p}>Sichere Authentifizierung und rollenbasierte Zugriffsrechte (RBAC) auf Basis von Supabase — vom Einzelkonto bis zu mehreren hundert Nutzenden:</p>

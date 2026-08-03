@@ -336,7 +336,7 @@ export default function Pruefung({onExit}){
           <img src={iconHeaderImg} alt="" style={{width:72,height:72,borderRadius:14,marginBottom:16}}/>
           <h2 style={{fontSize:22,fontWeight:700,marginBottom:8,color:C.t}}>Prüfungsvorbereitung</h2>
           <p style={{fontSize:14,color:C.t2,lineHeight:1.7,marginBottom:8}}>{!user?`Ein kostenloses Konto genügt für den Schnelltest (20 Fragen). Mit Premium: alle ${PRUEFUNG.length} Fragen aus allen 10 Bereichen.`:isPremium?`${PRUEFUNG.length} Fragen aus allen Themenbereichen — zufällig gemischt, mit sofortigem Feedback und Erklärung.`:`Im kostenlosen Schnelltest: 20 Fragen aus Grundlagen & Netzwerktechnik. Mit Premium: alle ${PRUEFUNG.length} Fragen aus allen 10 Bereichen.`}</p>
-          <p style={{fontSize:13,color:C.mu,marginBottom:32}}>Fachinformatiker für Systemintegration (FISI) · IHK-Stil</p>
+          <p style={{fontSize:13,color:C.mu,marginBottom:32}}>Fachinformatiker für Systemintegration (FISI) · im Format der Abschlussprüfung</p>
           <div style={{display:"flex",gap:10,justifyContent:"center",marginBottom:32}}>
             {[{n:20,l:"Schnelltest"},{n:50,l:"Halbprüfung"},{n:PRUEFUNG.length,l:"Vollprüfung"}].map(({n,l})=>{
               const locked=!user||(n>20&&!isPremium);
