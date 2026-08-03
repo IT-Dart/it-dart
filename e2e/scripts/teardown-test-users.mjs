@@ -1,3 +1,6 @@
+// ÜBERHOLT seit 2026-08-02, bewusst als manueller Fallback im Repo belassen
+// (siehe setup-test-users.mjs, gleiche Begründung, Revision in 30 Tagen).
+//
 // Löscht die vier E2E-Testkonten wieder (Gegenstück zu setup-test-users.mjs).
 // Ebenfalls bewusst ein Skript, das DU selbst ausführst.
 //

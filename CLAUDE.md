@@ -115,7 +115,11 @@ Details: [[feedback_multi_agent_coordination_protocol]] und [[project_content_pr
 
 [PROJEKT-STATUS.md](PROJEKT-STATUS.md) ist die kompakte Orientierungsdatei für jede neue Sitzung (eigene oder andere) — max. ~10 Zeilen: was fertig ist, was offen ist, was zuletzt geändert wurde. **Am Ende jeder Session mit sichtbarem Fortschritt aktualisieren** (nicht bei reinen Lese-/Rückfragen), damit eine frisch gestartete Sitzung sofort den Stand kennt, ohne erst Git-Log/Todos/GO_LIVE.md durchsuchen zu müssen. Kurz halten — Details gehören weiter in GO_LIVE.md, COMPLIANCE.md, die `todos`-Tabelle oder das Claude-Gedächtnis, nicht hierher.
 
+## Notfall-Gesamtwiederherstellungsplan
+
+[dokumentation/30_Notfall_Gesamtwiederherstellungsplan.docx](dokumentation/30_Notfall_Gesamtwiederherstellungsplan.docx) ist der zentrale Master-Notfallplan (PC-Ausfall, Claude-Code-Ausfall/Übergabe an Dritte, Supabase-/Vercel-/STRATO-/GitHub-/Resend-Ausfall, Hack, Meldepflichten, Credential-Inventar). **Muss 100 % aktuell bleiben:** bei jeder Änderung an einem Zugang, Passwort-Manager-Eintrag, Anbieter oder Secret dieses Dokument im selben Arbeitsschritt mitpflegen (siehe Abschnitt 11 im Dokument selbst), nicht erst bei der nächsten großen Aufräum-Session.
+
 ## Referenzen
 
 - Support-Kontakt: `kontakt@it-dart.de`
-- `dokumentation/` enthält nummerierte Word/PDF-Geschäftsdokumente (01 Lastenheft, 05 Sicherheitskonzept, 09 Datenschutz, 13 SQL-Notfallreferenz, ...) — bei sicherheits- oder rollenrelevanten Features dort ggf. mit aktualisieren, gleiche Nummerierung fortführen.
+- `dokumentation/` enthält nummerierte Word/PDF-Geschäftsdokumente (01 Lastenheft, 05 Sicherheitskonzept, 09 Datenschutz, 13 SQL-Notfallreferenz, 30 Notfall-Gesamtwiederherstellungsplan, ...) — bei sicherheits- oder rollenrelevanten Features dort ggf. mit aktualisieren, gleiche Nummerierung fortführen.

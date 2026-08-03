@@ -1136,11 +1136,12 @@ const AIChat=({ctx,q1,q2,a1,a2,moduleId,dialogMode})=>{
   );
 };
 
-const Pips=({items,cur,done,go,topicLimit})=>(
+const Pips=({items,cur,done,go,topicLimit,modId,visited})=>(
   <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:14}}>
     {items.map((it,i)=>{
       const locked=topicLimit!=null&&it.n>topicLimit;
-      return(<button key={i} onClick={()=>go(i)} style={{width:30,height:30,borderRadius:"50%",border:`1.5px solid ${i===cur?"#38bdf8":"#2d3f5a"}`,background:i===cur?"#0f2744":done.has(it.n)?"#14532d":C.s1,color:i===cur?"#38bdf8":done.has(it.n)?"#86efac":"#475569",fontSize:locked?11:12,fontWeight:600,cursor:"pointer"}}>{locked?"🔒":it.n}</button>);
+      const peeked=locked&&visited&&visited.has(`${modId}-${it.n}`);
+      return(<button key={i} onClick={()=>go(i)} style={{width:30,height:30,borderRadius:"50%",border:`1.5px solid ${i===cur?"#38bdf8":peeked?C.am:"#2d3f5a"}`,background:i===cur?"#0f2744":done.has(it.n)?"#14532d":C.s1,color:i===cur?"#38bdf8":done.has(it.n)?"#86efac":peeked?C.am:"#475569",fontSize:locked?11:12,fontWeight:600,cursor:"pointer"}}>{locked?"🔒":it.n}</button>);
     })}
   </div>
 );
@@ -1259,6 +1260,7 @@ export default function ITDart({onOpenExam,onOpenLegal,wartungsmodus}){
   const [idx,setIdx]=useState(0);
   const [phase,setPhase]=useState("intro"); // intro|learn|quiz
   const [done,setDone]=useState({});
+  const [visitedLocked,setVisitedLocked]=useState(()=>new Set()); // "modId-topicN" fuer Premium-Themen, die trotz Sperre angeklickt wurden
   const {user,isPremium,premiumUntil,isAdmin,isTrainer,isJuniorAdmin,signOut}=useAuth();
   // Nach dem Abmelden direkt zurück zum Login-Screen navigieren (statt auf
   // einer entrechteten Ansicht derselben Seite zu landen, die im
@@ -1486,7 +1488,7 @@ export default function ITDart({onOpenExam,onOpenLegal,wartungsmodus}){
           <button onClick={()=>setPhase("intro")} title="Zur Modul-Startseite" style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",padding:0,cursor:"pointer",fontSize:14,fontWeight:600,color:C.cy,fontFamily:"inherit",textAlign:"left"}}><span style={{fontSize:13}}>↩</span><span dangerouslySetInnerHTML={{__html:data.title}}/></button>
           <span style={{fontSize:12,color:C.mu}}>Thema {item.n} / {data.items.length}</span>
         </div>
-        <Pips items={data.items} cur={idx} done={doneFor(mod.id)} topicLimit={topicLimit} go={i=>{setIdx(i);const n=data.items[i].n;if(topicLimit==null||n<=topicLimit)mark(mod.id,n);}}/>
+        <Pips items={data.items} cur={idx} done={doneFor(mod.id)} topicLimit={topicLimit} modId={mod.id} visited={visitedLocked} go={i=>{setIdx(i);const n=data.items[i].n;if(topicLimit==null||n<=topicLimit){mark(mod.id,n);}else{setVisitedLocked(s=>new Set(s).add(`${mod.id}-${n}`));}}}/>
         {topicLocked?(
           <div style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:10,padding:"32px 20px",textAlign:"center",marginBottom:20}}>
             <div style={{fontSize:40,marginBottom:10}}>🔒</div>

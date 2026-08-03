@@ -1,3 +1,11 @@
+// ÜBERHOLT seit 2026-08-02, bewusst als manueller Fallback im Repo belassen
+// (Entscheidung 2026-08-02, Revision in 30 Tagen, siehe todos-Tabelle) —
+// die reguläre E2E-Suite (.github/workflows/e2e-tests.yml) provisioniert
+// ihre Testkonten seitdem selbst auf einem wegwerfbaren Supabase-Sandbox-
+// Branch (e2e/scripts/seed-e2e-users.js), nicht mehr über dieses Skript.
+// Die 4 alten Produktiv-Testkonten, die dieses Skript ursprünglich anlegte,
+// sowie die 8 zugehörigen GitHub-Secrets wurden am 2026-08-02 gelöscht.
+//
 // Einmaliges Setup-Skript für die vier E2E-Testkonten (Rollen A-D).
 //
 // Bewusst als eigenständiges Skript, das DU selbst ausführst — nicht Claude
