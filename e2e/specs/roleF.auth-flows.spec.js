@@ -100,18 +100,24 @@ test.fail("Passwort-Reset: Formular live + Reset-Link setzt ein neues, dauerhaft
   const email = process.env.E2E_TEST_RESETTARGET_EMAIL;
   if (!email) throw new Error("E2E_TEST_RESETTARGET_EMAIL fehlt -- seed-e2e-users.js prüfen.");
 
-  // Teil 1: das echte Formular anstoßen (live, kein Bypass) -- bewusst MIT
-  // einer anderen, beliebigen Adresse: ein zweiter echter
-  // resetPasswordForEmail()-Aufruf für resetTarget selbst würde den gleich
-  // danach per generateLink() erzeugten Recovery-Link sofort wieder
-  // ungültig machen (real aufgetreten: "Link ungültig oder abgelaufen").
-  // Die Erfolgsmeldung verrät ohnehin bewusst nicht, ob die Adresse
-  // wirklich existiert.
+  // Teil 1: das echte Formular anstoßen (live UI-Code-Pfad, kein Bypass der
+  // App-Logik) -- die zugrunde liegende Supabase-Auth-Anfrage selbst wird
+  // aber gemockt: ein echter resetPasswordForEmail()-Aufruf würde einen
+  // realen Zustellversuch an eine garantiert nicht existierende Adresse
+  // auslösen (E-Mail-Bounce, siehe echter Supabase-Warnhinweis zu
+  // Bounce-Raten 2026-08-04) -- und die Erfolgsmeldung verrät ohnehin
+  // bewusst nicht, ob die Adresse wirklich existiert, der Test braucht die
+  // echte Zustellung also gar nicht. resetTarget selbst NICHT verwenden:
+  // ein zweiter echter Aufruf würde den gleich danach per generateLink()
+  // erzeugten Recovery-Link sofort wieder ungültig machen (real
+  // aufgetreten: "Link ungültig oder abgelaufen").
+  await page.route("**/auth/v1/recover*", (route) => route.fulfill({ status: 200, contentType: "application/json", body: "{}" }));
   await page.goto("/?mode=login");
   await page.getByRole("button", { name: "Passwort vergessen?" }).click();
   await page.getByPlaceholder("E-Mail").fill(`e2e-livereset-${Date.now()}@sandbox.it-dart.de`);
   await page.getByRole("button", { name: "Link senden →" }).click();
   await expect(page.getByText("Falls diese E-Mail bei uns registriert ist", { exact: false })).toBeVisible();
+  await page.unroute("**/auth/v1/recover*");
 
   // Teil 2: der eigentliche Reset-Klick, Link unmittelbar vor Gebrauch
   // generiert (To-Do #109 -- vorgenerierte Links liefen sonst ab).

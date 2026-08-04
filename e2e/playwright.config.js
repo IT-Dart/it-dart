@@ -10,6 +10,8 @@ const SUITE_TO_SPEC = {
   roleB: "specs/roleB.trainee.spec.js",
   roleC: "specs/roleC.trainer.spec.js",
   roleD: "specs/roleD.junior-admin.spec.js",
+  roleE: "specs/roleE.admin.spec.js",
+  roleF: "specs/roleF.auth-flows.spec.js",
 };
 const suite = process.env.E2E_SUITE || "full";
 

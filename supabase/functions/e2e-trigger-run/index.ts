@@ -20,7 +20,7 @@ const ALLOWED_ORIGINS = new Set([
 // Einträgen in src/lib/e2eSuites.js übereinstimmen. Serverseitig geprüft,
 // bevor der Wert in den GitHub-API-Aufruf eingebettet wird — der Client
 // darf nie unvalidierte Werte bis zur GitHub API durchreichen.
-const ALLOWED_SUITES = new Set(["full", "roleA", "roleB", "roleC", "roleD"]);
+const ALLOWED_SUITES = new Set(["full", "roleA", "roleB", "roleC", "roleD", "roleE", "roleF"]);
 
 function corsHeaders(origin: string | null) {
   const headers: Record<string, string> = {

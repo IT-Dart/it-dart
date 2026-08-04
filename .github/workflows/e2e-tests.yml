@@ -18,7 +18,7 @@ on:
         required: true
         default: "full"
         type: choice
-        options: [full, roleA, roleB, roleC, roleD]
+        options: [full, roleA, roleB, roleC, roleD, roleE, roleF]
       run_id:
         description: "ID der e2e_runs-Zeile, gegen die das Ergebnis gemeldet wird"
         required: true
