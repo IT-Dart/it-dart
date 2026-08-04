@@ -82,11 +82,11 @@ export function AuthProvider({ children }) {
     let cancelled = false;
 
     const fetchProfile = () => {
-      supabase.from("profiles").select("is_premium, premium_until, is_admin, is_trainer, is_junior_admin, email, needs_password_setup, birthdate, parent_consent_confirmed").eq("id", user.id).single()
+      supabase.from("profiles").select("is_premium, premium_until, is_admin, is_trainer, is_junior_admin, email, needs_password_setup, birthdate, parent_consent_confirmed, agb_consent_given").eq("id", user.id).single()
         .then(({ data, error }) => {
           if (cancelled) return;
           if (error) console.error("Profil konnte nicht geladen werden:", error.message);
-          setProfile(data ?? { is_premium: false, premium_until: null, is_admin: false, is_trainer: false, is_junior_admin: false, needs_password_setup: false, birthdate: null, parent_consent_confirmed: false });
+          setProfile(data ?? { is_premium: false, premium_until: null, is_admin: false, is_trainer: false, is_junior_admin: false, needs_password_setup: false, birthdate: null, parent_consent_confirmed: false, agb_consent_given: true });
         });
     };
 
@@ -193,6 +193,7 @@ export function AuthProvider({ children }) {
     isTrainer: !!profile?.is_trainer,
     isJuniorAdmin: !!profile?.is_junior_admin,
     needsPasswordSetup: !!profile?.needs_password_setup,
+    needsAgbConsent: !!profile && profile.agb_consent_given === false,
     needsBirthdateSetup: MINOR_CONSENT_ENABLED && !!profile && !profile.birthdate,
     pendingParentConsent: MINOR_CONSENT_ENABLED && !!profile?.birthdate && ageFromBirthdate(profile.birthdate) < MIN_CONSENT_AGE && !profile.parent_consent_confirmed,
     recoveryMode,
@@ -200,7 +201,12 @@ export function AuthProvider({ children }) {
     dismissKickedOut: () => setKickedOut(false),
     authError,
     dismissAuthError: () => setAuthError(null),
-    signUp: (email, password) => supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin } }),
+    // agb_accepted in den User-Metadaten: AuthScreen.jsx erzwingt die
+    // Einwilligungs-Checkbox bereits clientseitig, bevor signUp() überhaupt
+    // aufgerufen wird -- handle_new_user() (DB-Trigger) liest dieses Feld und
+    // setzt profiles.agb_consent_given entsprechend, siehe Migration
+    // 20260804010000_agb_consent_gate.sql.
+    signUp: (email, password) => supabase.auth.signUp({ email, password, options: { emailRedirectTo: window.location.origin, data: { agb_accepted: true } } }),
     signIn: async (email, password) => {
       setKickedOut(false);
       const result = await supabase.auth.signInWithPassword({ email, password });

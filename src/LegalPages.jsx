@@ -97,7 +97,7 @@ export function Datenschutz({onClose}){
       <ul style={{paddingLeft:20,marginBottom:10}}>
         <li style={li}><strong style={{color:C.t}}>Supabase</strong> (Datenbank, Login) — verarbeitet alle unter Punkt 2 genannten Daten</li>
         <li style={li}><strong style={{color:C.t}}>Vercel Inc.</strong> (USA) — Hosting der Webanwendung</li>
-        <li style={li}><strong style={{color:C.t}}>Anthropic PBC</strong> (USA) — zum einen Verarbeitung deiner Frage beim KI-Chat, um eine Antwort zu erzeugen (es werden keine Konto- oder Kontaktdaten übermittelt, nur die gestellte Frage und der Lernkontext); für Premium-Nutzer optional auch eine Auswertung deiner bisherigen Prüfungsvorbereitung-Ergebnisse (nur die von dir selbst erzielten Punktzahlen je Themenbereich, keine Konto- oder Kontaktdaten); zum anderen intern für Admin-Werkzeuge zur Plattformpflege (z. B. Lösungsvorschläge für interne Aufgaben inkl. Websuche) — hierbei werden keine Nutzerdaten verarbeitet</li>
+        <li style={li}><strong style={{color:C.t}}>Anthropic PBC</strong> (USA) — zum einen Verarbeitung deiner Frage beim KI-Chat, um eine Antwort zu erzeugen (es werden keine Konto- oder Kontaktdaten übermittelt, nur die gestellte Frage und der Lernkontext); für Premium-Nutzer optional auch eine Auswertung deiner bisherigen Prüfungsvorbereitung-Ergebnisse (nur die von dir selbst erzielten Punktzahlen je Themenbereich, keine Konto- oder Kontaktdaten); zum anderen intern für Admin-Werkzeuge zur Plattformpflege (z. B. Lösungsvorschläge für interne Aufgaben inkl. Websuche) — hierbei werden keine Nutzerdaten verarbeitet. Ergänzend: Bei der Plattformpflege nutzt der Betreiber außerdem ein KI-gestütztes Programmierwerkzeug (Claude Code, ebenfalls Anthropic), das dabei technisch auch direkten Lesezugriff auf die Produktivdatenbank haben kann und somit im Rahmen einzelner Wartungstätigkeiten auch echte Nutzerdaten einsehen könnte</li>
         <li style={li}><strong style={{color:C.t}}>Resend</strong> (USA) — Versand von Registrierungsbestätigungs-, Passwort-Reset- und Einladungs-E-Mails (verarbeitet dabei deine E-Mail-Adresse sowie den Zeitpunkt des Versands)</li>
       </ul>
       <p style={p}>Bei Übermittlung in die USA erfolgt dies auf Grundlage von Standardvertragsklauseln der jeweiligen Anbieter.</p>
@@ -168,7 +168,7 @@ export function AGB({onClose}){
       <p style={p}>Diese AGB können bei Weiterentwicklung des Angebots angepasst werden. Es gilt die jeweils aktuelle, hier abrufbare Fassung. Über wesentliche Änderungen informieren wir registrierte Nutzer in geeigneter Form.</p>
 
       <h2 style={h2}>11. Schlussbestimmungen</h2>
-      <p style={p}>Es gilt deutsches Recht.</p>
+      <p style={p}>Es gilt deutsches Recht. Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: <a href="https://ec.europa.eu/consumers/odr/" target="_blank" rel="noreferrer" style={{color:C.cy}}>ec.europa.eu/consumers/odr</a>. Wir sind nicht verpflichtet und nicht bereit, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p>
     </LegalLayout>
   );
 }

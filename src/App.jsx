@@ -3,6 +3,7 @@ import ITDart from "./ITDart";
 import Pruefung from "./Pruefung";
 import ResetPasswordScreen from "./ResetPasswordScreen";
 import PasswordSetupScreen from "./PasswordSetupScreen";
+import AgbConsentScreen from "./AgbConsentScreen";
 import BirthdateSetupScreen from "./BirthdateSetupScreen";
 import ParentConsentConfirmScreen from "./ParentConsentConfirmScreen";
 import KickedOutScreen from "./KickedOutScreen";
@@ -22,7 +23,7 @@ import { AuthProvider, useAuth } from "./lib/AuthContext";
 const WARTUNGSMODUS=true;
 
 function AppShell(){
-  const {recoveryMode,needsPasswordSetup,needsBirthdateSetup,pendingParentConsent,kickedOut,dismissKickedOut,authError,dismissAuthError,user,loading}=useAuth();
+  const {recoveryMode,needsPasswordSetup,needsAgbConsent,needsBirthdateSetup,pendingParentConsent,kickedOut,dismissKickedOut,authError,dismissAuthError,user,loading}=useAuth();
   // "company" | "app" | "pruefung" | "impressum" | "datenschutz" | "leistungen" | "agb"
   // ?mode=login/register kommt vom "Anmelden / Registrieren"-Button auf der
   // Unternehmensseite selbst (CompanyScreen.jsx) sowie von Einladungslinks —
@@ -84,6 +85,7 @@ function AppShell(){
   if(loading)return null;
   if(kickedOut)return <KickedOutScreen onDismiss={()=>{dismissKickedOut();setPage("company");}}/>;
   if(user&&needsPasswordSetup)return <PasswordSetupScreen/>;
+  if(user&&needsAgbConsent)return <AgbConsentScreen onOpenLegal={setPage}/>;
   if(user&&(needsBirthdateSetup||pendingParentConsent))return <BirthdateSetupScreen/>;
   // Vercel liefert dank vercel.json-Rewrite für jeden unbekannten Pfad diese
   // SPA aus, statt selbst ein 404 zu werfen — die App entscheidet also hier,

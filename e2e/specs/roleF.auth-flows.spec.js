@@ -65,6 +65,17 @@ async function setNewPasswordAndExpectSuccess(page, newPassword) {
   await page.getByRole("button", { name: "Passwort ändern →" }).click();
 }
 
+// Neu (2026-08-04): per Einladung angelegte Konten (agb_consent_given=false
+// per DB-Default, siehe Migration 20260804010000_agb_consent_gate.sql) sehen
+// nach dem ersten Login AgbConsentScreen.jsx, bevor sie die App betreten --
+// dieselbe Einwilligungs-Checkbox wie im Selbstregistrierungs-Formular,
+// nachträglich für den bisher ungedeckten Einladungslink-Weg nachgeholt.
+async function acceptAgbConsentGate(page) {
+  await expect(page.getByRole("heading", { name: "Bevor es weitergeht" })).toBeVisible({ timeout: 15_000 });
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: "Bestätigen →" }).click();
+}
+
 test("Registrierung: Formular zeigt korrekt die deaktivierten Signups + Bestätigungslink funktioniert trotzdem", async ({ page }) => {
   test.setTimeout(30_000);
   const freshEmail = `e2e-liveregister-${Date.now()}@sandbox.it-dart.de`;
@@ -92,6 +103,7 @@ test("Registrierung: Formular zeigt korrekt die deaktivierten Signups + Bestäti
   });
   if (error) throw new Error(`generateLink(signup) fehlgeschlagen: ${error.message}`);
   await page.goto(data.properties.action_link);
+  await acceptAgbConsentGate(page);
   await expect(page.getByRole("button", { name: /Lernpfad starten/ })).toBeVisible({ timeout: 15_000 });
 });
 
@@ -177,6 +189,11 @@ test("Magic-Link/Einladung: roher Link führt zur Passwort-Setzen-Seite und dana
 
   await page.goto(data.properties.action_link);
   await setNewPasswordAndExpectSuccess(page, "EingeladenE2E-Passwort3!");
+  // Neu (2026-08-04): per Einladung angelegte Konten durchlaufen jetzt den
+  // AGB-Zustimmungs-Screen (AgbConsentScreen.jsx), da sie nie die
+  // Einwilligungs-Checkbox aus AuthScreen.jsx sehen -- siehe dokumentation/
+  // 29_Anwalt_Pruefauftrag_Rechtstexte.docx, Abschnitt 6.
+  await acceptAgbConsentGate(page);
   await expect(page.getByRole("button", { name: /Lernpfad starten/ })).toBeVisible({ timeout: 15_000 });
 });
 
@@ -200,6 +217,7 @@ test('Angemeldeter Nutzer bleibt nach Klick auf "Über IT-Dart" eingeloggt', asy
   if (error) throw new Error(`generateLink(invite) fehlgeschlagen: ${error.message}`);
   await page.goto(data.properties.action_link);
   await setNewPasswordAndExpectSuccess(page, "UeberItDartE2E-Passwort4!");
+  await acceptAgbConsentGate(page);
   await expect(page.getByRole("button", { name: /Lernpfad starten/ })).toBeVisible({ timeout: 15_000 });
 
   await page.getByRole("button", { name: "Über IT-Dart" }).click();
