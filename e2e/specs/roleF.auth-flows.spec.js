@@ -51,19 +51,18 @@ async function setNewPasswordAndExpectSuccess(page, newPassword) {
   await expect(page.getByRole("heading", { name: "Neues Passwort setzen" })).toBeVisible({ timeout: 15_000 });
   await page.getByPlaceholder("Neues Passwort").fill(newPassword);
   await page.getByPlaceholder("Passwort bestätigen").fill(newPassword);
-  // "Passwort geändert" ist nur ca. 1200ms sichtbar, bevor
-  // ResetPasswordScreen.jsx automatisch neu lädt -- zu flüchtig für eine
-  // zuverlässige toBeVisible()-Prüfung (auch mit langem Timeout: das
-  // Fenster selbst ist kurz, nicht die Wartezeit). Echt reproduziert am
-  // 2026-08-04: der Nutzer war beide Male nachweislich schon erfolgreich
-  // eingeloggt ("Angemeldet als ..." im Accessibility-Snapshot), obwohl
-  // Playwright den Zwischenschritt verpasste. Robusteres Vorgehen: direkt
-  // auf den Reload warten (waitForEvent muss VOR dem Klick lauschen, sonst
-  // ist ein sehr schneller Reload schon vorbei) und den Erfolg über den
-  // Aufrufer-seitigen "Lernpfad starten"-Check danach verifizieren.
-  const reload = page.waitForEvent("load");
+  // Weder "Passwort geändert" (nur ~1200ms sichtbar) noch page.waitForEvent
+  // ("load", scheiterte real am 2026-08-04 -- feuert für den
+  // window.location.reload() hier offenbar nicht zuverlässig als
+  // Playwright-Event) sind brauchbare Zwischen-Prüfungen. Echt reproduziert:
+  // der Nutzer war in allen drei Testläufen bereits erfolgreich eingeloggt
+  // ("Angemeldet als ..." im Accessibility-Snapshot), obwohl beide
+  // Zwischen-Prüfungen das nicht erkannten. Playwright-Locators lösen sich
+  // bei jedem Retry gegen das aktuelle Dokument auf und überleben damit
+  // einen zwischenzeitlichen Reload von selbst -- kein Zwischenschritt
+  // nötig, der Aufrufer-seitige "Lernpfad starten"-Check direkt danach
+  // ist die eigentliche, robuste Erfolgsprüfung.
   await page.getByRole("button", { name: "Passwort ändern →" }).click();
-  await reload;
 }
 
 test("Registrierung: Formular zeigt korrekt die deaktivierten Signups + Bestätigungslink funktioniert trotzdem", async ({ page }) => {
