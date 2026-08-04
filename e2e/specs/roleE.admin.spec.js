@@ -35,21 +35,26 @@ test("Admin: Nutzer verwalten (Premium/Trainer/Junior-Admin vergeben+entziehen, 
   const row = page.locator("div").filter({ hasText: targetEmail }).filter({ has: deleteButton }).last();
   await expect(row).toBeVisible();
 
+  // exact:true überall -- "🎓 Trainer entfernen"/"🧑‍💼 Junior-Admin entfernen"
+  // (die Buttons, die nach dem Vergeben erscheinen) enthalten den jeweiligen
+  // Badge-Text sonst als Substring und lösen eine Strict-Mode-Violation aus
+  // (real aufgetreten: getByText("🎓 Trainer") traf sowohl den Badge als
+  // auch den "...entfernen"-Button).
   await row.getByRole("button", { name: "Dauerhaft freischalten" }).click();
-  await expect(row.getByText("⭐ Dauerhaft")).toBeVisible();
+  await expect(row.getByText("⭐ Dauerhaft", { exact: true })).toBeVisible();
 
   await row.getByRole("button", { name: "🎓 Zum Trainer machen" }).click();
-  await expect(row.getByText("🎓 Trainer")).toBeVisible();
+  await expect(row.getByText("🎓 Trainer", { exact: true })).toBeVisible();
 
   await row.getByRole("button", { name: "🧑‍💼 Zum Junior-Admin machen" }).click();
-  await expect(row.getByText("🧑‍💼 Junior-Admin")).toBeVisible();
+  await expect(row.getByText("🧑‍💼 Junior-Admin", { exact: true })).toBeVisible();
 
   // revoke() in AdminScreen.jsx nimmt Premium, Trainer UND Junior-Admin
   // gleichzeitig zurück -- ein Klick genügt für alle drei Badges.
   await row.getByRole("button", { name: "Zugang entziehen" }).click();
-  await expect(row.getByText("⭐ Dauerhaft")).toHaveCount(0);
-  await expect(row.getByText("🎓 Trainer")).toHaveCount(0);
-  await expect(row.getByText("🧑‍💼 Junior-Admin")).toHaveCount(0);
+  await expect(row.getByText("⭐ Dauerhaft", { exact: true })).toHaveCount(0);
+  await expect(row.getByText("🎓 Trainer", { exact: true })).toHaveCount(0);
+  await expect(row.getByText("🧑‍💼 Junior-Admin", { exact: true })).toHaveCount(0);
 
   // Löschen eines AKTIVEN (bestätigten) Kontos ist admin-exklusiv --
   // Junior-Admins dürfen laut roleD.junior-admin.spec.js nur ausstehende

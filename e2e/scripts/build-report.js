@@ -18,6 +18,7 @@ const ROLE_LABELS = {
   trainee: "Rolle B – Trainee",
   trainer: "Rolle C – Trainer",
   juniorAdmin: "Rolle D – Junior-Admin",
+  admin: "Rolle E – Voll-Admin",
 };
 
 // specs/roleA.free.spec.js -> "free", etc. — ordnet einen Playwright-
@@ -27,6 +28,7 @@ function roleForFile(filePath) {
   if (filePath.includes("roleB")) return "trainee";
   if (filePath.includes("roleC")) return "trainer";
   if (filePath.includes("roleD")) return "juniorAdmin";
+  if (filePath.includes("roleE")) return "admin";
   return null;
 }
 
