@@ -95,6 +95,7 @@ export function AuthProvider({ children }) {
     let intervalId = null;
 
     const kickOut = () => {
+      console.log("[DEBUG108] kickOut, mySid:", sid, "at:", performance.now());
       if (stopped) return;
       stopped = true;
       localStorage.removeItem(SESSION_ID_KEY);
@@ -128,10 +129,11 @@ export function AuthProvider({ children }) {
         { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${user.id}` },
         (payload) => {
           const newActive = payload.new?.active_session_id;
+          console.log("[DEBUG108] postgres_changes UPDATE, newActive:", newActive, "mySid:", sid, "at:", performance.now());
           if (newActive && newActive !== sid) kickOut();
         }
       )
-      .subscribe();
+      .subscribe((status) => console.log("[DEBUG108] channel status:", status, "at:", performance.now()));
 
     // Kein sofortiger Herzschlag mehr direkt nach dem Anspruch: claim_session
     // (bzw. die claim-session Edge Function bei signIn()) setzt
@@ -142,16 +144,19 @@ export function AuthProvider({ children }) {
     // Bug, hat gerade jeden frischen Login sofort wieder rueckgaengig
     // gemacht). Der erste echte Herzschlag darf daher erst greifen, wenn
     // ein etwaiger Bootstrap-Anspruch garantiert abgeschlossen ist.
+    console.log("[DEBUG108] effect start, existingSid:", sid, "recoveryMode:", recoveryMode, "at:", performance.now());
     if (!sid) {
       sid = crypto.randomUUID();
+      console.log("[DEBUG108] claiming new sid:", sid, "at:", performance.now());
       localStorage.setItem(SESSION_ID_KEY, sid);
       supabase.rpc("claim_session", { new_session_id: sid }).then(({ error }) => {
+        console.log("[DEBUG108] claim_session resolved, error:", error?.message, "at:", performance.now());
         if (error) console.error("[AuthContext] claim_session (bootstrap) failed:", error.message);
       }).finally(() => { if (!stopped) intervalId = setInterval(beat, HEARTBEAT_INTERVAL_MS); });
     } else {
       intervalId = setInterval(beat, HEARTBEAT_INTERVAL_MS);
     }
-    return () => { stopped = true; if (intervalId) clearInterval(intervalId); supabase.removeChannel(channel); };
+    return () => { console.log("[DEBUG108] effect cleanup, mySid:", sid, "at:", performance.now()); stopped = true; if (intervalId) clearInterval(intervalId); supabase.removeChannel(channel); };
   }, [session?.user?.id, recoveryMode]);
 
   const hasTimedPremium = !!profile?.premium_until && new Date(profile.premium_until) > new Date();
