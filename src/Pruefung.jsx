@@ -7,7 +7,7 @@ import { tagestippFuerHeute } from "./lib/tagestipps";
 import FeedbackUmfrage from "./FeedbackUmfrage";
 import { describeError } from "./lib/errorText";
 import AuthScreen from "./AuthScreen";
-import { Logo } from "./ITDart";
+import { Logo } from "./Logo";
 import iconHeaderImg from "./assets/icon-pruefung-header.jpg";
 import iconZeitImg from "./assets/icon-pruefung-zeit.jpg";
 import iconAusschlussImg from "./assets/icon-pruefung-ausschluss.jpg";

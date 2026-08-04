@@ -1,5 +1,5 @@
 import { C, pri, wrap, inner } from "./lib/theme";
-import { Logo } from "./ITDart";
+import { Logo } from "./Logo";
 
 export default function NotFoundScreen(){
   return (

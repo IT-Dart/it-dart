@@ -32,6 +32,8 @@ import moduleBwImg from "./assets/module-bw.jpg";
 import lernnachweisBadgeGImg from "./assets/lernnachweis-badge-g.jpg";
 import { G, GQ, O, OQ, B, BQ, SI, SIQ, DB, DBQ, SK, SKQ, PR, PRQ, BW, DATA } from "./lib/moduleContent";
 import Scene from "./Scene";
+import { Logo } from "./Logo";
+import { OSIOverview, Pips, Hdr, OSIBezug } from "./ModuleUi";
 
 const MODULE_IMAGES={g:moduleGImg,o:moduleOImg,b:moduleBImg,si:moduleSiImg,db:moduleDbImg,sk:moduleSkImg,pr:modulePrImg,bw:moduleBwImg};
 const MODULE_IMAGE_ALT={g:"PC Komponenten",o:"Sechs leuchtende Netzwerk-Symbole in Blau und Cyan: WLAN-Router, Switch mit nummerierten Ports, VPN-Schloss, WLAN-Signal, Server-Rack, DHCP-Tag",b:"Betriebssysteme",si:"IT-Sicherheit",db:"Datenbanken",sk:"Skripting",pr:"Beruf und Projekt",bw:"Illustration einer Bewerberin mit Lebenslauf, umgeben von Symbolen für Telefon-Interview, Zertifikat und KI-gestütztes Mock-Interview am Laptop"};
@@ -46,30 +48,6 @@ const INTERVIEW_MAX_ROUNDS=8; // muss mit INTERVIEW_MAX_ROUNDS in supabase/funct
 const CHAT_MAX_QUESTIONS=10; // pro Thema — nur clientseitig, der eigentliche Kostendeckel ist das serverseitige Stundenlimit
 const FREE_TOPIC_LIMITS={o:2}; // Netzwerktechnik: nur die ersten 2 von 7 Themen sind ohne Premium sichtbar
 const FREE_QUIZ_N=5; // Modul-Quiz am Ende: Free-Nutzer sehen nur die ersten 5 Fragen
-
-export const Logo=({sz=44})=>(
-  <svg width={sz} height={sz} viewBox="0 0 44 44" fill="none">
-    <circle cx="22" cy="22" r="21" stroke="#2563eb" strokeWidth="1.5" fill="#1a2535"/>
-    <circle cx="22" cy="22" r="14" stroke="#3b82f6" strokeWidth="1" fill="none" opacity=".5"/>
-    <circle cx="22" cy="22" r="7" stroke="#38bdf8" strokeWidth="1" fill="none" opacity=".5"/>
-    <circle cx="22" cy="22" r="3" fill="#38bdf8"/>
-    <line x1="5" y1="22" x2="19" y2="22" stroke="#2563eb" strokeWidth="2" strokeLinecap="round"/>
-    <polygon points="28,16 38,22 28,28" fill="#2563eb"/>
-  </svg>
-);
-
-const OSIOverview=()=>(
-  <div style={{marginBottom:16}}>
-    <p style={{fontSize:13,fontWeight:600,color:C.t2,marginBottom:8}}>Die 7 Schichten im Überblick</p>
-    {[{n:7,nm:"Anwendungsschicht",ex:"HTTP, SMTP, DNS",c:"#14532d",b:"#22c55e"},{n:6,nm:"Darstellungsschicht",ex:"TLS, Verschlüsselung",c:"#0c2a2a",b:"#2dd4bf"},{n:5,nm:"Sitzungsschicht",ex:"Verbindungsaufbau",c:"#0f2744",b:"#38bdf8"},{n:4,nm:"Transportschicht",ex:"TCP, UDP, Ports",c:"#1e1a3a",b:"#a78bfa"},{n:3,nm:"Vermittlungsschicht",ex:"IP, Routing",c:"#2a1a0f",b:"#f97316"},{n:2,nm:"Sicherungsschicht",ex:"MAC, Switches",c:"#2a1f0a",b:"#fbbf24"},{n:1,nm:"Bitübertragungsschicht",ex:"Kabel, Signale",c:"#2a0f1a",b:"#f472b6"}].map((l,i)=>(
-      <div key={i} style={{display:"flex",alignItems:"center",gap:10,background:l.c,border:`0.5px solid ${l.b}`,borderRadius:8,padding:"8px 12px",marginBottom:4}}>
-        <span style={{width:22,height:22,borderRadius:"50%",background:l.b,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:700,color:"#fff",flexShrink:0}}>{l.n}</span>
-        <span style={{flex:1}}><span style={{display:"block",fontSize:13,fontWeight:600,color:C.t}}>{l.nm}</span><span style={{fontSize:11,color:C.t2}}>{l.ex}</span></span>
-        <span style={{fontSize:11,color:l.b,fontWeight:500}}>{["Application","Presentation","Session","Transport","Network","Data Link","Physical"][i]}</span>
-      </div>
-    ))}
-  </div>
-);
 
 const Quiz=({qs,onDone,title,mid})=>{
   const [i,setI]=useState(0);const [sel,setSel]=useState(null);const [sc,setSc]=useState(0);const [done,setDone]=useState(false);
@@ -297,32 +275,6 @@ const AIChat=({ctx,q1,q2,a1,a2,moduleId,dialogMode})=>{
     </div>
   );
 };
-
-const Pips=({items,cur,done,go,topicLimit,modId,visited})=>(
-  <div style={{display:"flex",gap:4,flexWrap:"wrap",marginBottom:14}}>
-    {items.map((it,i)=>{
-      const locked=topicLimit!=null&&it.n>topicLimit;
-      const peeked=locked&&visited&&visited.has(`${modId}-${it.n}`);
-      return(<button key={i} onClick={()=>go(i)} style={{width:30,height:30,borderRadius:"50%",border:`1.5px solid ${i===cur?"#38bdf8":peeked?C.am:"#2d3f5a"}`,background:i===cur?"#0f2744":done.has(it.n)?"#14532d":C.s1,color:i===cur?"#38bdf8":done.has(it.n)?"#86efac":peeked?C.am:"#475569",fontSize:locked?11:12,fontWeight:600,cursor:"pointer"}}>{locked?"🔒":it.n}</button>);
-    })}
-  </div>
-);
-
-const Hdr=({back})=>(
-  <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:20,paddingBottom:16,borderBottom:`0.5px solid ${C.bd}`}}>
-    <Logo sz={28}/><span style={{fontSize:18,fontWeight:700}}>IT-Dart</span>
-    <button onClick={back} style={{...ghost,marginLeft:"auto",fontSize:13,padding:"6px 12px"}}>← Übersicht</button>
-  </div>
-);
-
-const OSIBezug=({text})=>(
-  <div style={{background:"#0f2744",border:`0.5px solid ${C.bl}`,borderRadius:10,padding:"10px 14px",marginBottom:10,display:"flex",gap:10,alignItems:"flex-start"}}>
-    <span style={{fontSize:16,flexShrink:0}}>🌐</span>
-    <div><p style={{fontSize:11,fontWeight:600,color:C.cy,marginBottom:3,textTransform:"uppercase",letterSpacing:".05em"}}>OSI-Bezug</p>
-    <p style={{fontSize:13,color:"#93c5fd",lineHeight:1.6,margin:0}}>{text}</p></div>
-  </div>
-);
-
 
 const authModeRequested=typeof window!=="undefined"?new URLSearchParams(window.location.search).get("mode"):null;
 const registerLinkRequested=authModeRequested==="register";

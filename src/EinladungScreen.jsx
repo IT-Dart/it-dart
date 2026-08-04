@@ -1,5 +1,5 @@
 import { C, pri, wrap, inner } from "./lib/theme";
-import { Logo } from "./ITDart";
+import { Logo } from "./Logo";
 
 // Zwischenseite für per Messenger (WhatsApp etc.) geteilte Magic-Links. Nie
 // den rohen Supabase-Link direkt teilen: Messenger rufen geteilte Links oft

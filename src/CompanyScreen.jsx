@@ -2,7 +2,7 @@ import { useEffect, useRef } from "react";
 import { C, pri, ghost, wrap, inner, ff } from "./lib/theme";
 import { useAuth } from "./lib/AuthContext";
 import { canonicalUrl } from "./lib/nav";
-import { Logo } from "./ITDart";
+import { Logo } from "./Logo";
 import bookCoverImg from "./assets/book-claude-praxis-cover.png";
 import heroImg from "./assets/company-hero.jpg";
 import iconLernplattform from "./assets/icon-lernplattform.jpg";

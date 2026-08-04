@@ -1,5 +1,5 @@
 import { C, pri, ghost, wrap, inner, ff } from "./lib/theme";
-import { Logo } from "./ITDart";
+import { Logo } from "./Logo";
 import { canonicalUrl } from "./lib/nav";
 
 // Temporäre Ersatzseite für anonyme Besucher (Wartungsmodus-Schalter in
