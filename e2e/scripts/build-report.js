@@ -35,10 +35,20 @@ function collectTests(suites, out = []) {
     for (const spec of suite.specs || []) {
       for (const t of spec.tests || []) {
         const lastResult = t.results?.[t.results.length - 1];
+        // expectedStatus ist normalerweise "passed", aber "failed" bei
+        // einem bewusst mit test.fail(title, body) markierten Test (siehe
+        // roleA.free.spec.js, To-Do #106) -- ein solcher Test GILT als ok,
+        // wenn er tatsächlich fehlschlägt. Playwright selbst zählt ihn im
+        // eigenen "X passed"-Fazit entsprechend mit, ein reiner
+        // status==="passed"-Vergleich hier würde ihn faelschlich als echten
+        // Fehler melden, obwohl der Lauf komplett gruen ist.
+        const expectedStatus = t.expectedStatus || "passed";
+        const status = lastResult?.status || "unknown";
         out.push({
           file: suite.file || spec.file,
           title: spec.title,
-          status: lastResult?.status || "unknown",
+          status,
+          ok: status === expectedStatus,
           error: lastResult?.error?.message || null,
         });
       }
@@ -62,12 +72,12 @@ function buildPayload() {
 
   const tests = collectTests(raw.suites);
 
-  const passed = tests.filter((t) => t.status === "passed").length;
-  const failed = tests.filter((t) => t.status !== "passed").length;
+  const passed = tests.filter((t) => t.ok).length;
+  const failed = tests.filter((t) => !t.ok).length;
   const total = tests.length;
 
   const findings = tests
-    .filter((t) => t.status !== "passed")
+    .filter((t) => !t.ok)
     .map((t, i) => ({
       id: i + 1,
       symptom: t.title,
@@ -81,7 +91,7 @@ function buildPayload() {
     const role = roleForFile(t.file || "");
     if (!role) continue;
     byRole[role] ??= { role: ROLE_LABELS[role] || role, passed: 0, failed: 0 };
-    if (t.status === "passed") byRole[role].passed++;
+    if (t.ok) byRole[role].passed++;
     else byRole[role].failed++;
   }
 
