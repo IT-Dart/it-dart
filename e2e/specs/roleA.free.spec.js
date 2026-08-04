@@ -153,10 +153,27 @@ test("KI-Chat: eigene Frage ruft echt die ai-chat Edge Function auf", async ({ p
     await startButton.click();
   }
 
-  const aiChatResponse = page.waitForResponse((r) => r.url().includes("/ai-chat"), { timeout: 60_000 });
   await page.getByPlaceholder("Eigene Frage...").fill("Was macht die CPU in einem Computer?");
-  await page.getByPlaceholder("Eigene Frage...").press("Enter");
-  const response = await aiChatResponse;
+
+  // Dieser Test feuert den ersten echten Request auf dem frischen E2E-
+  // Branch oft schon nach ~20-25s ab -- die Edge-Function-Secrets
+  // (ANTHROPIC_API_KEY) sind zu dem Zeitpunkt manchmal noch nicht
+  // vollständig propagiert ("Server ist nicht konfiguriert.", 500).
+  // Dieselbe Klasse Boot-Verzögerung wie withStartupRetry in
+  // seed-e2e-users.js, hier für die ai-chat Edge Function nachgebaut,
+  // statt sie als echten App-Fehler zu werten.
+  let response;
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    const aiChatResponse = page.waitForResponse((r) => r.url().includes("/ai-chat"), { timeout: 30_000 });
+    await page.getByPlaceholder("Eigene Frage...").press("Enter");
+    response = await aiChatResponse;
+    if (response.ok()) break;
+    const body = await response.json().catch(() => ({}));
+    if (attempt === 4 || body?.error !== "Server ist nicht konfiguriert.") {
+      throw new Error(`ai-chat antwortete nicht ok (Status ${response.status()}, Versuch ${attempt}): ${JSON.stringify(body)}`);
+    }
+    await page.waitForTimeout(8_000);
+  }
   expect(response.ok()).toBeTruthy();
   await expect(page.getByText("Wird geladen...")).toHaveCount(0);
 });
