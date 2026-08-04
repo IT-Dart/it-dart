@@ -20,6 +20,17 @@ const HEARTBEAT_INTERVAL_MS = 2 * 60 * 1000;
 // own session detection consumes and strips it.
 const inviteFromUrl = typeof window !== "undefined" && window.location.hash.includes("type=invite");
 
+// To-Do #108: `type=recovery` HAT zwar ein eigenes Event (PASSWORD_RECOVERY),
+// das feuert aber erst asynchron (per setTimeout in supabase-js), NACHDEM die
+// Session bereits per _saveSession() gesetzt wurde -- der getSession()-Aufruf
+// unten und/oder eine generische Auth-Benachrichtigung können session/user
+// also schon VOR PASSWORD_RECOVERY setzen. In diesem kurzen Fenster ist
+// recoveryMode noch false, aber user schon gesetzt -- genau das startet den
+// Heartbeat/Kickout-Effect weiter unten fälschlich zu früh (reproduziert
+// 2026-08-04). Deshalb wie bei invite synchron aus dem Hash lesen, nicht auf
+// das Event warten.
+const recoveryFromUrl = typeof window !== "undefined" && window.location.hash.includes("type=recovery");
+
 // Ein abgelaufener oder bereits verwendeter Magic-Link (z.B. nach der
 // Einladungs-Zwischenseite in EinladungScreen.jsx) schickt Supabase
 // ebenfalls per URL-Hash zurück, aber als Fehler statt als Session:
@@ -36,7 +47,7 @@ const authErrorFromUrl = (() => {
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(undefined); // undefined = loading, null = logged out
   const [profile, setProfile] = useState(null);
-  const [recoveryMode, setRecoveryMode] = useState(inviteFromUrl);
+  const [recoveryMode, setRecoveryMode] = useState(inviteFromUrl || recoveryFromUrl);
   const [kickedOut, setKickedOut] = useState(false);
   const [authError, setAuthError] = useState(authErrorFromUrl);
 
