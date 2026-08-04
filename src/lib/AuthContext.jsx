@@ -80,7 +80,16 @@ export function AuthProvider({ children }) {
   // still eine neue ID, ohne den Nutzer zu unterbrechen.
   useEffect(() => {
     const user = session?.user;
-    if (!user) return;
+    // Während recoveryMode (Passwort-Reset-/Einladungs-Link) darf dieser
+    // Effect nicht laufen: die frische, gerade erst aus der URL aufgebaute
+    // Session hat noch keine aktive_session_id beansprucht -- claim_session()
+    // würde sie sofort setzen, der eigene Realtime-Kanal unten empfängt
+    // dieses eigene UPDATE dann als vermeintliches "anderes Gerät" und meldet
+    // den Nutzer noch vor dem Absenden des neuen Passworts wieder ab
+    // ("Auth session missing!" beim updateUser()-Aufruf, To-Do #108). Sobald
+    // updatePassword() recoveryMode auf false setzt, läuft dieser Effect
+    // ganz normal für die jetzt echte Sitzung an.
+    if (!user || recoveryMode) return;
     let sid = localStorage.getItem(SESSION_ID_KEY);
     let stopped = false;
     let intervalId = null;
@@ -143,7 +152,7 @@ export function AuthProvider({ children }) {
       intervalId = setInterval(beat, HEARTBEAT_INTERVAL_MS);
     }
     return () => { stopped = true; if (intervalId) clearInterval(intervalId); supabase.removeChannel(channel); };
-  }, [session?.user?.id]);
+  }, [session?.user?.id, recoveryMode]);
 
   const hasTimedPremium = !!profile?.premium_until && new Date(profile.premium_until) > new Date();
 

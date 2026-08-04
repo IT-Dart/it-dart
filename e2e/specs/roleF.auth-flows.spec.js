@@ -36,17 +36,14 @@ const randomPassword = () => crypto.randomBytes(18).toString("base64url");
 // Beide Screens (Recovery und Invite) landen auf derselben
 // ResetPasswordScreen.jsx ("Neues Passwort setzen") -- gemeinsamer Helper.
 //
-// To-Do #108: updateUser() liefert hier zuverlässig "Auth session missing!"
-// -- sowohl bei Recovery- als auch bei Invite-Links. Ursprünglich als
-// kurzes Timing-Race vermutet, aber widerlegt: selbst 6 Versuche über 12s+
-// (Run 53) ändern nichts, ein echtes Race würde sich auflösen. Die Ursache
-// ist noch nicht gefunden (vermutlich ein Unterschied zwischen dem, was
-// React als "eingeloggt" zeigt, und supabase-js' eigenem internen
-// Session-Zustand, den updateUser() tatsächlich abfragt) -- braucht
-// interaktives Browser-Debugging, nicht weiteres Raten über CI-Logs.
-// Deshalb hier bewusst nur EIN Versuch, kein Retry mehr (half nachweislich
-// nicht), die Tests, die diesen Helper nutzen, sind mit test.fail()
-// markiert.
+// To-Do #108: updateUser() lieferte hier zuverlässig "Auth session missing!"
+// -- sowohl bei Recovery- als auch bei Invite-Links. Per interaktivem
+// Browser-Debugging (2026-08-04) gefunden: die frische Recovery-Session
+// wurde durch den eigenen Session-Kickout-Mechanismus (Realtime-Kanal
+// reagiert auf die eigene claim_session()-Änderung) noch vor dem Absenden
+// des Formulars wieder abgemeldet. Fix in AuthContext.jsx: der
+// Heartbeat/Kickout-Effect läuft jetzt nicht mehr während recoveryMode.
+// Dieser Test prüft, ob der Fix wirkt (kein test.fail() mehr).
 async function setNewPasswordAndExpectSuccess(page, newPassword) {
   // Großzügiges Timeout -- nach der Umleitung muss supabase-js erst den
   // Hash-Fragment-Token verarbeiten und die Sitzung aufbauen, bevor
@@ -90,12 +87,9 @@ test("Registrierung: Formular zeigt korrekt die deaktivierten Signups + Bestäti
   await expect(page.getByRole("button", { name: /Lernpfad starten/ })).toBeVisible({ timeout: 15_000 });
 });
 
-// To-Do #108: schlägt zuverlässig an "Auth session missing!" fehl (siehe
-// Kommentar bei setNewPasswordAndExpectSuccess oben). test.fail() statt
-// hartem Failure, damit die Suite nicht wegen eines bekannten, separat
-// verfolgten Problems rot bleibt -- sobald #108 behoben ist, meldet
-// Playwright diesen Test als "unerwartet bestanden".
-test.fail("Passwort-Reset: Formular live + Reset-Link setzt ein neues, dauerhaft gültiges Passwort", async ({ page }) => {
+// To-Do #108: siehe Kommentar bei setNewPasswordAndExpectSuccess oben --
+// testet den Fix (Kickout-Effect pausiert während recoveryMode).
+test("Passwort-Reset: Formular live + Reset-Link setzt ein neues, dauerhaft gültiges Passwort", async ({ page }) => {
   test.setTimeout(30_000);
   const email = process.env.E2E_TEST_RESETTARGET_EMAIL;
   if (!email) throw new Error("E2E_TEST_RESETTARGET_EMAIL fehlt -- seed-e2e-users.js prüfen.");
@@ -143,9 +137,9 @@ test.fail("Passwort-Reset: Formular live + Reset-Link setzt ein neues, dauerhaft
   await expect(page.getByRole("button", { name: /Lernpfad starten/ })).toBeVisible({ timeout: 15_000 });
 });
 
-// To-Do #108: schlägt ebenfalls zuverlässig an "Auth session missing!"
-// fehl -- gleiches test.fail()-Vorgehen wie beim Passwort-Reset-Test oben.
-test.fail("Magic-Link/Einladung: roher Link führt zur Passwort-Setzen-Seite und danach ins Konto", async ({ page }) => {
+// To-Do #108: testet denselben Fix wie der Passwort-Reset-Test oben, nur
+// für den Invite-Link-Pfad.
+test("Magic-Link/Einladung: roher Link führt zur Passwort-Setzen-Seite und danach ins Konto", async ({ page }) => {
   test.setTimeout(30_000);
   // type:"invite" (nicht "magiclink") -- AuthContext.jsx prüft explizit
   // "type=invite" im URL-Hash, das ist der einzige Linktyp ohne eigenes
