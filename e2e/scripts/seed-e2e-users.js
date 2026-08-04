@@ -75,6 +75,63 @@ const admin = await createTestUser("admin", { is_admin: true });
 // Free-Status prueft, dort zufaellig fehlschlagen).
 const adminTarget = await createTestUser("admintarget");
 
+// --- To-Do #105: Registrierung/Passwort-Reset/Magic-Link -------------------
+// Kein echter E-Mail-Versand/-Empfang noetig: generateLink() erzeugt exakt
+// denselben Bestaetigungs-/Reset-/Einladungslink, der sonst per E-Mail
+// verschickt wuerde (dasselbe Muster wie supabase/functions/invite-user/
+// index.ts fuer den manuell teilbaren Link). Playwright navigiert direkt
+// dorthin und testet damit die echte App-Seite (Session-Aufbau, Passwort
+// setzen, Hash-Handling) -- die reine Zustellung ist Supabase/SMTP-Sache,
+// nicht App-Logik.
+//
+// Muss zu BASE_URL im Workflow (.github/workflows/e2e-tests.yml, "Tests
+// ausfuehren") passen -- die Seed-Phase hat kein window.location, daher
+// hier fest verdrahtet statt hergeleitet.
+const REDIRECT_TO = "http://localhost:5173";
+
+// generateLink(type:"signup") legt den (unbestaetigten) Nutzer direkt an,
+// genau wie ein echter supabase.auth.signUp()-Aufruf aus der App -- kein
+// vorheriges createUser() noetig.
+const { data: signupLinkData, error: signupLinkErr } = await withStartupRetry(
+  "generateLink(signup)",
+  () => supabase.auth.admin.generateLink({
+    type: "signup",
+    email: `e2e-regconfirm-${Date.now()}@sandbox.it-dart.de`,
+    password: randomPassword(),
+    options: { redirectTo: REDIRECT_TO },
+  })
+);
+if (signupLinkErr) throw new Error(`generateLink(signup) fehlgeschlagen: ${signupLinkErr.message}`);
+const signupConfirmLink = signupLinkData.properties.action_link;
+
+const resetTarget = await createTestUser("resettarget");
+const { data: recoveryLinkData, error: recoveryLinkErr } = await supabase.auth.admin.generateLink({
+  type: "recovery",
+  email: resetTarget.email,
+  options: { redirectTo: REDIRECT_TO },
+});
+if (recoveryLinkErr) throw new Error(`generateLink(recovery) fehlgeschlagen: ${recoveryLinkErr.message}`);
+const passwordResetLink = recoveryLinkData.properties.action_link;
+
+// type:"invite" (nicht "magiclink") -- AuthContext.jsx prueft explizit
+// "type=invite" im URL-Hash (src/lib/AuthContext.jsx, inviteFromUrl), das
+// ist der einzige Linktyp ohne eigenes Supabase-Auth-Event.
+const { data: inviteLinkData, error: inviteLinkErr } = await supabase.auth.admin.generateLink({
+  type: "invite",
+  email: `e2e-invitetarget-${Date.now()}@sandbox.it-dart.de`,
+  options: { redirectTo: REDIRECT_TO },
+});
+if (inviteLinkErr) throw new Error(`generateLink(invite) fehlgeschlagen: ${inviteLinkErr.message}`);
+// KEIN ?mode=einladung-Wrapping hier (anders als im echten Einladungs-Flow,
+// invite-user/index.ts): App.jsx validiert einen solchen Link gegen
+// SUPABASE_VERIFY_PREFIX, das fest auf die PRODUKTIONS-Projekt-URL verdrahtet
+// ist (vukqjpqawzhfvpjjpipp.supabase.co) -- auf dem wegwerfbaren E2E-Branch
+// hat der generierte Link zwangsläufig eine andere Projekt-URL und würde die
+// Prüfung nie bestehen. EinladungScreen.jsx selbst bleibt dadurch bewusst
+// ungetestet (siehe To-Do-Notiz unten) -- der rohe Link testet aber weiterhin
+// den eigentlichen, custom gebauten type=invite-Verarbeitungspfad danach.
+const inviteLink = inviteLinkData.properties.action_link;
+
 // roleD.junior-admin.spec.js prueft die zentrale Sicherheitsgrenze des
 // geschuetzten Hauptkontos (is_protected_account() in den Migrationen,
 // PROTECTED_USER_ID in den Edge Functions) -- dessen UUID ist fest im
@@ -117,5 +174,14 @@ const out = {
   // Kein Passwort -- adminTarget loggt sich nie selbst ein, nur
   // roleE.admin.spec.js sucht per E-Mail danach.
   E2E_TEST_ADMINTARGET_EMAIL: adminTarget.email,
+  // To-Do #105: resettarget braucht seine E-Mail fuer den LIVE-Teil des
+  // Tests ("Passwort vergessen"-Formular ausfuellen) -- das ORIGINAL-
+  // Passwort wird nie gebraucht, der Test setzt ueber den Recovery-Link ein
+  // neues. Die drei *_LINK-Variablen sind echte Auth-Token und werden vom
+  // Workflow genau wie *_PASSWORD maskiert.
+  E2E_TEST_RESETTARGET_EMAIL: resetTarget.email,
+  E2E_TEST_SIGNUP_CONFIRM_LINK: signupConfirmLink,
+  E2E_TEST_PASSWORD_RESET_LINK: passwordResetLink,
+  E2E_TEST_INVITE_LINK: inviteLink,
 };
 for (const [k, v] of Object.entries(out)) console.log(`${k}=${v}`);

@@ -129,7 +129,7 @@ jobs:
           node scripts/seed-e2e-users.js > seed_output.txt
           while IFS='=' read -r key val; do
             [ -z "$key" ] && continue
-            case "$key" in *_PASSWORD) echo "::add-mask::$val" ;; esac
+            case "$key" in *_PASSWORD|*_LINK) echo "::add-mask::$val" ;; esac
             echo "$key=$val" >> "$GITHUB_ENV"
           done < seed_output.txt
 
