@@ -9,6 +9,7 @@ export const ROLES = {
   trainee: { emailEnv: "E2E_TEST_TRAINEE_EMAIL", passwordEnv: "E2E_TEST_TRAINEE_PASSWORD" },
   trainer: { emailEnv: "E2E_TEST_TRAINER_EMAIL", passwordEnv: "E2E_TEST_TRAINER_PASSWORD" },
   juniorAdmin: { emailEnv: "E2E_TEST_JUNIORADMIN_EMAIL", passwordEnv: "E2E_TEST_JUNIORADMIN_PASSWORD" },
+  admin: { emailEnv: "E2E_TEST_ADMIN_EMAIL", passwordEnv: "E2E_TEST_ADMIN_PASSWORD" },
 };
 
 export function credentialsFor(role) {

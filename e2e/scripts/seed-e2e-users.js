@@ -66,6 +66,14 @@ const trainer = await createTestUser("trainer", { is_trainer: true, trainee_limi
 // echter Lernnachweis-PDF-Download).
 const trainee = await createTestUser("trainee", { is_premium: true });
 const juniorAdmin = await createTestUser("junioradmin", { is_junior_admin: true });
+const admin = await createTestUser("admin", { is_admin: true });
+// Rein passives Ziel-Konto fuer roleE.admin.spec.js (Premium/Trainer/
+// Junior-Admin vergeben+entziehen, am Ende loeschen) -- niemals eines der
+// vier Rollen-Konten selbst dafuer verwenden, sonst gibt es einen echten
+// Race gegen deren EIGENE, parallel laufende Tests (z. B. wuerde ein
+// Premium-Toggle auf "free" waehrend roleA.free.spec.js noch dessen
+// Free-Status prueft, dort zufaellig fehlschlagen).
+const adminTarget = await createTestUser("admintarget");
 
 // roleD.junior-admin.spec.js prueft die zentrale Sicherheitsgrenze des
 // geschuetzten Hauptkontos (is_protected_account() in den Migrationen,
@@ -104,5 +112,10 @@ const out = {
   E2E_TEST_TRAINER_PASSWORD: trainer.password,
   E2E_TEST_JUNIORADMIN_EMAIL: juniorAdmin.email,
   E2E_TEST_JUNIORADMIN_PASSWORD: juniorAdmin.password,
+  E2E_TEST_ADMIN_EMAIL: admin.email,
+  E2E_TEST_ADMIN_PASSWORD: admin.password,
+  // Kein Passwort -- adminTarget loggt sich nie selbst ein, nur
+  // roleE.admin.spec.js sucht per E-Mail danach.
+  E2E_TEST_ADMINTARGET_EMAIL: adminTarget.email,
 };
 for (const [k, v] of Object.entries(out)) console.log(`${k}=${v}`);
