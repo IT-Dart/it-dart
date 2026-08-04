@@ -98,8 +98,10 @@ export function Datenschutz({onClose}){
         <li style={li}><strong style={{color:C.t}}>Supabase</strong> (Datenbank, Login) — verarbeitet alle unter Punkt 2 genannten Daten</li>
         <li style={li}><strong style={{color:C.t}}>Vercel Inc.</strong> (USA) — Hosting der Webanwendung</li>
         <li style={li}><strong style={{color:C.t}}>Anthropic PBC</strong> (USA) — zum einen Verarbeitung deiner Frage beim KI-Chat, um eine Antwort zu erzeugen (es werden keine Konto- oder Kontaktdaten übermittelt, nur die gestellte Frage und der Lernkontext); für Premium-Nutzer optional auch eine Auswertung deiner bisherigen Prüfungsvorbereitung-Ergebnisse (nur die von dir selbst erzielten Punktzahlen je Themenbereich, keine Konto- oder Kontaktdaten); zum anderen intern für Admin-Werkzeuge zur Plattformpflege (z. B. Lösungsvorschläge für interne Aufgaben inkl. Websuche) — hierbei werden keine Nutzerdaten verarbeitet</li>
+        <li style={li}><strong style={{color:C.t}}>Resend</strong> (USA) — Versand von Registrierungsbestätigungs-, Passwort-Reset- und Einladungs-E-Mails (verarbeitet dabei deine E-Mail-Adresse sowie den Zeitpunkt des Versands)</li>
       </ul>
       <p style={p}>Bei Übermittlung in die USA erfolgt dies auf Grundlage von Standardvertragsklauseln der jeweiligen Anbieter.</p>
+      <p style={p}>Ergänzend zur Vollständigkeit, ohne aktive Rolle bei der Bereitstellung des Lernangebots selbst: <strong style={{color:C.t}}>STRATO</strong> (Deutschland) verwaltet die Domain it-dart.de und das allgemeine Kontakt-Postfach kontakt@it-dart.de; <strong style={{color:C.t}}>GitHub Inc.</strong> (USA) speichert ein tägliches, GPG-verschlüsseltes Datenbank-Backup zu Notfallwiederherstellungszwecken — der Inhalt ist für GitHub selbst nicht lesbar.</p>
 
       <h2 style={h2}>5. Speicherdauer</h2>
       <p style={p}>Deine Daten werden gespeichert, solange dein Konto besteht. Du kannst dein Konto und alle damit verbundenen Daten jederzeit selbst und vollständig löschen (siehe Punkt 6).</p>
