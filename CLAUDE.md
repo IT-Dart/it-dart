@@ -76,7 +76,9 @@ Nach jeder Änderung an diesen drei Bereichen den Nutzer explizit auf die fälli
 
 ## Datenmodell — `profiles` (relevante Spalten)
 
-`id, email, is_admin, is_junior_admin, is_trainer, trainee_limit, is_premium, premium_until, ai_enabled, confirmed_at, created_at, needs_password_setup, birthdate, parent_email, parent_consent_confirmed, parent_consent_token, agb_consent_given`
+`id, email, is_admin, is_junior_admin, is_trainer, trainee_limit, is_premium, premium_until, ai_enabled, confirmed_at, created_at, needs_password_setup, birthdate, parent_email, parent_consent_confirmed, parent_consent_token, agb_consent_given, display_ref`
+
+`display_ref` ist eine rein kosmetische, fortlaufende Nummer (kein Sicherheits-/Auth-Bezug) zum Wiedererkennen im Supabase-Studio, seit dort `email` als sensible Spalte maskiert wird — niemals für Lookups/Autorisierung im App-Code verwenden, die echte `id`-UUID bleibt die einzige tatsächlich genutzte Identität.
 
 Die vier Spalten `birthdate`, `parent_email`, `parent_consent_confirmed`, `parent_consent_token` gehören zur noch inaktiven Altersabfrage/Eltern-Bestätigung — siehe `src/lib/featureFlags.js` (`MINOR_CONSENT_ENABLED`) und [[project_minor_consent_flow]]. `agb_consent_given` ist dagegen live aktiv (kein Feature-Flag): schließt die Lücke, dass per Einladungslink registrierte Nutzer nie die Einwilligungs-Checkbox aus `AuthScreen.jsx` durchlaufen — `AgbConsentScreen.jsx` gated das analog zu `needs_password_setup`.
 
