@@ -1,10 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { C, pri, ghost, wrap, inner, ff, fm } from "./lib/theme";
+import { C, pri, ghost, wrap, inner, ff } from "./lib/theme";
 import { useAuth } from "./lib/AuthContext";
 import { supabase } from "./lib/supabaseClient";
-import { authFetch } from "./lib/authFetch";
-import { generateLernnachweis, logLernnachweis } from "./lib/lernnachweis";
-import { describeError } from "./lib/errorText";
 import { canonicalUrl } from "./lib/nav";
 import { MODS } from "./lib/modules";
 import AuthScreen from "./AuthScreen";
@@ -34,6 +31,8 @@ import { G, GQ, O, OQ, B, BQ, SI, SIQ, DB, DBQ, SK, SKQ, PR, PRQ, BW, DATA } fro
 import Scene from "./Scene";
 import { Logo } from "./Logo";
 import { OSIOverview, Pips, Hdr, OSIBezug } from "./ModuleUi";
+import Quiz from "./Quiz";
+import AIChat from "./AIChat";
 
 const MODULE_IMAGES={g:moduleGImg,o:moduleOImg,b:moduleBImg,si:moduleSiImg,db:moduleDbImg,sk:moduleSkImg,pr:modulePrImg,bw:moduleBwImg};
 const MODULE_IMAGE_ALT={g:"PC Komponenten",o:"Sechs leuchtende Netzwerk-Symbole in Blau und Cyan: WLAN-Router, Switch mit nummerierten Ports, VPN-Schloss, WLAN-Signal, Server-Rack, DHCP-Tag",b:"Betriebssysteme",si:"IT-Sicherheit",db:"Datenbanken",sk:"Skripting",pr:"Beruf und Projekt",bw:"Illustration einer Bewerberin mit Lebenslauf, umgeben von Symbolen für Telefon-Interview, Zertifikat und KI-gestütztes Mock-Interview am Laptop"};
@@ -44,237 +43,8 @@ const MODULE_IMAGE_ALT={g:"PC Komponenten",o:"Sechs leuchtende Netzwerk-Symbole 
 const LERNNACHWEIS_BADGE_IMAGES={...MODULE_IMAGES,g:lernnachweisBadgeGImg};
 
 const FREE_MODULE_IDS=["g","o"]; // Grundlagen frei zugänglich, Netzwerktechnik als Vorschau — Rest inkl. Karriere & Bewerbung (Mock-Interview) ist Premium
-const INTERVIEW_MAX_ROUNDS=8; // muss mit INTERVIEW_MAX_ROUNDS in supabase/functions/ai-chat/index.ts übereinstimmen
-const CHAT_MAX_QUESTIONS=10; // pro Thema — nur clientseitig, der eigentliche Kostendeckel ist das serverseitige Stundenlimit
 const FREE_TOPIC_LIMITS={o:2}; // Netzwerktechnik: nur die ersten 2 von 7 Themen sind ohne Premium sichtbar
 const FREE_QUIZ_N=5; // Modul-Quiz am Ende: Free-Nutzer sehen nur die ersten 5 Fragen
-
-const Quiz=({qs,onDone,title,mid})=>{
-  const [i,setI]=useState(0);const [sel,setSel]=useState(null);const [sc,setSc]=useState(0);const [done,setDone]=useState(false);
-  const [nachweisBusy,setNachweisBusy]=useState(false);
-  const [startedAt,setStartedAt]=useState(()=>new Date());
-  const [logErr,setLogErr]=useState(null);
-  const [dlErr,setDlErr]=useState(null);
-  const {user,isPremium}=useAuth();
-  // Einmal pro Durchlauf gemischt (nicht bei jedem Re-Render), damit die
-  // Reihenfolge bei jedem Versuch anders ist, aber innerhalb eines
-  // Durchlaufs stabil bleibt.
-  // Fragen- UND Antwortreihenfolge werden gemischt (nicht nur die Fragen) --
-  // sonst steht die richtige Antwort bei jedem Durchlauf an derselben
-  // Stelle, was Auswendiglernen der Position statt des Inhalts begünstigt.
-  const [shuffled]=useState(()=>{
-    const shuffleArr=arr=>[...arr].sort(()=>Math.random()-0.5);
-    return shuffleArr(qs).map(item=>{
-      const order=shuffleArr(item.o.map((_,idx)=>idx));
-      return{...item,o:order.map(idx=>item.o[idx]),c:order.indexOf(item.c)};
-    });
-  });
-  const q=shuffled[i];const ans=sel!==null;
-  const pick=idx=>{if(ans)return;setSel(idx);if(idx===q.c)setSc(s=>s+1);};
-  const next=()=>{if(i===qs.length-1){setDone(true);return;}setI(x=>x+1);setSel(null);};
-  const pct=Math.round((sc/qs.length)*100);
-  // jsPDF (~400 KB) lädt sonst erst beim Klick auf "Herunterladen" — hier
-  // schon im Hintergrund anstoßen, sobald das Ergebnis steht, damit der
-  // eigentliche Download-Klick aus dem (dann bereits warmen) Modul-Cache
-  // bedient wird statt spürbar zu verzögern.
-  useEffect(()=>{if(done)import("jspdf");},[done]);
-  useEffect(()=>{
-    if(!done||!user)return;
-    logLernnachweis({user,kind:"modul",title,score:sc,total:qs.length,topics:[{name:title,correct:sc,total:qs.length}],startedAt,finishedAt:new Date()})
-      ?.then(({error})=>{if(error)setLogErr(describeError(error));});
-  },[done]);
-  const downloadNachweis=async()=>{
-    setNachweisBusy(true);
-    setDlErr(null);
-    try{
-      await generateLernnachweis({user,kind:"modul",title,score:sc,total:qs.length,topics:[{name:title,correct:sc,total:qs.length}],startedAt,finishedAt:new Date(),skipLog:true,moduleIconUrl:LERNNACHWEIS_BADGE_IMAGES[mid]});
-    }catch(e){
-      setDlErr(describeError(e));
-    }finally{
-      setNachweisBusy(false);
-    }
-  };
-  if(done)return(
-    <div style={{textAlign:"center",padding:"10px 0"}}>
-      <div style={{fontSize:48,marginBottom:12}}>{pct>=80?"🎯":pct>=60?"👍":"💪"}</div>
-      <h3 style={{fontSize:20,fontWeight:700,marginBottom:6}}>{pct>=80?"Sehr gut!":pct>=60?"Gut gemacht!":"Weiter üben!"}</h3>
-      <p style={{fontSize:14,color:C.t2,marginBottom:16}}>{sc} von {qs.length} richtig — {pct}%</p>
-      <div style={{height:8,background:C.s2,borderRadius:4,overflow:"hidden",marginBottom:20}}>
-        <div style={{height:"100%",width:`${pct}%`,background:pct>=80?C.gr:pct>=60?C.am:"#ef4444",borderRadius:4}}/>
-      </div>
-      {logErr&&<div style={{background:"#450a0a",border:"0.5px solid #ef4444",borderRadius:10,padding:"10px 14px",marginBottom:16,textAlign:"left"}}>
-        <p style={{fontSize:13,color:"#fca5a5",margin:0}}>Ergebnis konnte nicht in „Meine Statistik" gespeichert werden: {logErr}</p>
-      </div>}
-      {dlErr&&<div style={{background:"#450a0a",border:"0.5px solid #ef4444",borderRadius:10,padding:"10px 14px",marginBottom:16,textAlign:"left"}}>
-        <p style={{fontSize:13,color:"#fca5a5",margin:0}}>Lernnachweis konnte nicht erstellt werden: {dlErr}</p>
-      </div>}
-      <div style={{display:"flex",gap:8,justifyContent:"center",marginBottom:user&&pct>=50?12:0}}>
-        <button onClick={()=>{setI(0);setSel(null);setSc(0);setDone(false);setStartedAt(new Date());}} style={{...ghost}}>🔄 Nochmal</button>
-        <button onClick={onDone} style={{...pri}}>✓ Übersicht</button>
-      </div>
-      {user&&pct>=50&&(isPremium?<button onClick={downloadNachweis} disabled={nachweisBusy} style={{...ghost,width:"100%",justifyContent:"center",opacity:nachweisBusy?.6:1}}>{nachweisBusy?"Wird erstellt...":"📄 Lernnachweis herunterladen"}</button>:<p style={{fontSize:12,color:C.mu,margin:0}}>🔒 Lernnachweis-Download ist ein Premium-Feature.</p>)}
-    </div>
-  );
-  return(
-    <div>
-      <div style={{display:"flex",justifyContent:"space-between",marginBottom:10}}><span style={{fontSize:12,color:C.mu}}>Frage {i+1} / {qs.length}</span><span style={{fontSize:12,color:C.t2}}>{sc} richtig</span></div>
-      <div style={{height:3,background:C.s2,borderRadius:2,overflow:"hidden",marginBottom:16}}><div style={{height:"100%",width:`${(i/qs.length)*100}%`,background:`linear-gradient(90deg,${C.bl},${C.cy})`,borderRadius:2}}/></div>
-      <div style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:10,padding:"14px 16px",marginBottom:14}}><p style={{fontSize:15,fontWeight:600,lineHeight:1.5,margin:0}}>{q.q}</p></div>
-      <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:14}}>
-        {q.o.map((opt,idx)=>{
-          let bg=C.s2,bdr=C.bd,col=C.t;
-          if(ans){if(idx===q.c){bg="#14532d";bdr="#22c55e";col="#86efac";}else if(idx===sel){bg="#450a0a";bdr="#ef4444";col="#fca5a5";}}
-          return(<button key={idx} onClick={()=>pick(idx)} style={{display:"flex",alignItems:"center",gap:10,textAlign:"left",width:"100%",background:bg,border:`1px solid ${bdr}`,borderRadius:10,padding:"11px 14px",cursor:ans?"default":"pointer",color:col,fontFamily:"inherit",transition:"all .15s"}}>
-            <span style={{width:24,height:24,borderRadius:"50%",background:ans&&idx===q.c?"#22c55e":ans&&idx===sel?"#ef4444":C.bd,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:600,flexShrink:0,color:"#fff"}}>{ans&&idx===q.c?"✓":ans&&idx===sel?"✗":["A","B","C","D"][idx]}</span>
-            <span style={{fontSize:14,lineHeight:1.4}}>{opt}</span>
-          </button>);
-        })}
-      </div>
-      {ans&&<><div style={{background:sel===q.c?"#052e16":"#1c0a0a",border:`0.5px solid ${sel===q.c?"#22c55e":"#ef4444"}`,borderRadius:10,padding:"12px 14px",marginBottom:14}}>
-        <p style={{fontSize:13,color:sel===q.c?"#86efac":"#fca5a5",lineHeight:1.6,margin:0}}><span style={{fontWeight:600}}>{sel===q.c?"✓ Richtig! ":"✗ Leider falsch. "}</span>{q.e}</p>
-      </div>
-      <button onClick={next} style={{...pri,width:"100%",justifyContent:"center"}}>{i===qs.length-1?"Ergebnis →":"Nächste Frage →"}</button></>}
-    </div>
-  );
-};
-
-// Beide mehrstufigen Dialogmodi (Mock-Interview, Netzwerk-Diagnose) teilen
-// sich dieselbe Verlaufs-/Rundenlogik unten, nur Label/Icon/Texte weichen
-// ab — siehe DIALOG_COPY. Neue Modi hier ergänzen, nicht die Mechanik
-// duplizieren.
-const DIALOG_COPY={
-  interview:{icon:"🎤",label:"Mock-Interview",start:"Interview starten",roundNoun:"Runden",overMsg:"Diese Interview-Runde ist abgeschlossen. Verlasse das Thema und öffne es erneut, um eine neue Runde zu starten.",starterText:"Bitte beginne das Interview mit deiner ersten Frage.",startingText:"Interview wird vorbereitet …"},
-  diagnose:{icon:"🛰️",label:"Diagnose-Dialog",start:"Diagnose starten",roundNoun:"Runden",overMsg:"Diese Diagnose-Runde ist abgeschlossen. Verlasse das Thema und öffne es erneut, um eine neue Runde zu starten.",starterText:"Bitte beschreibe die erste Störungsmeldung und beginne die Diagnose.",startingText:"Troubleshooting-System wird gestartet …"},
-};
-
-// Gemeinsamer "HUD"-Look für KI-Lernassistent und Dialogmodi (bewusst per
-// <style>-Tag statt Inline-Style, da CSS-Keyframes/Media-Queries mit
-// reinen Style-Objekten nicht abbildbar sind — kein CSS-Framework, kein
-// styled-components, nur natives CSS). Respektiert prefers-reduced-motion
-// wie schon ParticleBackground auf der Unternehmensseite.
-const AI_PANEL_CSS=`
-@keyframes aiGlowPulse{0%,100%{box-shadow:0 0 0 1px rgba(56,189,248,.35),0 0 16px rgba(56,189,248,.18),inset 0 0 24px rgba(37,99,235,.06)}50%{box-shadow:0 0 0 1px rgba(56,189,248,.65),0 0 30px rgba(56,189,248,.4),inset 0 0 24px rgba(37,99,235,.12)}}
-@keyframes aiOrbPulse{0%,100%{box-shadow:0 0 0 0 rgba(56,189,248,.55)}50%{box-shadow:0 0 0 6px rgba(56,189,248,0)}}
-@keyframes aiDot{0%,80%,100%{opacity:.25;transform:scale(.85)}40%{opacity:1;transform:scale(1)}}
-.ai-panel{animation:aiGlowPulse 3.2s ease-in-out infinite}
-.ai-orb{animation:aiOrbPulse 2s ease-in-out infinite}
-.ai-dot{animation:aiDot 1.1s ease-in-out infinite}
-.ai-dot:nth-child(2){animation-delay:.15s}
-.ai-dot:nth-child(3){animation-delay:.3s}
-@media (prefers-reduced-motion: reduce){.ai-panel,.ai-orb,.ai-dot{animation:none}}
-`;
-const aiPanelStyle={position:"relative",background:"linear-gradient(165deg, rgba(37,99,235,.10), rgba(15,22,35,0) 65%)",border:`1px solid ${C.bl}`,borderRadius:14,padding:"16px",overflow:"hidden"};
-const AIOrb=({icon})=><span className="ai-orb" style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:26,height:26,borderRadius:"50%",background:"radial-gradient(circle at 35% 30%, #38bdf8, #1d4ed8)",fontSize:13,flexShrink:0}}>{icon}</span>;
-const AIThinking=({text})=>(
-  <div style={{display:"flex",alignItems:"center",gap:10,padding:"6px 2px"}}>
-    <div style={{display:"flex",gap:4}}>{[0,1,2].map(i=><span key={i} className="ai-dot" style={{width:6,height:6,borderRadius:"50%",background:C.cy,display:"inline-block"}}/>)}</div>
-    <span style={{fontSize:12,color:C.cy,letterSpacing:".02em"}}>{text}</span>
-  </div>
-);
-
-const AIChat=({ctx,q1,q2,a1,a2,moduleId,dialogMode})=>{
-  const [q,setQ]=useState("");const [a,setA]=useState("");
-  const [history,setHistory]=useState([]); // nur in Dialogmodi genutzt: [{role,content}]
-  const [busy,setBusy]=useState(false);
-  const [askCount,setAskCount]=useState(0); // nur im Frag-nach-Modus genutzt
-  const dialog=dialogMode?DIALOG_COPY[dialogMode]:null;
-
-  const call=async(question,priorHistory)=>{
-    const {data:{session}}=await supabase.auth.getSession();
-    if(!session)return{error:"Bitte melde dich an, um die KI zu nutzen."};
-    const r=await authFetch("ai-chat",dialog?{ctx,question,moduleId,history:priorHistory,mode:dialogMode}:{ctx,question,moduleId});
-    const d=await r.json();
-    if(!r.ok)return{error:d.error||`Fehler (${r.status}).`};
-    return{answer:d.answer||"Keine Antwort."};
-  };
-
-  const askLimitReached=askCount>=CHAT_MAX_QUESTIONS;
-  const ask=async(question)=>{
-    if(!question.trim()||askLimitReached)return;
-    setAskCount(c=>c+1);
-    setA("Wird geladen...");
-    try{const res=await call(question);setA(res.error||res.answer);}
-    catch(e){setA("Verbindung fehlgeschlagen.");}
-  };
-
-  // Anthropic verlangt strikt abwechselnde user/assistant-Rollen, beginnend
-  // mit user. Der Auslöser-Text für die erste Frage wird deshalb selbst als
-  // echter user-Turn gespeichert (sonst würde der zweite Aufruf mit einem
-  // assistant-Turn beginnen und die API mit einem Fehler ablehnen) — beim
-  // Rendern wird nur dieser eine, unsichtbare Auslöser-Turn ausgeblendet.
-  const dialogRounds=history.filter(m=>m.role==="assistant").length;
-  const dialogOver=dialogRounds>=INTERVIEW_MAX_ROUNDS;
-  const dialogStep=async(userText)=>{
-    if(dialogOver)return;
-    const turnText=userText||dialog.starterText;
-    const priorHistory=history;
-    setHistory(h=>[...h,{role:"user",content:turnText}]);
-    setQ("");setBusy(true);
-    try{
-      const res=await call(turnText,priorHistory);
-      setHistory(h=>[...h,{role:"assistant",content:res.error||res.answer}]);
-    }catch(e){setHistory(h=>[...h,{role:"assistant",content:"Verbindung fehlgeschlagen."}]);}
-    setBusy(false);
-  };
-
-  if(dialog)return(
-    <div className="ai-panel" style={aiPanelStyle}>
-      <style>{AI_PANEL_CSS}</style>
-      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
-        <AIOrb icon={dialog.icon}/>
-        <p style={{fontSize:12,fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",color:C.t,margin:0,textShadow:"0 0 12px rgba(56,189,248,.5)"}}>{dialog.label}</p>
-        {history.length>0&&<span style={{marginLeft:"auto",fontSize:11,color:C.cy,border:`0.5px solid ${C.bl}`,borderRadius:20,padding:"2px 9px"}}>{Math.min(dialogRounds,INTERVIEW_MAX_ROUNDS)} / {INTERVIEW_MAX_ROUNDS} {dialog.roundNoun}</span>}
-      </div>
-      {history.length===0?(
-        busy?<AIThinking text={dialog.startingText}/>:
-        <button onClick={()=>dialogStep(null)} style={{...pri,width:"100%",justifyContent:"center",boxShadow:"0 0 22px rgba(37,99,235,.55)"}}>{dialog.start}</button>
-      ):(<>
-        <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:10}}>
-          {history.slice(1).map((m,i)=>(
-            <div key={i} style={{alignSelf:m.role==="user"?"flex-end":"flex-start",maxWidth:"88%",background:m.role==="user"?C.s2:"linear-gradient(135deg, #0f2744, #0b1c33)",border:`0.5px solid ${m.role==="user"?C.bd:"rgba(56,189,248,.5)"}`,borderRadius:10,padding:"9px 12px",boxShadow:m.role==="user"?"none":"0 0 14px rgba(56,189,248,.12)"}}>
-              <p style={{fontSize:13,color:m.role==="user"?C.t:"#93c5fd",lineHeight:1.6,margin:0}}>{m.content}</p>
-            </div>
-          ))}
-          {busy&&<AIThinking text={dialogRounds===0?dialog.startingText:"Antwort wird analysiert …"}/>}
-        </div>
-        {dialogOver?(
-          <p style={{fontSize:12,color:C.mu,margin:0}}>{dialog.overMsg}</p>
-        ):(
-          <div style={{display:"flex",gap:8}}>
-            <input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==="Enter"&&!busy&&dialogStep(q)} placeholder="Deine Antwort..." disabled={busy} style={{flex:1,background:C.s2,border:`0.5px solid ${C.bd}`,borderRadius:10,color:C.t,padding:"10px 14px",fontSize:14,outline:"none",fontFamily:"inherit"}}/>
-            <button onClick={()=>dialogStep(q)} disabled={busy||!q.trim()} style={{...pri,padding:"10px 14px",flexShrink:0,opacity:busy||!q.trim()?.6:1,boxShadow:busy||!q.trim()?"none":"0 0 16px rgba(37,99,235,.5)"}}>→</button>
-          </div>
-        )}
-      </>)}
-    </div>
-  );
-
-  const chatLoading=a==="Wird geladen...";
-  return(
-    <div className="ai-panel" style={aiPanelStyle}>
-      <style>{AI_PANEL_CSS}</style>
-      <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
-        <AIOrb icon="🤖"/>
-        <p style={{fontSize:12,fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",color:C.t,margin:0,textShadow:"0 0 12px rgba(56,189,248,.5)"}}>KI-Lernassistent</p>
-        {askCount>0&&<span style={{marginLeft:"auto",fontSize:11,color:C.cy,border:`0.5px solid ${C.bl}`,borderRadius:20,padding:"2px 9px"}}>{Math.min(askCount,CHAT_MAX_QUESTIONS)} / {CHAT_MAX_QUESTIONS} Fragen</span>}
-      </div>
-      {askLimitReached?(
-        <p style={{fontSize:12,color:C.mu,margin:0}}>Maximale Anzahl an Fragen für dieses Thema erreicht. Verlasse das Thema und öffne es erneut, um weiter zu fragen.</p>
-      ):(<>
-        <div style={{display:"flex",flexDirection:"column",gap:6,marginBottom:10}}>
-          {[[q1,a1],[q2,a2]].map(([qi,ai],i)=>(<button key={i} onClick={()=>{setQ(qi);ai?setA(ai):ask(qi);}} style={{...ghost,textAlign:"left",fontSize:13,padding:"8px 12px",width:"100%"}}>{qi}</button>))}
-        </div>
-        <p style={{fontSize:10,fontWeight:700,letterSpacing:".06em",textTransform:"uppercase",color:C.cy,margin:"2px 0 6px"}}>✏️ Dein Vorteil: frag alles zum Thema</p>
-        <div style={{display:"flex",gap:8}}>
-          <input value={q} onChange={e=>setQ(e.target.value)} onKeyDown={e=>e.key==="Enter"&&ask(q)} placeholder="Eigene Frage..." style={{flex:1,background:C.s2,border:`1px solid ${C.cy}`,borderRadius:10,color:C.t,padding:"10px 14px",fontSize:14,outline:"none",fontFamily:"inherit",boxShadow:"0 0 12px rgba(56,189,248,.25)"}}/>
-          <button onClick={()=>ask(q)} style={{...pri,padding:"10px 14px",flexShrink:0,boxShadow:"0 0 16px rgba(37,99,235,.5)"}}>→</button>
-        </div>
-      </>)}
-      {chatLoading&&<div style={{marginTop:10}}><AIThinking text="Antwort wird analysiert …"/></div>}
-      {a&&!chatLoading&&<div style={{marginTop:10,background:"linear-gradient(135deg, #0f2744, #0b1c33)",border:"0.5px solid rgba(56,189,248,.5)",borderRadius:10,padding:12,boxShadow:"0 0 14px rgba(56,189,248,.12)"}}><p style={{fontSize:14,color:"#93c5fd",lineHeight:1.6,margin:0}}>{a}</p></div>}
-    </div>
-  );
-};
 
 const authModeRequested=typeof window!=="undefined"?new URLSearchParams(window.location.search).get("mode"):null;
 const registerLinkRequested=authModeRequested==="register";
@@ -502,7 +272,7 @@ export default function ITDart({onOpenExam,onOpenLegal,wartungsmodus}){
         <p style={{fontSize:11,fontWeight:600,letterSpacing:".06em",textTransform:"uppercase",color:C.cy,marginBottom:6}}>Modul {MODS.findIndex(m=>m.id===mod.id)+1} · Quiz</p>
         <h2 style={{fontSize:20,fontWeight:700,marginBottom:8}} dangerouslySetInnerHTML={{__html:`${mod.e} ${data.title}`}}/>
         {!isPremium&&data.quiz.length>FREE_QUIZ_N&&<p style={{fontSize:13,color:C.mu,marginBottom:16}}>Kostenlose Vorschau: {FREE_QUIZ_N} von {data.quiz.length} Fragen. Mit Premium: alle Fragen.</p>}
-        <Quiz qs={isPremium?data.quiz:data.quiz.slice(0,FREE_QUIZ_N)} onDone={()=>setView("overview")} title={data.title.replace(/&amp;/g,"&")} mid={mod.id}/>
+        <Quiz qs={isPremium?data.quiz:data.quiz.slice(0,FREE_QUIZ_N)} onDone={()=>setView("overview")} title={data.title.replace(/&amp;/g,"&")} mid={mod.id} badgeImages={LERNNACHWEIS_BADGE_IMAGES}/>
       </div></div>
     );
     const item=data.items[idx];
