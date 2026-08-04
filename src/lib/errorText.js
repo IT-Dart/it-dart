@@ -11,6 +11,14 @@ const KNOWN_TRANSLATIONS = [
   [/for security purposes.*after \d+ seconds/i, "Aus Sicherheitsgründen bitte kurz warten, bevor du das erneut versuchst."],
   [/email rate limit exceeded/i, "Zu viele Anfragen — bitte kurz warten und erneut versuchen."],
   [/token has expired or is invalid/i, "Dieser Link ist abgelaufen oder ungültig — bitte fordere einen neuen an."],
+  // To-Do #111: @supabase/gotrue-js verwirft clientseitig jede URL-Session,
+  // deren Token laut "iat"-Claim älter als 120s ist ("Session as retrieved
+  // from URL was issued over 120s ago"), lautlos ohne eigenen Error-Code --
+  // die Session wird dann nie aufgebaut, updateUser() wirft stattdessen
+  // dieses generische "Auth session missing!". In ResetPasswordScreen.jsx/
+  // PasswordSetupScreen.jsx (die einzigen Aufrufer von updatePassword())
+  // kann das nur bedeuten: der Link ist zu alt oder bereits verbraucht.
+  [/auth session missing/i, "Dieser Link ist abgelaufen oder wurde bereits verwendet. Bitte fordere einen neuen Link an."],
 ];
 
 function translate(message) {
