@@ -83,7 +83,9 @@ test("Registrierung: Formular zeigt korrekt die deaktivierten Signups + Bestäti
     options: { redirectTo: REDIRECT_TO },
   });
   if (error) throw new Error(`generateLink(signup) fehlgeschlagen: ${error.message}`);
+  console.log("[DEBUG signup] action_link:", data.properties.action_link);
   await page.goto(data.properties.action_link);
+  console.log("[DEBUG signup] page.url() nach Navigation:", page.url());
   await expect(page.getByRole("button", { name: /Lernpfad starten/ })).toBeVisible({ timeout: 15_000 });
 });
 
@@ -114,7 +116,9 @@ test("Passwort-Reset: Formular live + Reset-Link setzt ein neues, dauerhaft gül
   });
   if (error) throw new Error(`generateLink(recovery) fehlgeschlagen: ${error.message}`);
   const newPassword = "NeuesE2E-Passwort2!";
+  console.log("[DEBUG recovery] action_link:", data.properties.action_link);
   await page.goto(data.properties.action_link);
+  console.log("[DEBUG recovery] page.url() nach Navigation:", page.url());
   await setNewPasswordAndExpectSuccess(page, newPassword);
   await expect(page.getByRole("button", { name: /Lernpfad starten/ })).toBeVisible({ timeout: 15_000 });
 
@@ -141,7 +145,9 @@ test("Magic-Link/Einladung: roher Link führt zur Passwort-Setzen-Seite und dana
   });
   if (error) throw new Error(`generateLink(invite) fehlgeschlagen: ${error.message}`);
 
+  console.log("[DEBUG invite] action_link:", data.properties.action_link);
   await page.goto(data.properties.action_link);
+  console.log("[DEBUG invite] page.url() nach Navigation:", page.url());
   await setNewPasswordAndExpectSuccess(page, "EingeladenE2E-Passwort3!");
   await expect(page.getByRole("button", { name: /Lernpfad starten/ })).toBeVisible({ timeout: 15_000 });
 });
