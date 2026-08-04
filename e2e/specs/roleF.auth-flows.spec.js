@@ -99,6 +99,7 @@ test("Registrierung: Formular zeigt korrekt die deaktivierten Signups + Bestäti
 // testet den Fix (Kickout-Effect pausiert während recoveryMode).
 test("Passwort-Reset: Formular live + Reset-Link setzt ein neues, dauerhaft gültiges Passwort", async ({ page }) => {
   test.setTimeout(30_000);
+  page.on("console", (msg) => { if (msg.text().includes("[DEBUG108]")) console.log(msg.text()); });
   const email = process.env.E2E_TEST_RESETTARGET_EMAIL;
   if (!email) throw new Error("E2E_TEST_RESETTARGET_EMAIL fehlt -- seed-e2e-users.js prüfen.");
 
