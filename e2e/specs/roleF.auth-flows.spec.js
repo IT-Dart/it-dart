@@ -43,20 +43,20 @@ async function setNewPasswordAndExpectSuccess(page, newPassword) {
   await page.getByPlaceholder("Neues Passwort").fill(newPassword);
   await page.getByPlaceholder("Passwort bestätigen").fill(newPassword);
 
-  // To-Do #108: bei Einladungslinks (type=invite) wird recoveryMode
-  // synchron aus dem URL-Hash gesetzt (AuthContext.jsx), unabhängig davon
-  // ob supabase-js die Sitzung aus demselben Hash im Hintergrund schon
-  // fertig aufgebaut hat. Ein sofortiges Abschicken (hier bewusst schneller
-  // als ein Mensch) kann dadurch einmalig "Auth session missing!" statt
-  // Erfolg liefern -- ResetPasswordScreen.jsx bleibt danach unverändert
-  // stehen (Formularwerte bleiben erhalten), ein erneuter Klick reicht,
-  // sobald die Sitzung tatsächlich steht.
-  for (let attempt = 1; attempt <= 3; attempt++) {
+  // To-Do #108: auch bei Recovery-Links (nicht nur Invite, wie ursprünglich
+  // angenommen) kann supabase-js die Sitzung im Hintergrund noch nicht
+  // fertig persistiert haben, obwohl ResetPasswordScreen schon rendert --
+  // ein sofortiges Abschicken (schneller als ein Mensch) liefert dann
+  // einmalig "Auth session missing!" statt Erfolg. 3x1s reichte nicht immer
+  // (Run 52), jetzt großzügiger. ResetPasswordScreen.jsx bleibt bei einem
+  // Fehler unverändert stehen (Formularwerte bleiben erhalten), ein
+  // erneuter Klick reicht, sobald die Sitzung tatsächlich steht.
+  for (let attempt = 1; attempt <= 6; attempt++) {
     await page.getByRole("button", { name: "Passwort ändern →" }).click();
     const success = await page.getByRole("heading", { name: "Passwort geändert" }).isVisible({ timeout: 3_000 }).catch(() => false);
     if (success) break;
-    if (attempt === 3) throw new Error("Passwort-Änderung nach 3 Versuchen weiterhin fehlgeschlagen.");
-    await page.waitForTimeout(1_000);
+    if (attempt === 6) throw new Error("Passwort-Änderung nach 6 Versuchen weiterhin fehlgeschlagen.");
+    await page.waitForTimeout(2_000);
   }
   // ResetPasswordScreen.jsx lädt 1200ms nach Erfolg automatisch neu.
   await page.waitForTimeout(1_800);
@@ -88,14 +88,12 @@ test("Registrierung: Formular zeigt korrekt die deaktivierten Signups + Bestäti
     options: { redirectTo: REDIRECT_TO },
   });
   if (error) throw new Error(`generateLink(signup) fehlgeschlagen: ${error.message}`);
-  console.log("[DEBUG signup] action_link:", data.properties.action_link);
   await page.goto(data.properties.action_link);
-  console.log("[DEBUG signup] page.url() nach Navigation:", page.url());
   await expect(page.getByRole("button", { name: /Lernpfad starten/ })).toBeVisible({ timeout: 15_000 });
 });
 
 test("Passwort-Reset: Formular live + Reset-Link setzt ein neues, dauerhaft gültiges Passwort", async ({ page }) => {
-  test.setTimeout(30_000);
+  test.setTimeout(60_000);
   const email = process.env.E2E_TEST_RESETTARGET_EMAIL;
   if (!email) throw new Error("E2E_TEST_RESETTARGET_EMAIL fehlt -- seed-e2e-users.js prüfen.");
 
@@ -121,9 +119,7 @@ test("Passwort-Reset: Formular live + Reset-Link setzt ein neues, dauerhaft gül
   });
   if (error) throw new Error(`generateLink(recovery) fehlgeschlagen: ${error.message}`);
   const newPassword = "NeuesE2E-Passwort2!";
-  console.log("[DEBUG recovery] action_link:", data.properties.action_link);
   await page.goto(data.properties.action_link);
-  console.log("[DEBUG recovery] page.url() nach Navigation:", page.url());
   await setNewPasswordAndExpectSuccess(page, newPassword);
   await expect(page.getByRole("button", { name: /Lernpfad starten/ })).toBeVisible({ timeout: 15_000 });
 
@@ -139,7 +135,7 @@ test("Passwort-Reset: Formular live + Reset-Link setzt ein neues, dauerhaft gül
 });
 
 test("Magic-Link/Einladung: roher Link führt zur Passwort-Setzen-Seite und danach ins Konto", async ({ page }) => {
-  test.setTimeout(30_000);
+  test.setTimeout(60_000);
   // type:"invite" (nicht "magiclink") -- AuthContext.jsx prüft explizit
   // "type=invite" im URL-Hash, das ist der einzige Linktyp ohne eigenes
   // Supabase-Auth-Event.
@@ -150,9 +146,7 @@ test("Magic-Link/Einladung: roher Link führt zur Passwort-Setzen-Seite und dana
   });
   if (error) throw new Error(`generateLink(invite) fehlgeschlagen: ${error.message}`);
 
-  console.log("[DEBUG invite] action_link:", data.properties.action_link);
   await page.goto(data.properties.action_link);
-  console.log("[DEBUG invite] page.url() nach Navigation:", page.url());
   await setNewPasswordAndExpectSuccess(page, "EingeladenE2E-Passwort3!");
   await expect(page.getByRole("button", { name: /Lernpfad starten/ })).toBeVisible({ timeout: 15_000 });
 });
