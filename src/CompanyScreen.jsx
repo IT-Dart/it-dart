@@ -166,7 +166,7 @@ export default function CompanyScreen({onEnterApp,onOpenLegal}){
         <div style={{position:"relative"}}>
           <Logo sz={72}/>
           <h1 style={{fontSize:26,fontWeight:700,marginTop:20,marginBottom:6}}>IT-Dart</h1>
-          <p style={{fontSize:14,color:C.cy,fontWeight:700,letterSpacing:0.3,marginBottom:4}}>Gezielt ans Ziel.</p>
+          <p style={{fontSize:14,color:C.cy,fontWeight:700,letterSpacing:0.3,marginBottom:4}}>Gezielt ans Ziel</p>
           <p style={{fontSize:13,color:C.t2,fontWeight:500}}>Digitale Bildung für die IT-Ausbildung</p>
         </div>
       </div>

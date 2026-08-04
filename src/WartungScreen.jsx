@@ -13,7 +13,7 @@ export default function WartungScreen({ onOpenLegal }) {
       <div style={{ ...inner, textAlign: "center", paddingTop: 80, paddingBottom: 60 }}>
         <Logo sz={64} />
         <h2 style={{ fontSize: 22, fontWeight: 700, marginTop: 16, marginBottom: 2 }}>IT-Dart</h2>
-        <p style={{ fontSize: 13, color: C.cy, fontWeight: 700, letterSpacing: 0.3, marginTop: 0, marginBottom: 0 }}>Gezielt ans Ziel.</p>
+        <p style={{ fontSize: 13, color: C.cy, fontWeight: 700, letterSpacing: 0.3, marginTop: 0, marginBottom: 0 }}>Gezielt ans Ziel</p>
         <h1 style={{ fontSize: 26, fontWeight: 700, marginTop: 10, marginBottom: 10 }}>Wir sind gerade im Aufbau.</h1>
         <p style={{ fontSize: 14, color: C.t2, lineHeight: 1.7, marginBottom: 32 }}>
           IT-Dart wird derzeit überarbeitet. Schau in Kürze wieder vorbei.
