@@ -136,7 +136,14 @@ test("KI-Chat: eigene Frage ruft echt die ai-chat Edge Function auf", async ({ p
   // AIChat.jsx: "ai?setA(ai):ask(qi)") -- das ist bewusst so, um Live-API-
   // Aufrufe bei jedem Fragen-Klick zu vermeiden. Um den echten Pfad zu
   // testen, muss also eine eigene, frei getippte Frage gestellt werden.
-  test.setTimeout(90_000);
+  //
+  // Doku 2026-08-04 / To-Do #106: die 500er waren nach ~50s Retry immer
+  // noch da, waehrend spaetere echte Aufrufe im selben Lauf (Interview/
+  // Diagnose) erfolgreich waren -- kein einfaches "kurz warten", sondern
+  // eine echte Luecke in der Branch-Readiness-Pruefung (prueft nur DB/API,
+  // nicht Edge-Function-Secrets). Grosszuegigeres Budget hier, bis der
+  // eigentliche Workflow-Fix aus #106 steht.
+  test.setTimeout(180_000);
   await loginAs(page, "free");
   await page.getByRole("button", { name: /Grundlagen IT/ }).click();
 
@@ -162,17 +169,18 @@ test("KI-Chat: eigene Frage ruft echt die ai-chat Edge Function auf", async ({ p
   // Dieselbe Klasse Boot-Verzögerung wie withStartupRetry in
   // seed-e2e-users.js, hier für die ai-chat Edge Function nachgebaut,
   // statt sie als echten App-Fehler zu werten.
+  const maxAttempts = 8;
   let response;
-  for (let attempt = 1; attempt <= 4; attempt++) {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const aiChatResponse = page.waitForResponse((r) => r.url().includes("/ai-chat"), { timeout: 30_000 });
     await page.getByPlaceholder("Eigene Frage...").press("Enter");
     response = await aiChatResponse;
     if (response.ok()) break;
     const body = await response.json().catch(() => ({}));
-    if (attempt === 4 || body?.error !== "Server ist nicht konfiguriert.") {
-      throw new Error(`ai-chat antwortete nicht ok (Status ${response.status()}, Versuch ${attempt}): ${JSON.stringify(body)}`);
+    if (attempt === maxAttempts || body?.error !== "Server ist nicht konfiguriert.") {
+      throw new Error(`ai-chat antwortete nicht ok (Status ${response.status()}, Versuch ${attempt}/${maxAttempts}): ${JSON.stringify(body)}`);
     }
-    await page.waitForTimeout(8_000);
+    await page.waitForTimeout(12_000);
   }
   expect(response.ok()).toBeTruthy();
   await expect(page.getByText("Wird geladen...")).toHaveCount(0);
