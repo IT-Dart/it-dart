@@ -136,20 +136,29 @@ test("KI-Chat: eigene Frage ruft echt die ai-chat Edge Function auf", async ({ p
   // AIChat.jsx: "ai?setA(ai):ask(qi)") -- das ist bewusst so, um Live-API-
   // Aufrufe bei jedem Fragen-Klick zu vermeiden. Um den echten Pfad zu
   // testen, muss also eine eigene, frei getippte Frage gestellt werden.
-  // 60s war im ersten echten Lauf zu knapp (Modulnavigation + echter
-  // API-Roundtrip zusammen liefen ins globale Test-Timeout, nicht in eine
-  // einzelne Assertion) -- mehr Luft, analog zu den anderen Tests mit
-  // echten KI-Aufrufen in roleB.trainee.spec.js.
   test.setTimeout(90_000);
   await loginAs(page, "free");
   await page.getByRole("button", { name: /Grundlagen IT/ }).click();
-  await page.getByRole("button", { name: /Lernpfad starten/ }).click();
+
+  // Der vorherige Test in dieser Datei ("Modul G: Lernpfad-Themen...")
+  // hat für dieses Konto bereits Fortschritt in Modul G hinterlassen --
+  // openMod() (src/ITDart.jsx) startet dann direkt in phase "learn" statt
+  // "intro", der "Lernpfad starten"-Button existiert dann gar nicht mehr.
+  // "Wird geladen..." nur einen kurzen Moment lang sichtbar sein kann,
+  // bevor die echte Antwort ankommt -- ein fixer isVisible()-Check kann das
+  // verpassen. Stattdessen direkt auf die echte HTTP-Antwort der
+  // ai-chat-Funktion warten, statt UI-Text-Timing zu erraten.
+  const startButton = page.getByRole("button", { name: /Lernpfad starten/ });
+  if (await startButton.isVisible({ timeout: 3_000 }).catch(() => false)) {
+    await startButton.click();
+  }
+
+  const aiChatResponse = page.waitForResponse((r) => r.url().includes("/ai-chat"), { timeout: 60_000 });
   await page.getByPlaceholder("Eigene Frage...").fill("Was macht die CPU in einem Computer?");
   await page.getByPlaceholder("Eigene Frage...").press("Enter");
-  await expect(page.getByText("Wird geladen...")).toBeVisible();
-  // Echter API-Aufruf statt Musterantwort -- deutlich mehr Luft als beim
-  // AIThinking-Rendering, bis eine tatsächliche Antwort zurückkommt.
-  await expect(page.getByText("Wird geladen...")).toHaveCount(0, { timeout: 60_000 });
+  const response = await aiChatResponse;
+  expect(response.ok()).toBeTruthy();
+  await expect(page.getByText("Wird geladen...")).toHaveCount(0);
 });
 
 // MUSS der letzte Test in dieser Datei bleiben (Playwright führt Tests einer
