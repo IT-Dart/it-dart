@@ -21,7 +21,12 @@ import crypto from "node:crypto";
 // E2E-Branch nie zutrifft. Der rohe Einladungslink danach ist trotzdem
 // abgedeckt (Test 3).
 
-const REDIRECT_TO = "http://localhost:5173"; // muss zu BASE_URL passen
+// Diagnose (Run 51) zeigte: der generierte Link enthielt "redirect_to=
+// https://it-dart.de" statt localhost, obwohl explizit localhost angegeben
+// wurde -- generateLink() ignorierte den Wert offenbar, weil er nicht exakt
+// gegen den konfigurierten Redirect-URL-Eintrag (localhost:5173/** mit
+// abschliessendem Slash vor dem Wildcard) passte. Mit Slash statt bar.
+const REDIRECT_TO = "http://localhost:5173/"; // muss zum Redirect-URL-Eintrag passen
 if (!process.env.BRANCH_URL || !process.env.SERVICE_KEY) {
   throw new Error("BRANCH_URL/SERVICE_KEY fehlen -- .github/workflows/e2e-tests.yml, Schritt \"Tests ausführen\" prüfen.");
 }
