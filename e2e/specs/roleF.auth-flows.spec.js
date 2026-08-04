@@ -129,7 +129,11 @@ test("Passwort-Reset: Formular live + Reset-Link setzt ein neues, dauerhaft gül
     options: { redirectTo: REDIRECT_TO },
   });
   if (error) throw new Error(`generateLink(recovery) fehlgeschlagen: ${error.message}`);
-  const newPassword = "NeuesE2E-Passwort2!";
+  // Zufällig statt fest -- ein Retry (Playwright retries:1) startet den
+  // kompletten Test neu und würde mit einem festen Passwort auf ein Konto
+  // treffen, das es aus dem vorherigen (fehlgeschlagenen) Versuch bereits
+  // trägt: "Das neue Passwort muss sich vom bisherigen unterscheiden."
+  const newPassword = randomPassword();
   await page.goto(data.properties.action_link);
   await setNewPasswordAndExpectSuccess(page, newPassword);
   await expect(page.getByRole("button", { name: /Lernpfad starten/ })).toBeVisible({ timeout: 15_000 });
@@ -145,7 +149,11 @@ test("Passwort-Reset: Formular live + Reset-Link setzt ein neues, dauerhaft gül
   // um dieselbe Konto-Sitzung kollidiert (reproduziert 2026-08-04: die neue
   // Anmeldung kickte sich dadurch selbst wieder raus).
   await page.getByRole("button", { name: "Abmelden" }).click();
-  await expect(page.getByRole("heading", { name: "Wir sind gerade im Aufbau." })).toBeVisible({ timeout: 10_000 });
+  // Nach Abmelden bleibt App.jsx auf page="app" (kein Reset auf "company"),
+  // ein anonymer Nutzer landet dort direkt auf dem Anmelden-Screen -- NICHT
+  // auf WartungScreen (das gilt nur für page==="company"). Live per Snapshot
+  // verifiziert 2026-08-04.
+  await expect(page.getByRole("heading", { name: "Anmelden" })).toBeVisible({ timeout: 10_000 });
   await page.goto("/?mode=login");
   await page.getByPlaceholder("E-Mail").fill(email);
   await page.getByPlaceholder("Passwort", { exact: true }).fill(newPassword);
