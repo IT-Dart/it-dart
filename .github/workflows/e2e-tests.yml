@@ -167,6 +167,14 @@ jobs:
         env:
           BASE_URL: http://localhost:5173
           E2E_SUITE: ${{ inputs.suite }}
+          # Fuer roleF.auth-flows.spec.js: Signup-/Recovery-/Invite-Links
+          # muessen unmittelbar vor der Nutzung generiert werden, nicht
+          # Minuten vorher im Seed-Schritt -- die Links waren sonst bereits
+          # abgelaufen/ungueltig, wenn dieser Test-File dran war (siehe
+          # To-Do #109). Bereits in der "Branch-Zugangsdaten ermitteln"-
+          # Ausgabe maskiert, bleibt es auch hier maskiert.
+          BRANCH_URL: ${{ steps.branch_keys.outputs.branch_url }}
+          SERVICE_KEY: ${{ steps.branch_keys.outputs.service_key }}
         # continue-on-error, damit fehlgeschlagene Tests trotzdem einen
         # Bericht erzeugen und melden, statt den Job stillschweigend rot
         # abbrechen zu lassen, ohne dass das Dashboard je etwas erfährt.

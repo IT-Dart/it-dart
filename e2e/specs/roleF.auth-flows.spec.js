@@ -1,19 +1,32 @@
 import { test, expect } from "@playwright/test";
+import { createClient } from "@supabase/supabase-js";
+import crypto from "node:crypto";
 
 // To-Do #105: Registrierung/Passwort-Reset/Magic-Link. Kein echter
-// E-Mail-Versand/-Empfang nötig -- seed-e2e-users.js generiert die
-// Bestätigungs-/Reset-/Einladungslinks direkt über die Supabase Admin-API
-// (generateLink), exakt dasselbe Muster wie invite-user/index.ts für den
-// manuell teilbaren Link. Playwright navigiert direkt dorthin und testet
-// damit die echte App-Seite (Session-Aufbau, Passwort setzen, Hash-
-// Handling) -- die reine Zustellung ist Supabase/SMTP-Sache, nicht
-// App-Logik.
+// E-Mail-Versand/-Empfang nötig -- generateLink() erzeugt exakt denselben
+// Bestätigungs-/Reset-/Einladungslink, der sonst per E-Mail verschickt
+// würde (dasselbe Muster wie invite-user/index.ts für den manuell
+// teilbaren Link). Playwright navigiert direkt dorthin und testet damit
+// die echte App-Seite (Session-Aufbau, Passwort setzen, Hash-Handling) --
+// die reine Zustellung ist Supabase/SMTP-Sache, nicht App-Logik.
+//
+// To-Do #109: die Links werden bewusst HIER, direkt im Test unmittelbar
+// vor Gebrauch generiert, NICHT im Seed-Skript -- ein erster Versuch mit
+// Vorgenerierung im Seed-Skript scheiterte, weil die Links Minuten später
+// (nachdem roleA-E schon gelaufen waren) bereits abgelaufen/ungültig waren.
 //
 // Bewusst NICHT getestet: die ?mode=einladung-Zwischenseite
 // (EinladungScreen.jsx) selbst -- App.jsx validiert deren Link gegen die
 // fest verdrahtete PRODUKTIONS-Projekt-URL, die auf dem wegwerfbaren
-// E2E-Branch nie zutrifft (siehe Kommentar in seed-e2e-users.js). Der rohe
-// Einladungslink danach ist trotzdem abgedeckt (Test 3).
+// E2E-Branch nie zutrifft. Der rohe Einladungslink danach ist trotzdem
+// abgedeckt (Test 3).
+
+const REDIRECT_TO = "http://localhost:5173"; // muss zu BASE_URL passen
+if (!process.env.BRANCH_URL || !process.env.SERVICE_KEY) {
+  throw new Error("BRANCH_URL/SERVICE_KEY fehlen -- .github/workflows/e2e-tests.yml, Schritt \"Tests ausführen\" prüfen.");
+}
+const admin = createClient(process.env.BRANCH_URL, process.env.SERVICE_KEY);
+const randomPassword = () => crypto.randomBytes(18).toString("base64url");
 
 // Beide Screens (Recovery und Invite) landen auf derselben
 // ResetPasswordScreen.jsx ("Neues Passwort setzen") -- gemeinsamer Helper.
@@ -61,36 +74,47 @@ test("Registrierung: Formular zeigt korrekt die deaktivierten Signups + Bestäti
   await expect(page.getByText("Signups not allowed for this instance", { exact: false })).toBeVisible();
 
   // Der Bestätigungs-KLICK selbst bleibt unabhängig davon testbar: die
-  // Admin-API (generateLink in seed-e2e-users.js) legt das Konto direkt
-  // an, ohne über das (deaktivierte) öffentliche signUp() zu laufen.
-  const confirmLink = process.env.E2E_TEST_SIGNUP_CONFIRM_LINK;
-  if (!confirmLink) throw new Error("E2E_TEST_SIGNUP_CONFIRM_LINK fehlt -- seed-e2e-users.js prüfen.");
-  await page.goto(confirmLink);
+  // Admin-API (generateLink) legt das Konto direkt an, ohne über das
+  // (deaktivierte) öffentliche signUp() zu laufen.
+  const { data, error } = await admin.auth.admin.generateLink({
+    type: "signup",
+    email: `e2e-regconfirm-${Date.now()}@sandbox.it-dart.de`,
+    password: randomPassword(),
+    options: { redirectTo: REDIRECT_TO },
+  });
+  if (error) throw new Error(`generateLink(signup) fehlgeschlagen: ${error.message}`);
+  await page.goto(data.properties.action_link);
   await expect(page.getByRole("button", { name: /Lernpfad starten/ })).toBeVisible({ timeout: 15_000 });
 });
 
 test("Passwort-Reset: Formular live + Reset-Link setzt ein neues, dauerhaft gültiges Passwort", async ({ page }) => {
   test.setTimeout(30_000);
   const email = process.env.E2E_TEST_RESETTARGET_EMAIL;
-  const resetLink = process.env.E2E_TEST_PASSWORD_RESET_LINK;
-  if (!email || !resetLink) throw new Error("E2E_TEST_RESETTARGET_EMAIL/E2E_TEST_PASSWORD_RESET_LINK fehlen -- seed-e2e-users.js prüfen.");
+  if (!email) throw new Error("E2E_TEST_RESETTARGET_EMAIL fehlt -- seed-e2e-users.js prüfen.");
 
   // Teil 1: das echte Formular anstoßen (live, kein Bypass) -- bewusst MIT
   // einer anderen, beliebigen Adresse: ein zweiter echter
-  // resetPasswordForEmail()-Aufruf für resetTarget selbst würde den im
-  // Seed-Skript bereits vorgenerierten Recovery-Link ungültig machen,
-  // bevor Teil 2 unten ihn nutzt (real aufgetreten: "Link ungültig oder
-  // abgelaufen"). Die Erfolgsmeldung verrät ohnehin bewusst nicht, ob die
-  // Adresse wirklich existiert.
+  // resetPasswordForEmail()-Aufruf für resetTarget selbst würde den gleich
+  // danach per generateLink() erzeugten Recovery-Link sofort wieder
+  // ungültig machen (real aufgetreten: "Link ungültig oder abgelaufen").
+  // Die Erfolgsmeldung verrät ohnehin bewusst nicht, ob die Adresse
+  // wirklich existiert.
   await page.goto("/?mode=login");
   await page.getByRole("button", { name: "Passwort vergessen?" }).click();
   await page.getByPlaceholder("E-Mail").fill(`e2e-livereset-${Date.now()}@sandbox.it-dart.de`);
   await page.getByRole("button", { name: "Link senden →" }).click();
   await expect(page.getByText("Falls diese E-Mail bei uns registriert ist", { exact: false })).toBeVisible();
 
-  // Teil 2: der eigentliche Reset-Klick über den vorbereiteten Link.
+  // Teil 2: der eigentliche Reset-Klick, Link unmittelbar vor Gebrauch
+  // generiert (To-Do #109 -- vorgenerierte Links liefen sonst ab).
+  const { data, error } = await admin.auth.admin.generateLink({
+    type: "recovery",
+    email,
+    options: { redirectTo: REDIRECT_TO },
+  });
+  if (error) throw new Error(`generateLink(recovery) fehlgeschlagen: ${error.message}`);
   const newPassword = "NeuesE2E-Passwort2!";
-  await page.goto(resetLink);
+  await page.goto(data.properties.action_link);
   await setNewPasswordAndExpectSuccess(page, newPassword);
   await expect(page.getByRole("button", { name: /Lernpfad starten/ })).toBeVisible({ timeout: 15_000 });
 
@@ -107,10 +131,17 @@ test("Passwort-Reset: Formular live + Reset-Link setzt ein neues, dauerhaft gül
 
 test("Magic-Link/Einladung: roher Link führt zur Passwort-Setzen-Seite und danach ins Konto", async ({ page }) => {
   test.setTimeout(30_000);
-  const inviteLink = process.env.E2E_TEST_INVITE_LINK;
-  if (!inviteLink) throw new Error("E2E_TEST_INVITE_LINK fehlt -- seed-e2e-users.js prüfen.");
+  // type:"invite" (nicht "magiclink") -- AuthContext.jsx prüft explizit
+  // "type=invite" im URL-Hash, das ist der einzige Linktyp ohne eigenes
+  // Supabase-Auth-Event.
+  const { data, error } = await admin.auth.admin.generateLink({
+    type: "invite",
+    email: `e2e-invitetarget-${Date.now()}@sandbox.it-dart.de`,
+    options: { redirectTo: REDIRECT_TO },
+  });
+  if (error) throw new Error(`generateLink(invite) fehlgeschlagen: ${error.message}`);
 
-  await page.goto(inviteLink);
+  await page.goto(data.properties.action_link);
   await setNewPasswordAndExpectSuccess(page, "EingeladenE2E-Passwort3!");
   await expect(page.getByRole("button", { name: /Lernpfad starten/ })).toBeVisible({ timeout: 15_000 });
 });
