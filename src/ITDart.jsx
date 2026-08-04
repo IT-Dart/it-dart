@@ -116,7 +116,15 @@ export default function ITDart({onOpenExam,onOpenLegal,wartungsmodus}){
   // Wartungsseite zurückführen statt in die (sonst als Vorschau gedachte)
   // Modulübersicht -- das gibt es sonst nirgends, da App.jsx's page-State
   // hier bereits "app" ist und von ITDarts eigenem view-State nichts weiß.
-  if(view==="auth")return <AuthScreen onClose={()=>{(wartungsmodus&&!user)?(window.location.href=canonicalUrl("/")):setView("overview");}} initialMode={registerLinkRequested?"register":"login"} onOpenLegal={onOpenLegal}/>;
+  // view startet rein aus dem URL-Parameter auf "auth" (siehe oben) --
+  // ohne diesen Schutz würde ein bereits angemeldeter Nutzer, der über
+  // einen ?mode=login/register-Link zurück in die App kommt (z. B. den
+  // "Hier anmelden"-Link auf WartungScreen.jsx), erneut das Login-Formular
+  // sehen. Ein zweiter, erfolgreicher Login-Versuch dort würde per
+  // Single-Session-Enforcement die eigene, noch aktive erste Sitzung
+  // hinauswerfen -- ein bereits angemeldeter Nutzer geht hier also einfach
+  // direkt weiter in die App, statt erneut zur Eingabe aufgefordert zu werden.
+  if(view==="auth"&&!user)return <AuthScreen onClose={()=>{(wartungsmodus&&!user)?(window.location.href=canonicalUrl("/")):setView("overview");}} initialMode={registerLinkRequested?"register":"login"} onOpenLegal={onOpenLegal}/>;
   if(view==="admin"||view==="junior-admin")return (isAdmin||isJuniorAdmin)?<AdminScreen onClose={()=>setView("overview")}/>:null;
   if(view==="e2e-tests")return isAdmin?<E2ETestScreen onClose={()=>setView("overview")}/>:null;
   if(view==="website-check")return isAdmin?<WebsiteCheckScreen onClose={()=>setView("overview")}/>:null;

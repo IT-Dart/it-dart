@@ -3,6 +3,8 @@ import ITDart from "./ITDart";
 import Pruefung from "./Pruefung";
 import ResetPasswordScreen from "./ResetPasswordScreen";
 import PasswordSetupScreen from "./PasswordSetupScreen";
+import BirthdateSetupScreen from "./BirthdateSetupScreen";
+import ParentConsentConfirmScreen from "./ParentConsentConfirmScreen";
 import KickedOutScreen from "./KickedOutScreen";
 import AuthErrorScreen from "./AuthErrorScreen";
 import CompanyScreen from "./CompanyScreen";
@@ -20,7 +22,7 @@ import { AuthProvider, useAuth } from "./lib/AuthContext";
 const WARTUNGSMODUS=true;
 
 function AppShell(){
-  const {recoveryMode,needsPasswordSetup,kickedOut,dismissKickedOut,authError,dismissAuthError,user,loading}=useAuth();
+  const {recoveryMode,needsPasswordSetup,needsBirthdateSetup,pendingParentConsent,kickedOut,dismissKickedOut,authError,dismissAuthError,user,loading}=useAuth();
   // "company" | "app" | "pruefung" | "impressum" | "datenschutz" | "leistungen" | "agb"
   // ?mode=login/register kommt vom "Anmelden / Registrieren"-Button auf der
   // Unternehmensseite selbst (CompanyScreen.jsx) sowie von Einladungslinks —
@@ -55,6 +57,11 @@ function AppShell(){
     return raw&&raw.startsWith(SUPABASE_VERIFY_PREFIX)?raw:null;
   })():null;
 
+  // Bestaetigungslink aus der parent-consent-Mail (siehe
+  // BirthdateSetupScreen.jsx) -- oeffentlich, unabhaengig vom Login-Zustand
+  // der erziehungsberechtigten Person, daher ebenfalls ganz oben geprueft.
+  const parentConsentToken=params.get("mode")==="parent-consent"?params.get("token"):null;
+
   // Einmalige Entscheidung, sobald die Sitzung geladen ist: bestehende
   // Konten landen wie gewohnt direkt im Lerntool, neue/anonyme Besucher
   // sehen zuerst die Unternehmenspräsentation. Danach volle manuelle
@@ -71,17 +78,23 @@ function AppShell(){
   useEffect(()=>{window.scrollTo(0,0);},[page]);
 
   if(einladungLink)return <EinladungScreen link={einladungLink}/>;
+  if(parentConsentToken)return <ParentConsentConfirmScreen token={parentConsentToken}/>;
   if(authError)return <AuthErrorScreen authError={authError} onDismiss={()=>{dismissAuthError();setPage("company");}}/>;
   if(recoveryMode)return <ResetPasswordScreen/>;
   if(loading)return null;
   if(kickedOut)return <KickedOutScreen onDismiss={()=>{dismissKickedOut();setPage("company");}}/>;
   if(user&&needsPasswordSetup)return <PasswordSetupScreen/>;
+  if(user&&(needsBirthdateSetup||pendingParentConsent))return <BirthdateSetupScreen/>;
   // Vercel liefert dank vercel.json-Rewrite für jeden unbekannten Pfad diese
   // SPA aus, statt selbst ein 404 zu werfen — die App entscheidet also hier,
   // ob der aufgerufene Pfad überhaupt bekannt ist (die App kennt sonst nur "/",
   // da es keinen Router gibt und alle Screens über view/page-State laufen).
   if(window.location.pathname!=="/")return <NotFoundScreen/>;
-  if(page==="company")return WARTUNGSMODUS?<WartungScreen onOpenLegal={setPage}/>:<CompanyScreen onEnterApp={()=>setPage("app")} onOpenLegal={setPage}/>;
+  // WARTUNGSMODUS soll nur anonyme Besucher betreffen -- ein bereits
+  // angemeldeter Nutzer, der z. B. "Über IT-Dart" aus der App heraus
+  // anklickt, muss die echte CompanyScreen sehen, nicht die Baustellenseite
+  // mit ihrem eigenen (fälschlich wirkenden) "Hier anmelden"-Link.
+  if(page==="company")return (WARTUNGSMODUS&&!user)?<WartungScreen onOpenLegal={setPage}/>:<CompanyScreen onEnterApp={()=>setPage("app")} onOpenLegal={setPage}/>;
   const backHome=()=>setPage(user?"app":"company");
   if(page==="impressum")return <Impressum onClose={backHome}/>;
   if(page==="datenschutz")return <Datenschutz onClose={backHome}/>;

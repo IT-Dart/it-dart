@@ -179,3 +179,36 @@ test("Magic-Link/Einladung: roher Link führt zur Passwort-Setzen-Seite und dana
   await setNewPasswordAndExpectSuccess(page, "EingeladenE2E-Passwort3!");
   await expect(page.getByRole("button", { name: /Lernpfad starten/ })).toBeVisible({ timeout: 15_000 });
 });
+
+// Regressionstest für einen real vom Nutzer gemeldeten Bug (2026-08-04): ein
+// bereits angemeldeter Nutzer, der auf dem Cover-Screen "Über IT-Dart"
+// anklickt (onOpenLegal("company") -> App.jsx), landete wegen WARTUNGSMODUS
+// auf WartungScreen.jsx statt der echten CompanyScreen -- inklusive deren
+// eigenem "Hier anmelden"-Link. Ein zweiter, erfolgreicher Login-Versuch
+// dort hätte per Single-Session-Enforcement (claim-session) die eigene,
+// noch aktive Sitzung hinausgeworfen (App.jsx zeigte WartungScreen
+// unabhängig vom Login-Status; ITDart.jsx zeigte view "auth" rein aus dem
+// URL-Parameter, ebenfalls unabhängig vom Login-Status). Fix: beide Stellen
+// prüfen jetzt zusätzlich !user.
+test('Angemeldeter Nutzer bleibt nach Klick auf "Über IT-Dart" eingeloggt', async ({ page }) => {
+  test.setTimeout(30_000);
+  const { data, error } = await admin.auth.admin.generateLink({
+    type: "invite",
+    email: `e2e-ueberitdart-${Date.now()}@sandbox.it-dart.de`,
+    options: { redirectTo: REDIRECT_TO },
+  });
+  if (error) throw new Error(`generateLink(invite) fehlgeschlagen: ${error.message}`);
+  await page.goto(data.properties.action_link);
+  await setNewPasswordAndExpectSuccess(page, "UeberItDartE2E-Passwort4!");
+  await expect(page.getByRole("button", { name: /Lernpfad starten/ })).toBeVisible({ timeout: 15_000 });
+
+  await page.getByRole("button", { name: "Über IT-Dart" }).click();
+  // Muss die echte CompanyScreen zeigen, NICHT WartungScreen.
+  await expect(page.getByRole("heading", { name: "Vision" })).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText("Wir sind gerade im Aufbau.")).toHaveCount(0);
+
+  // Zurück in die App -- muss weiterhin angemeldet sein, nicht erneut das
+  // Login-Formular sehen.
+  await page.getByRole("button", { name: /Zum Lerntool/ }).click();
+  await expect(page.getByRole("button", { name: /Lernpfad starten/ })).toBeVisible({ timeout: 10_000 });
+});
