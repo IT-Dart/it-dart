@@ -51,12 +51,19 @@ async function setNewPasswordAndExpectSuccess(page, newPassword) {
   await expect(page.getByRole("heading", { name: "Neues Passwort setzen" })).toBeVisible({ timeout: 15_000 });
   await page.getByPlaceholder("Neues Passwort").fill(newPassword);
   await page.getByPlaceholder("Passwort bestätigen").fill(newPassword);
+  // "Passwort geändert" ist nur ca. 1200ms sichtbar, bevor
+  // ResetPasswordScreen.jsx automatisch neu lädt -- zu flüchtig für eine
+  // zuverlässige toBeVisible()-Prüfung (auch mit langem Timeout: das
+  // Fenster selbst ist kurz, nicht die Wartezeit). Echt reproduziert am
+  // 2026-08-04: der Nutzer war beide Male nachweislich schon erfolgreich
+  // eingeloggt ("Angemeldet als ..." im Accessibility-Snapshot), obwohl
+  // Playwright den Zwischenschritt verpasste. Robusteres Vorgehen: direkt
+  // auf den Reload warten (waitForEvent muss VOR dem Klick lauschen, sonst
+  // ist ein sehr schneller Reload schon vorbei) und den Erfolg über den
+  // Aufrufer-seitigen "Lernpfad starten"-Check danach verifizieren.
+  const reload = page.waitForEvent("load");
   await page.getByRole("button", { name: "Passwort ändern →" }).click();
-  // Gleiches großzügiges Timeout wie oben -- updateUser() braucht einen
-  // echten Netzwerk-Roundtrip, der Standard-Timeout (5s) war hier zu knapp.
-  await expect(page.getByRole("heading", { name: "Passwort geändert" })).toBeVisible({ timeout: 15_000 });
-  // ResetPasswordScreen.jsx lädt 1200ms nach Erfolg automatisch neu.
-  await page.waitForTimeout(1_800);
+  await reload;
 }
 
 test("Registrierung: Formular zeigt korrekt die deaktivierten Signups + Bestätigungslink funktioniert trotzdem", async ({ page }) => {
