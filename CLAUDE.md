@@ -125,3 +125,32 @@ Details: [[feedback_multi_agent_coordination_protocol]] und [[project_content_pr
 
 - Support-Kontakt: `kontakt@it-dart.de`
 - `dokumentation/` enthält nummerierte Word/PDF-Geschäftsdokumente (01 Lastenheft, 05 Sicherheitskonzept, 09 Datenschutz, 13 SQL-Notfallreferenz, 30 Notfall-Gesamtwiederherstellungsplan, ...) — bei sicherheits- oder rollenrelevanten Features dort ggf. mit aktualisieren, gleiche Nummerierung fortführen.
+
+## Sicherheits- & Datenschutzrichtlinien (Supabase & DSGVO)
+
+1. Supabase Authentifizierung & Rechte:
+- Rollenquelle: Rechteprüfungen dürfen NIEMALS über `user_metadata` erfolgen. Rollen stammen ausschließlich aus `app_metadata` oder serverseitigen Tabellen.
+- Service Role Key: Der `SUPABASE_SERVICE_ROLE_KEY` ist 100% serverseitig. Er darf niemals in Client-Komponenten, Browser-Bundles, Frontend-Logs oder öffentlichen `.env`-Dateien auftauchen.
+- Client-Zugriffe: Frontend-Code nutzt ausschließlich den `anon`-Key in Kombination mit aktiver Row Level Security (RLS).
+- RLS-Pflicht: Jede Datenbanktabelle MUSS RLS aktiviert haben, bevor ein Feature als fertig gilt.
+- Privilegierte Aktionen: Kritische Operationen laufen ausnahmslos über serverseitige Routen oder Edge Functions.
+
+2. Datenschutz & Data Masking:
+- Standard-Maskierung: E-Mail-Adressen und sensible Nutzerdaten werden in Standard-Ansichten anonymisiert dargestellt.
+- On-Demand-Freigabe: Das Aufdecken von Klartext-E-Mails erfolgt ausschließlich über die RPC-Funktion `reveal_user_email` inklusive automatischem Eintrag in `audit_logs`.
+
+3. Test- & Entwicklungsregeln:
+- Negativ-Tests: Jedes Auth-Feature benötigt Tests, die nachweisen, dass normale User keine Admin-Rechte haben und `user_metadata`-Updates für Rechte wirkungslos bleiben.
+- Geheimhaltung: .env-Dateien und Keys niemals lesen/ausgeben. Lokal nur mit Supabase-CLI (`supabase start`) und Testdaten (`seed.sql`) arbeiten.
+
+**Abgleich mit dem tatsächlichen Ist-Zustand dieses Projekts (2026-08-04, verifiziert per Grep gegen `supabase/migrations/` und `.github/`, nicht aus dem Gedächtnis übernommen):**
+- Abschnitt 1 entspricht bereits der gelebten Praxis: Rollen (`is_admin`, `is_trainer`, `is_junior_admin`) liegen ausschließlich in `profiles` (serverseitige Tabelle), nicht in `user_metadata`/`app_metadata`; RLS ist überall aktiv; Service-Role-Key nur in Edge Functions — siehe „Sicherheitsprinzipien" oben.
+- Abschnitt 2 beschreibt **noch nicht Gebautes**: Es gibt aktuell weder eine Standard-Maskierung von E-Mail-Adressen (AdminScreen.jsx/TrainerScreen.jsx zeigen sie im Klartext) noch eine Funktion `reveal_user_email` noch eine Tabelle `audit_logs` — beide Namen existieren nirgends im Projekt. Vorhandenes Äquivalent fürs Sicherheits-Audit-Logging ist `session_audit_log` (Migration `20260730000000_session_recovery_and_ip_audit.sql`), aber ohne Masking-Mechanismus davor. Vor einer Umsetzung dieses Abschnitts: mit dem Nutzer klären, ob das ein neues Feature werden soll, und dabei denselben Namenskonventions-Fehler vermeiden wie beim „Datenmodell"-Abschnitt oben (erfundene Namen aus einem Entwurf, die nie umgesetzt wurden).
+- Abschnitt 3, erster Punkt (Negativ-Tests) passt zur bestehenden E2E-Kultur (`e2e/specs/roleA-E`), ist aber ein schärferes Muss als aktuell durchgängig existiert. Zweiter Punkt weicht vom real etablierten Workflow ab: Es gibt kein `seed.sql` und keine lokale `supabase start`-Nutzung — E2E-Tests laufen gegen einen echten, nach jedem Lauf gelöschten Supabase-Branch (`.github/workflows/e2e-tests.yml` + `e2e/scripts/seed-e2e-users.js`), nicht lokal. Das „Keys niemals lesen/ausgeben"-Prinzip selbst gilt bereits (siehe `feedback_secrets_never_in_chat` im Claude-Gedächtnis).
+
+4. Verifikation, Protokollierung & Bestandsschutz (2026-08-04, nach Abgleich mit ChatGPT-Vorschlägen ergänzt):
+- Logging-Hygiene: Tokens, JWTs, Session-IDs, API-Keys, Passwörter oder personenbezogene Daten dürfen niemals in Server-Logs, Console-Ausgaben oder Error-Reports erscheinen.
+- SQL-Sicherheit in `SECURITY DEFINER`-/PL/pgSQL-Funktionen: keine dynamisch zusammengesetzten SQL-Strings — ausschließlich parametrisierte Statements. Der normale Supabase-Client (`.eq()`, `.select()` etc.) erzwingt das bereits durch seine API; relevant wird der Punkt konkret bei selbst geschriebenen `plpgsql`-Funktionen.
+- **Echter, aktuell bestehender Lückenbefund (kein Zielbild, keine bereits gelöste Sache):** Es gibt kein Protokoll darüber, wer wann Admin-/Premium-/Trainer-Status vergeben oder entzogen bzw. ein Konto gelöscht hat — `session_audit_log` deckt ausschließlich IP-/Sitzungs-Claims ab, keine Rechte-Änderungen. Bei der nächsten nennenswerten Erweiterung des Admin-Bereichs mitdenken, nicht stillschweigend als bereits gelöst behandeln.
+- Verifikation sicherheitskritischer Änderungen: Änderungen an Authentifizierung, Autorisierung, RLS, `SECURITY DEFINER`-Funktionen, Zahlungslogik oder Datenschutz gelten erst als abgeschlossen, nachdem sie unabhängig verifiziert wurden — z. B. echte Testabfrage gegen die Datenbank, ein realer E2E-Lauf gegen einen Sandbox-Branch, oder eine gezielte Sicherheitsprüfung. Die eigene Zusicherung, der Code sei korrekt, reicht dafür nicht (siehe Produktionsfehler 2026-08-04: Migration referenziert, aber nicht angewendet — erst der echte DB-Query-Test deckte es auf).
+- Kein stilles Abschwächen bestehender Sicherheitsmechanismen: RLS-Policies, `SECURITY DEFINER`-Berechtigungsprüfungen, der PROTECTED_UID-Schutz, Consent-Gates (`needs_password_setup`, `AgbConsentScreen.jsx`), CORS-Whitelisting oder Rate-Limits (`CHAT_MAX_QUESTIONS`) dürfen zur Fehlerbehebung oder Feature-Umsetzung niemals abgeschwächt oder entfernt werden, ohne das ausdrücklich mit dem Nutzer zu besprechen und hier zu dokumentieren.
