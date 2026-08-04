@@ -30,7 +30,6 @@ const inviteFromUrl = typeof window !== "undefined" && window.location.hash.incl
 // 2026-08-04). Deshalb wie bei invite synchron aus dem Hash lesen, nicht auf
 // das Event warten.
 const recoveryFromUrl = typeof window !== "undefined" && window.location.hash.includes("type=recovery");
-if (typeof window !== "undefined") console.log("[DEBUG108] module eval, hash:", window.location.hash.slice(0, 60), "recoveryFromUrl:", recoveryFromUrl, "inviteFromUrl:", inviteFromUrl);
 
 // Ein abgelaufener oder bereits verwendeter Magic-Link (z.B. nach der
 // Einladungs-Zwischenseite in EinladungScreen.jsx) schickt Supabase
@@ -51,12 +50,10 @@ export function AuthProvider({ children }) {
   const [recoveryMode, setRecoveryMode] = useState(inviteFromUrl || recoveryFromUrl);
   const [kickedOut, setKickedOut] = useState(false);
   const [authError, setAuthError] = useState(authErrorFromUrl);
-  console.log("[DEBUG108] render, recoveryMode:", recoveryMode, "session:", session === undefined ? "undefined" : session?.user?.email ?? "null", "at:", performance.now());
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => { console.log("[DEBUG108] getSession resolved:", data.session?.user?.email, "at:", performance.now()); setSession(data.session); });
+    supabase.auth.getSession().then(({ data }) => setSession(data.session));
     const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
-      console.log("[DEBUG108] onAuthStateChange event:", event, "user:", s?.user?.email, "at:", performance.now());
       if (event === "PASSWORD_RECOVERY") setRecoveryMode(true);
       setSession(s);
     });
@@ -103,14 +100,12 @@ export function AuthProvider({ children }) {
     // ("Auth session missing!" beim updateUser()-Aufruf, To-Do #108). Sobald
     // updatePassword() recoveryMode auf false setzt, läuft dieser Effect
     // ganz normal für die jetzt echte Sitzung an.
-    console.log("[DEBUG108] heartbeat-effect eval, user:", user?.email, "recoveryMode:", recoveryMode, "willSkip:", !user || recoveryMode, "at:", performance.now());
     if (!user || recoveryMode) return;
     let sid = localStorage.getItem(SESSION_ID_KEY);
     let stopped = false;
     let intervalId = null;
 
     const kickOut = () => {
-      console.log("[DEBUG108] kickOut, mySid:", sid, "at:", performance.now());
       if (stopped) return;
       stopped = true;
       localStorage.removeItem(SESSION_ID_KEY);
@@ -144,7 +139,6 @@ export function AuthProvider({ children }) {
         { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${user.id}` },
         (payload) => {
           const newActive = payload.new?.active_session_id;
-          console.log("[DEBUG108] postgres_changes UPDATE, newActive:", newActive, "mySid:", sid, "at:", performance.now());
           if (newActive && newActive !== sid) kickOut();
         }
       )

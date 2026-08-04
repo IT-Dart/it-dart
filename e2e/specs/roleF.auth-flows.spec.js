@@ -99,7 +99,6 @@ test("Registrierung: Formular zeigt korrekt die deaktivierten Signups + Bestäti
 // testet den Fix (Kickout-Effect pausiert während recoveryMode).
 test("Passwort-Reset: Formular live + Reset-Link setzt ein neues, dauerhaft gültiges Passwort", async ({ page }) => {
   test.setTimeout(30_000);
-  page.on("console", (msg) => { if (msg.text().includes("[DEBUG108]")) console.log(msg.text()); });
   const email = process.env.E2E_TEST_RESETTARGET_EMAIL;
   if (!email) throw new Error("E2E_TEST_RESETTARGET_EMAIL fehlt -- seed-e2e-users.js prüfen.");
 
@@ -138,7 +137,15 @@ test("Passwort-Reset: Formular live + Reset-Link setzt ein neues, dauerhaft gül
   // Teil 3: zusätzliche Sicherheit, dass das neue Passwort wirklich
   // dauerhaft (nicht nur für die laufende Sitzung) gilt -- abmelden und mit
   // dem neuen Passwort frisch einloggen.
+  // Der Klick löst signOut() nur asynchron aus (Playwright wartet nicht auf
+  // dessen Abschluss) -- ohne diese Bestätigung navigiert page.goto() manchmal
+  // los, BEVOR AuthContext.jsx die Sitzung wirklich aus localStorage entfernt
+  // hat. Die neu geladene Seite würde dann die noch nicht gelöschte ALTE
+  // Sitzung wiederherstellen, die kurz darauf mit der frischen Neuanmeldung
+  // um dieselbe Konto-Sitzung kollidiert (reproduziert 2026-08-04: die neue
+  // Anmeldung kickte sich dadurch selbst wieder raus).
   await page.getByRole("button", { name: "Abmelden" }).click();
+  await expect(page.getByRole("heading", { name: "Wir sind gerade im Aufbau." })).toBeVisible({ timeout: 10_000 });
   await page.goto("/?mode=login");
   await page.getByPlaceholder("E-Mail").fill(email);
   await page.getByPlaceholder("Passwort", { exact: true }).fill(newPassword);
