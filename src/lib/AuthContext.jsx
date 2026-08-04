@@ -1,6 +1,22 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "./supabaseClient";
 import { authFetch } from "./authFetch";
+import { MINOR_CONSENT_ENABLED } from "./featureFlags";
+
+// Art. 8 DSGVO: in Deutschland gilt regelmaessig die Altersgrenze 16 Jahre
+// fuer eine wirksame Einwilligung eines Minderjaehrigen selbst -- muss mit
+// derselben Grenze in der parent-consent Edge Function uebereinstimmen.
+const MIN_CONSENT_AGE = 16;
+function ageFromBirthdate(birthdate) {
+  const b = new Date(birthdate + "T00:00:00Z");
+  const now = new Date();
+  let age = now.getUTCFullYear() - b.getUTCFullYear();
+  const hadBirthdayThisYear =
+    now.getUTCMonth() > b.getUTCMonth() ||
+    (now.getUTCMonth() === b.getUTCMonth() && now.getUTCDate() >= b.getUTCDate());
+  if (!hadBirthdayThisYear) age--;
+  return age;
+}
 
 const AuthContext = createContext(null);
 
@@ -66,11 +82,11 @@ export function AuthProvider({ children }) {
     let cancelled = false;
 
     const fetchProfile = () => {
-      supabase.from("profiles").select("is_premium, premium_until, is_admin, is_trainer, is_junior_admin, email, needs_password_setup").eq("id", user.id).single()
+      supabase.from("profiles").select("is_premium, premium_until, is_admin, is_trainer, is_junior_admin, email, needs_password_setup, birthdate, parent_consent_confirmed").eq("id", user.id).single()
         .then(({ data, error }) => {
           if (cancelled) return;
           if (error) console.error("Profil konnte nicht geladen werden:", error.message);
-          setProfile(data ?? { is_premium: false, premium_until: null, is_admin: false, is_trainer: false, is_junior_admin: false, needs_password_setup: false });
+          setProfile(data ?? { is_premium: false, premium_until: null, is_admin: false, is_trainer: false, is_junior_admin: false, needs_password_setup: false, birthdate: null, parent_consent_confirmed: false });
         });
     };
 
@@ -177,6 +193,8 @@ export function AuthProvider({ children }) {
     isTrainer: !!profile?.is_trainer,
     isJuniorAdmin: !!profile?.is_junior_admin,
     needsPasswordSetup: !!profile?.needs_password_setup,
+    needsBirthdateSetup: MINOR_CONSENT_ENABLED && !!profile && !profile.birthdate,
+    pendingParentConsent: MINOR_CONSENT_ENABLED && !!profile?.birthdate && ageFromBirthdate(profile.birthdate) < MIN_CONSENT_AGE && !profile.parent_consent_confirmed,
     recoveryMode,
     kickedOut,
     dismissKickedOut: () => setKickedOut(false),

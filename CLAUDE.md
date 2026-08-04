@@ -76,7 +76,9 @@ Nach jeder Änderung an diesen drei Bereichen den Nutzer explizit auf die fälli
 
 ## Datenmodell — `profiles` (relevante Spalten)
 
-`id, email, is_admin, is_junior_admin, is_trainer, trainee_limit, is_premium, premium_until, ai_enabled, confirmed_at, created_at`
+`id, email, is_admin, is_junior_admin, is_trainer, trainee_limit, is_premium, premium_until, ai_enabled, confirmed_at, created_at, needs_password_setup, birthdate, parent_email, parent_consent_confirmed, parent_consent_token`
+
+Die letzten vier Spalten (`birthdate`, `parent_email`, `parent_consent_confirmed`, `parent_consent_token`) gehören zur noch inaktiven Altersabfrage/Eltern-Bestätigung — siehe `src/lib/featureFlags.js` (`MINOR_CONSENT_ENABLED`) und [[project_minor_consent_flow]].
 
 Kein `premium_tier`-Enum, kein `trainer_quota`, kein `ai_access_enabled` — diese Namen tauchten in einem Entwurf auf, sind aber falsch. Bei SQL-Referenzen/Migrationen immer gegen `supabase/migrations/*.sql` verifizieren statt aus dem Gedächtnis zu raten.
 
