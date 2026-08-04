@@ -208,7 +208,8 @@ test('Angemeldeter Nutzer bleibt nach Klick auf "Über IT-Dart" eingeloggt', asy
   await expect(page.getByText("Wir sind gerade im Aufbau.")).toHaveCount(0);
 
   // Zurück in die App -- muss weiterhin angemeldet sein, nicht erneut das
-  // Login-Formular sehen.
-  await page.getByRole("button", { name: /Zum Lerntool/ }).click();
+  // Login-Formular sehen. CompanyScreen.jsx rendert den Button zweimal
+  // (oben + unten), daher .first().
+  await page.getByRole("button", { name: /Zum Lerntool/ }).first().click();
   await expect(page.getByRole("button", { name: /Lernpfad starten/ })).toBeVisible({ timeout: 10_000 });
 });
