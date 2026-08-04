@@ -97,6 +97,8 @@ test("Statistik zeigt echten Modulfortschritt", async ({ page }) => {
   await loginAs(page, "trainee");
   await page.getByRole("button", { name: /Statistik/ }).click();
   await expect(page.getByText("Modulfortschritt")).toBeVisible();
-  // Aus dem vorherigen Test in dieser Datei bereits abgeschlossen.
-  await expect(page.getByText("Grundlagen IT", { exact: false })).toBeVisible();
+  // Aus dem vorherigen Test in dieser Datei bereits abgeschlossen. .first()
+  // noetig -- "Grundlagen IT" matcht zwei Elemente auf StatistikScreen.jsx
+  // (Emoji-Badge-Span und der eigentliche Modulname-Span daneben).
+  await expect(page.getByText("Grundlagen IT", { exact: false }).first()).toBeVisible();
 });

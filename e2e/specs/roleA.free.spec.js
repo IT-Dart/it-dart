@@ -136,7 +136,11 @@ test("KI-Chat: eigene Frage ruft echt die ai-chat Edge Function auf", async ({ p
   // AIChat.jsx: "ai?setA(ai):ask(qi)") -- das ist bewusst so, um Live-API-
   // Aufrufe bei jedem Fragen-Klick zu vermeiden. Um den echten Pfad zu
   // testen, muss also eine eigene, frei getippte Frage gestellt werden.
-  test.setTimeout(60_000);
+  // 60s war im ersten echten Lauf zu knapp (Modulnavigation + echter
+  // API-Roundtrip zusammen liefen ins globale Test-Timeout, nicht in eine
+  // einzelne Assertion) -- mehr Luft, analog zu den anderen Tests mit
+  // echten KI-Aufrufen in roleB.trainee.spec.js.
+  test.setTimeout(90_000);
   await loginAs(page, "free");
   await page.getByRole("button", { name: /Grundlagen IT/ }).click();
   await page.getByRole("button", { name: /Lernpfad starten/ }).click();
@@ -145,7 +149,7 @@ test("KI-Chat: eigene Frage ruft echt die ai-chat Edge Function auf", async ({ p
   await expect(page.getByText("Wird geladen...")).toBeVisible();
   // Echter API-Aufruf statt Musterantwort -- deutlich mehr Luft als beim
   // AIThinking-Rendering, bis eine tatsächliche Antwort zurückkommt.
-  await expect(page.getByText("Wird geladen...")).toHaveCount(0, { timeout: 30_000 });
+  await expect(page.getByText("Wird geladen...")).toHaveCount(0, { timeout: 60_000 });
 });
 
 // MUSS der letzte Test in dieser Datei bleiben (Playwright führt Tests einer
