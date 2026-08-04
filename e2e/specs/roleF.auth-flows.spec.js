@@ -52,7 +52,9 @@ async function setNewPasswordAndExpectSuccess(page, newPassword) {
   await page.getByPlaceholder("Neues Passwort").fill(newPassword);
   await page.getByPlaceholder("Passwort bestätigen").fill(newPassword);
   await page.getByRole("button", { name: "Passwort ändern →" }).click();
-  await expect(page.getByRole("heading", { name: "Passwort geändert" })).toBeVisible();
+  // Gleiches großzügiges Timeout wie oben -- updateUser() braucht einen
+  // echten Netzwerk-Roundtrip, der Standard-Timeout (5s) war hier zu knapp.
+  await expect(page.getByRole("heading", { name: "Passwort geändert" })).toBeVisible({ timeout: 15_000 });
   // ResetPasswordScreen.jsx lädt 1200ms nach Erfolg automatisch neu.
   await page.waitForTimeout(1_800);
 }
