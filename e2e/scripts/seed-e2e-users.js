@@ -57,8 +57,14 @@ async function createTestUser(localPart, profileUpdates = null) {
 }
 
 const free = await createTestUser("free");
-const trainer = await createTestUser("trainer", { is_trainer: true });
-const trainee = await createTestUser("trainee");
+// trainee_limit:2 statt des Standards 5 -- die Kontingent-Tests in
+// roleC.trainer.spec.js brauchen dafuer nur eine einzige echte Einladung
+// (der Trainee unten zaehlt schon als 1/2), nicht vier.
+const trainer = await createTestUser("trainer", { is_trainer: true, trainee_limit: 2 });
+// is_premium:true -- roleB.trainee.spec.js testet damit auch Pfade, die ohne
+// Premium gar nicht erreichbar sind (BW-Modul, Netzwerktechnik-Thema 7,
+// echter Lernnachweis-PDF-Download).
+const trainee = await createTestUser("trainee", { is_premium: true });
 const juniorAdmin = await createTestUser("junioradmin", { is_junior_admin: true });
 
 // roleD.junior-admin.spec.js prueft die zentrale Sicherheitsgrenze des

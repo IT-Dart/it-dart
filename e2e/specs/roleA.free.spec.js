@@ -5,6 +5,19 @@ import { loginAs } from "./helpers.js";
 // Checkliste dieser Session (Freemium-Modulgrenzen, Premium-Gate beim
 // Lernnachweis-Download) in wiederholbare Prüfungen.
 
+test("Onboarding-Feedback-Fragebogen erscheint und lässt sich absenden", async ({ page }) => {
+  // FeedbackUmfrage (src/FeedbackUmfrage.jsx) rendert nur, solange
+  // localStorage "it_dart_onboarding_feedback_done" nicht gesetzt ist --
+  // bei jedem neuen Playwright-Browser-Kontext (also bei jedem Test) leer,
+  // erscheint also garantiert. Bisher lief sie in jedem bestehenden Test
+  // unbemerkt mit, ohne je selbst geprüft zu werden.
+  await loginAs(page, "free");
+  await expect(page.getByText("Was erwartest du von dieser Plattform?")).toBeVisible();
+  await page.getByPlaceholder("Kurz in eigenen Worten...").fill("E2E-Testeintrag");
+  await page.getByRole("button", { name: "Absenden" }).click();
+  await expect(page.getByText("Was erwartest du von dieser Plattform?")).toHaveCount(0);
+});
+
 test("Free-Konto zeigt korrekten Status und Freemium-Grenzen", async ({ page }) => {
   await loginAs(page, "free");
   await expect(page.getByText("Free", { exact: false })).toBeVisible();
@@ -115,4 +128,35 @@ test("Modul O: OSI-Übersicht auf der Intro-Seite + Freemium-Sperre nach 2 Theme
   await page.getByRole("button", { name: /Weiter →/ }).click();
   await expect(page.getByText("Ab hier geht's mit Premium weiter")).toBeVisible();
   await expect(page.getByRole("button", { name: /Weiter →/ })).toHaveCount(0);
+});
+
+test("KI-Chat: eigene Frage ruft echt die ai-chat Edge Function auf", async ({ page }) => {
+  // Ein Klick auf eine der beiden Musterfragen (q1/q2) ruft NICHT die echte
+  // API auf, falls eine fixierte Musterantwort (a1/a2) hinterlegt ist (siehe
+  // AIChat.jsx: "ai?setA(ai):ask(qi)") -- das ist bewusst so, um Live-API-
+  // Aufrufe bei jedem Fragen-Klick zu vermeiden. Um den echten Pfad zu
+  // testen, muss also eine eigene, frei getippte Frage gestellt werden.
+  test.setTimeout(60_000);
+  await loginAs(page, "free");
+  await page.getByRole("button", { name: /Grundlagen IT/ }).click();
+  await page.getByRole("button", { name: /Lernpfad starten/ }).click();
+  await page.getByPlaceholder("Eigene Frage...").fill("Was macht die CPU in einem Computer?");
+  await page.getByPlaceholder("Eigene Frage...").press("Enter");
+  await expect(page.getByText("Wird geladen...")).toBeVisible();
+  // Echter API-Aufruf statt Musterantwort -- deutlich mehr Luft als beim
+  // AIThinking-Rendering, bis eine tatsächliche Antwort zurückkommt.
+  await expect(page.getByText("Wird geladen...")).toHaveCount(0, { timeout: 30_000 });
+});
+
+// MUSS der letzte Test in dieser Datei bleiben (Playwright führt Tests einer
+// Datei standardmäßig sequenziell in Deklarationsreihenfolge aus) -- löscht
+// das "free"-Testkonto endgültig, jeder Test danach würde sich nicht mehr
+// einloggen können. Auf dem wegwerfbaren E2E-Branch ist das gefahrlos: der
+// gesamte Branch wird nach dem Lauf ohnehin verworfen.
+test("Konto endgültig löschen (DeleteAccountScreen)", async ({ page }) => {
+  await loginAs(page, "free");
+  await page.getByRole("button", { name: "Konto löschen" }).click();
+  await page.getByPlaceholder("LÖSCHEN").fill("LÖSCHEN");
+  await page.getByRole("button", { name: "Konto endgültig löschen" }).click();
+  await expect(page.getByRole("heading", { name: "Konto gelöscht" })).toBeVisible({ timeout: 15_000 });
 });
