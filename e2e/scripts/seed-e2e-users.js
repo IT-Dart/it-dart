@@ -23,12 +23,17 @@ const randomPassword = () => crypto.randomBytes(18).toString("base64url");
 // Connection-Pooler) bootet daneben offenbar noch nach und ist kurz danach
 // noch nicht vollstaendig konsistent. Real durchlaufene Fehlerbilder direkt
 // nacheinander: "Could not find the table 'public.profiles'", dann "Could
-// not find the 'is_trainer' column", dann eine Fremdschluessel-Verletzung
-// bei einem Insert auf eine gerade erst erstellte Zeile (vermutlich
-// Pooler-Verzoegerung, kein Schema-Cache-Fehlerbild im engeren Sinn). Daher
-// hier bewusst NICHT auf eine bestimmte Fehlermeldung filtern, sondern jeden
-// .from()-Aufruf in dieser fruehen Bootstrap-Phase pauschal wiederholen.
-async function withStartupRetry(label, fn, maxAttempts = 8, delayMs = 3000) {
+// not find the 'is_trainer' column", dann "Could not find the
+// 'username_welcome_seen' column" (2026-08-04, nach zwei zusaetzlichen
+// Migrationen mit mehreren neuen Spalten am selben Tag -- offenbar mehr
+// Schema-Flaeche zum Nachladen als die bisherigen 8*3s=24s abdeckten), dann
+// eine Fremdschluessel-Verletzung bei einem Insert auf eine gerade erst
+// erstellte Zeile (vermutlich Pooler-Verzoegerung, kein
+// Schema-Cache-Fehlerbild im engeren Sinn). Daher hier bewusst NICHT auf
+// eine bestimmte Fehlermeldung filtern, sondern jeden .from()-Aufruf in
+// dieser fruehen Bootstrap-Phase pauschal wiederholen -- Budget grosszuegig
+// bemessen (15*4s=60s), da das nur einmalig beim Branch-Boot kostet.
+async function withStartupRetry(label, fn, maxAttempts = 15, delayMs = 4000) {
   let lastResult;
   for (let i = 1; i <= maxAttempts; i++) {
     lastResult = await fn();
