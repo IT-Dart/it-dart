@@ -46,15 +46,16 @@ async function createTestUser(localPart, profileUpdates = null) {
   const { data, error } = await supabase.auth.admin.createUser({ email, password, email_confirm: true });
   if (error) throw new Error(`createUser(${localPart}) fehlgeschlagen: ${error.message}`);
   const userId = data.user.id;
-  // agb_consent_given=true immer mitsetzen (2026-08-04, Migration
-  // 20260804010000_agb_consent_gate.sql): ohne echtes agb_accepted-Metadatenfeld
-  // beim Anlegen bleibt die Spalte sonst auf dem Default false stehen, und
-  // loginAs() (helpers.js) würde bei jedem einzelnen Test zuerst auf
-  // AgbConsentScreen.jsx landen statt auf dem Cover-Screen -- das hier
-  // umgeht das zentral, statt jeden einzelnen Test einzeln anzupassen.
+  // agb_consent_given=true und username_welcome_seen=true immer mitsetzen
+  // (2026-08-04/05, Migrationen 20260804010000_agb_consent_gate.sql und
+  // 20260805010000_username_field.sql): ohne das bleiben beide Spalten auf
+  // ihrem Default false stehen, und loginAs() (helpers.js) würde bei jedem
+  // einzelnen Test zuerst auf AgbConsentScreen.jsx bzw. UsernameScreen.jsx
+  // landen statt auf dem Cover-Screen -- das hier umgeht das zentral, statt
+  // jeden einzelnen Test einzeln anzupassen.
   const { error: updErr } = await withStartupRetry(
     `profiles-Update(${localPart})`,
-    () => supabase.from("profiles").update({ agb_consent_given: true, ...profileUpdates }).eq("id", userId)
+    () => supabase.from("profiles").update({ agb_consent_given: true, username_welcome_seen: true, ...profileUpdates }).eq("id", userId)
   );
   if (updErr) throw new Error(`profiles-Update(${localPart}) fehlgeschlagen: ${updErr.message}`);
   return { email, password, userId };

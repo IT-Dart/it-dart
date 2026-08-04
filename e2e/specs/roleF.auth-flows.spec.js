@@ -76,6 +76,15 @@ async function acceptAgbConsentGate(page) {
   await page.getByRole("button", { name: "Bestätigen →" }).click();
 }
 
+// Neu (2026-08-05): dieselben Konten sehen direkt danach den
+// UsernameScreen.jsx-Willkommens-Screen (username_welcome_seen=false per
+// DB-Default, Migration 20260805010000_username_field.sql) -- generierten
+// Namen einfach uebernehmen, kein eigener Name noetig fuer den Test.
+async function acknowledgeUsernameWelcome(page) {
+  await expect(page.getByRole("heading", { name: "Dein Nutzername" })).toBeVisible({ timeout: 15_000 });
+  await page.getByRole("button", { name: "Diesen Namen übernehmen und weiter →" }).click();
+}
+
 test("Registrierung: Formular zeigt korrekt die deaktivierten Signups + Bestätigungslink funktioniert trotzdem", async ({ page }) => {
   test.setTimeout(30_000);
   const freshEmail = `e2e-liveregister-${Date.now()}@sandbox.it-dart.de`;
@@ -104,6 +113,7 @@ test("Registrierung: Formular zeigt korrekt die deaktivierten Signups + Bestäti
   if (error) throw new Error(`generateLink(signup) fehlgeschlagen: ${error.message}`);
   await page.goto(data.properties.action_link);
   await acceptAgbConsentGate(page);
+  await acknowledgeUsernameWelcome(page);
   await expect(page.getByRole("button", { name: /Lernpfad starten/ })).toBeVisible({ timeout: 15_000 });
 });
 
@@ -194,6 +204,7 @@ test("Magic-Link/Einladung: roher Link führt zur Passwort-Setzen-Seite und dana
   // Einwilligungs-Checkbox aus AuthScreen.jsx sehen -- siehe dokumentation/
   // 29_Anwalt_Pruefauftrag_Rechtstexte.docx, Abschnitt 6.
   await acceptAgbConsentGate(page);
+  await acknowledgeUsernameWelcome(page);
   await expect(page.getByRole("button", { name: /Lernpfad starten/ })).toBeVisible({ timeout: 15_000 });
 });
 
@@ -218,6 +229,7 @@ test('Angemeldeter Nutzer bleibt nach Klick auf "Über IT-Dart" eingeloggt', asy
   await page.goto(data.properties.action_link);
   await setNewPasswordAndExpectSuccess(page, "UeberItDartE2E-Passwort4!");
   await acceptAgbConsentGate(page);
+  await acknowledgeUsernameWelcome(page);
   await expect(page.getByRole("button", { name: /Lernpfad starten/ })).toBeVisible({ timeout: 15_000 });
 
   await page.getByRole("button", { name: "Über IT-Dart" }).click();
