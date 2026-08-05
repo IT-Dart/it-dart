@@ -150,14 +150,21 @@ function ParticleBackground(){
 }
 
 export default function CompanyScreen({onEnterApp,onOpenLegal}){
-  const {user,signOut}=useAuth();
+  const {user,signOutAndRedirect,signingOut}=useAuth();
   // Anonyme Besucher haben noch kein Konto zum Betreten der App — führt sie
   // stattdessen direkt zum Login (?mode=login, dasselbe Muster wie die
   // bestehende ?mode=register-Einladungslink-Logik in ITDart.jsx).
   const handleEnter=user?onEnterApp:()=>{window.location.href=canonicalUrl("/?mode=login");};
-  // Nach dem Abmelden direkt zurück zum Login-Screen navigieren, gleiches
-  // Muster wie handleEnter oben.
-  const handleSignOut=async()=>{await signOut();window.location.href=canonicalUrl("/?mode=login");};
+  // Abmelden + Weiterleitung: geteilte Logik aus AuthContext.jsx
+  // (signOutAndRedirect) statt einer eigenen Kopie -- war zuvor hier UND in
+  // ITDart.jsx unabhaengig voneinander implementiert, siehe dortiger
+  // Kommentar zum real beobachteten Aufblitz-Fehler beim Abmelden.
+  const handleSignOut=signOutAndRedirect;
+
+  // Waehrend des Abmeldens ganz oben abfangen -- siehe ITDart.jsx fuer die
+  // ausfuehrliche Begruendung (verhindert das kurze Aufblitzen der
+  // oeffentlichen Variante dieser Seite, bevor der Reload greift).
+  if(signingOut)return <div style={wrap}><div style={{...inner,textAlign:"center",paddingTop:80}}><p style={{fontSize:14,color:C.mu}}>Wird abgemeldet …</p></div></div>;
 
   return (
     <div style={wrap}><div style={{...inner,paddingTop:40,paddingBottom:40}}>

@@ -98,12 +98,12 @@ export default function ITDart({onOpenExam,onOpenLegal,wartungsmodus}){
   const [phase,setPhase]=useState("intro"); // intro|learn|quiz
   const [done,setDone]=useState({});
   const [visitedLocked,setVisitedLocked]=useState(()=>new Set()); // "modId-topicN" fuer Premium-Themen, die trotz Sperre angeklickt wurden
-  const {user,isPremium,premiumUntil,isAdmin,isTrainer,isJuniorAdmin,signOut}=useAuth();
+  const {user,isPremium,premiumUntil,isAdmin,isTrainer,isJuniorAdmin,signOutAndRedirect,signingOut}=useAuth();
   // Nach dem Abmelden direkt zurück zum Login-Screen navigieren (statt auf
   // einer entrechteten Ansicht derselben Seite zu landen, die im
   // Wartungsmodus dann die Baustellenseite zeigt) -- gleiches ?mode=login-
   // Muster wie der Login-Link auf WartungScreen.jsx.
-  const handleSignOut=async()=>{await signOut();hardNavigate(canonicalUrl("/?mode=login"));};
+  const handleSignOut=signOutAndRedirect;
   // Einmaliger Onboarding-Feedback-Fragebogen (To-Do #68) -- per localStorage
   // gemerkt, damit er nach dem ersten Ausfüllen/Überspringen nicht erneut nervt.
   const [showOnboardingFeedback,setShowOnboardingFeedback]=useState(()=>!localStorage.getItem("it_dart_onboarding_feedback_done"));
@@ -151,6 +151,14 @@ export default function ITDart({onOpenExam,onOpenLegal,wartungsmodus}){
     if(!canOpen(m)){setMod(m);changeView("locked");return;}
     setMod(m);setIdx(0);setPhase(doneFor(m.id).size>0?"learn":"intro");changeView("mod");
   };
+
+  // Waehrend des Abmeldens (siehe AuthContext.jsx signOutAndRedirect) ganz
+  // oben abfangen, noch vor jeder view-spezifischen Ansicht -- verhindert,
+  // dass diese Komponente im kurzen Fenster zwischen "user wird null" und
+  // dem anschliessenden harten Reload noch einmal in ihrer abgemeldeten
+  // Variante aufblitzt (real beobachteter Fehler: die "cover"-Ansicht
+  // zeigte kurz ihre oeffentliche Variante, bevor der Login-Screen lud).
+  if(signingOut)return <div style={wrap}><div style={{...inner,textAlign:"center",paddingTop:80}}><p style={{fontSize:14,color:C.mu}}>Wird abgemeldet …</p></div></div>;
 
   // Im Wartungsmodus soll "Zurück" auf dem Login-Screen wirklich zur
   // Wartungsseite zurückführen statt in die (sonst als Vorschau gedachte)

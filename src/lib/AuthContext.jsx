@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "./supabaseClient";
 import { authFetch } from "./authFetch";
 import { MINOR_CONSENT_ENABLED } from "./featureFlags";
+import { canonicalUrl } from "./nav";
 
 // Art. 8 DSGVO: in Deutschland gilt regelmaessig die Altersgrenze 16 Jahre
 // fuer eine wirksame Einwilligung eines Minderjaehrigen selbst -- muss mit
@@ -66,6 +67,17 @@ export function AuthProvider({ children }) {
   const [recoveryMode, setRecoveryMode] = useState(inviteFromUrl || recoveryFromUrl);
   const [kickedOut, setKickedOut] = useState(false);
   const [authError, setAuthError] = useState(authErrorFromUrl);
+  // Real beobachteter Fehler (2026-08-05): ITDart.jsx und CompanyScreen.jsx
+  // hatten je eine eigene, unabhaengige "Abmelden + zum Login weiterleiten"-
+  // Logik. await signOut() setzt `user` fast sofort auf null, wodurch die
+  // aktuell sichtbare Ansicht (z.B. die "cover"-Seite) fuer einen kurzen
+  // Moment ganz normal in ihrer abgemeldeten Variante neu zeichnet, BEVOR
+  // der anschliessende harte Reload tatsaechlich greift -- das war der
+  // sichtbare Blitz der Baustellen-/Cover-Ansicht beim Abmelden. signingOut
+  // erlaubt jedem Screen, waehrend dieses kurzen Fensters stattdessen einen
+  // neutralen Zwischenzustand zu zeigen, statt sich aus dem schon-null
+  // gewordenen user neu abzuleiten.
+  const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSession(data.session));
@@ -183,6 +195,21 @@ export function AuthProvider({ children }) {
 
   const hasTimedPremium = !!profile?.premium_until && new Date(profile.premium_until) > new Date();
 
+  // Eigenstaendige Funktion statt Inline-Definition im value-Objekt, damit
+  // signOutAndRedirect unten dieselbe Logik aufrufen kann, ohne sie zu
+  // duplizieren (frueherer Zustand: ITDart.jsx und CompanyScreen.jsx hatten
+  // je ihre eigene Kopie von "signOut + Reload zum Login").
+  const doSignOut = async () => {
+    const sid = localStorage.getItem(SESSION_ID_KEY);
+    if (sid) {
+      await supabase.rpc("release_session", { session_id: sid }).then(({ error }) => {
+        if (error) console.error("[AuthContext] release_session failed:", error.message);
+      });
+      localStorage.removeItem(SESSION_ID_KEY);
+    }
+    return supabase.auth.signOut();
+  };
+
   const value = {
     session,
     user: session?.user ?? null,
@@ -241,15 +268,17 @@ export function AuthProvider({ children }) {
       }
       return result;
     },
-    signOut: async () => {
-      const sid = localStorage.getItem(SESSION_ID_KEY);
-      if (sid) {
-        await supabase.rpc("release_session", { session_id: sid }).then(({ error }) => {
-          if (error) console.error("[AuthContext] release_session failed:", error.message);
-        });
-        localStorage.removeItem(SESSION_ID_KEY);
-      }
-      return supabase.auth.signOut();
+    signOut: doSignOut,
+    signingOut,
+    // Gemeinsame "Abmelden + zum Login weiterleiten"-Logik fuer alle Screens
+    // mit einem eigenen Abmelden-Button (ITDart.jsx, CompanyScreen.jsx) --
+    // ersetzt zwei zuvor unabhaengige, identische Kopien. setSigningOut(true)
+    // laeuft synchron VOR dem await, damit Screens den neutralen
+    // Zwischenzustand schon zeigen, bevor `user` auf null wechselt.
+    signOutAndRedirect: async () => {
+      setSigningOut(true);
+      await doSignOut();
+      window.location.href = canonicalUrl("/?mode=login");
     },
     resetPassword: (email) => supabase.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin }),
     updatePassword: async (password) => {
