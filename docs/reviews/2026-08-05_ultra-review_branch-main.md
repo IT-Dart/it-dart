@@ -4,6 +4,8 @@
 - **Geprüfter Umfang:** 21 geänderte Dateien, +2770/-25 Zeilen (kompletter aktueller Stand von `main` gegenüber dem letzten Review-Zeitpunkt)
 - **Ausgeführt von:** `/ultrareview` (kostenlose Nutzung 1 von 3)
 - **Hintergrund:** ausgelöst nach einer Nutzer-Rückfrage, ob eine Selbstprüfung (auch per Ersatz-Agent) dieselbe Qualität wie ein unabhängiger, mehrstufiger Cloud-Review liefert — die Antwort war "wahrscheinlich nicht", und der Ultra-Review hat das direkt bestätigt: er fand einen echten Fund, den weder ich noch der vorherige Ersatz-Security-Review bemerkt hatten.
+- **Tatsächlicher Prüf-Fokus (wichtig für die Einordnung):** `/ultrareview` lief als Bug-/Korrektheits-/Sicherheits-Review (interne Pipeline-Bezeichnung "bughunter", Funde als `bug_001`/`bug_003` geführt) — **kein** Duplikat-/Redundanz-/Vereinfachungs-Check. Dafür existiert die separate Skill `/simplify` ("Quality only — it does not hunt for bugs"), die in diesem Lauf nicht mit abgedeckt war.
+- **Rohergebnis des Laufs:** genau 2 Funde von der gesamten Multi-Agent-Pipeline gemeldet (beide unten dokumentiert) — keine weiteren, unbestätigten oder verworfenen Kandidaten sichtbar gemacht.
 
 ## Ergebnis
 
