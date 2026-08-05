@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { C, pri, ghost, wrap, inner, ff } from "./lib/theme";
 import { useAuth } from "./lib/AuthContext";
 import { canonicalUrl } from "./lib/nav";
 import { Logo } from "./Logo";
+import { Reveal } from "./Reveal";
 import heroImg from "./assets/company-hero.jpg";
 import iconLernplattform from "./assets/icon-lernplattform.jpg";
 import iconUnternehmen from "./assets/icon-unternehmen.jpg";
@@ -131,27 +132,6 @@ function ParticleBackground(){
     return()=>{cancelAnimationFrame(raf);window.removeEventListener("resize",onResize);};
   },[]);
   return <canvas ref={canvasRef} style={{position:"absolute",inset:0,width:"100%",height:"100%",pointerEvents:"none"}}/>;
-}
-
-// Sanftes Fade-in-on-Scroll fuer die Abschnitte unterhalb des ersten
-// Bildschirms (Hero/Intro/CTA bleiben sofort sichtbar, kein verzoegerter
-// erster Eindruck). Zeigt Inhalte per IntersectionObserver einmalig an,
-// sobald sie ins Blickfeld kommen -- respektiert prefers-reduced-motion
-// genau wie ParticleBackground oben, dann sofort voll sichtbar ohne Observer.
-function Reveal({children}){
-  const ref=useRef(null);
-  const [visible,setVisible]=useState(()=>window.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
-  useEffect(()=>{
-    if(visible)return;
-    const el=ref.current;
-    if(!el)return;
-    const io=new IntersectionObserver(([entry])=>{
-      if(entry.isIntersecting){setVisible(true);io.disconnect();}
-    },{threshold:0.15,rootMargin:"0px 0px -40px 0px"});
-    io.observe(el);
-    return()=>io.disconnect();
-  },[visible]);
-  return <div ref={ref} style={{opacity:visible?1:0,transform:visible?"none":"translateY(16px)",transition:"opacity 0.6s ease,transform 0.6s ease"}}>{children}</div>;
 }
 
 export default function CompanyScreen({onEnterApp,onOpenLegal}){

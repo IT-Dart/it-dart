@@ -1,4 +1,5 @@
 import { C, ghost, wrap, inner } from "./lib/theme";
+import { Reveal } from "./Reveal";
 
 const h2={fontSize:16,fontWeight:700,marginTop:28,marginBottom:8,color:C.t};
 const p={fontSize:13,color:C.t2,lineHeight:1.7,marginBottom:10};
@@ -46,25 +47,25 @@ export function Impressum({onClose}){
     <LegalLayout title="Impressum" onClose={onClose}>
       <p style={p}>Angaben gemäß § 5 Digitale-Dienste-Gesetz (DDG)</p>
 
-      <h2 style={h2}>Betreiber</h2>
+      <Reveal><h2 style={h2}>Betreiber</h2>
       <p style={p}>
         Coskun Selim Bulut<br/>
         Carl-Orff-Bogen 195<br/>
         80939 München<br/>
         Deutschland
-      </p>
+      </p></Reveal>
 
-      <h2 style={h2}>Kontakt</h2>
-      <p style={p}>E-Mail: kontakt@it-dart.de</p>
+      <Reveal><h2 style={h2}>Kontakt</h2>
+      <p style={p}>E-Mail: kontakt@it-dart.de</p></Reveal>
 
-      <h2 style={h2}>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
-      <p style={p}>Coskun Selim Bulut (Anschrift wie oben)</p>
+      <Reveal><h2 style={h2}>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
+      <p style={p}>Coskun Selim Bulut (Anschrift wie oben)</p></Reveal>
 
-      <h2 style={h2}>Streitschlichtung</h2>
-      <p style={p}>Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: <a href="https://ec.europa.eu/consumers/odr/" target="_blank" rel="noreferrer" style={{color:C.cy}}>ec.europa.eu/consumers/odr</a>. Wir sind nicht verpflichtet und nicht bereit, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p>
+      <Reveal><h2 style={h2}>Streitschlichtung</h2>
+      <p style={p}>Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: <a href="https://ec.europa.eu/consumers/odr/" target="_blank" rel="noreferrer" style={{color:C.cy}}>ec.europa.eu/consumers/odr</a>. Wir sind nicht verpflichtet und nicht bereit, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p></Reveal>
 
-      <h2 style={h2}>Copyright</h2>
-      <p style={p}>© {new Date().getFullYear()} IT-Dart – Coskun Selim Bulut. Alle Inhalte dieser Plattform (Texte, Code, Gestaltung) sind urheberrechtlich geschützt, soweit nicht anders gekennzeichnet.</p>
+      <Reveal><h2 style={h2}>Copyright</h2>
+      <p style={p}>© {new Date().getFullYear()} IT-Dart – Coskun Selim Bulut. Alle Inhalte dieser Plattform (Texte, Code, Gestaltung) sind urheberrechtlich geschützt, soweit nicht anders gekennzeichnet.</p></Reveal>
     </LegalLayout>
   );
 }
@@ -72,14 +73,14 @@ export function Impressum({onClose}){
 export function Datenschutz({onClose}){
   return(
     <LegalLayout title="Datenschutzerklärung" onClose={onClose}>
-      <h2 style={h2}>1. Verantwortlicher</h2>
+      <Reveal><h2 style={h2}>1. Verantwortlicher</h2>
       <p style={p}>
         Coskun Selim Bulut<br/>
         Carl-Orff-Bogen 195, 80939 München<br/>
         E-Mail: kontakt@it-dart.de
-      </p>
+      </p></Reveal>
 
-      <h2 style={h2}>2. Welche Daten wir verarbeiten</h2>
+      <Reveal><h2 style={h2}>2. Welche Daten wir verarbeiten</h2>
       <ul style={{paddingLeft:20,marginBottom:10}}>
         <li style={li}>E-Mail-Adresse und Passwort (verschlüsselt gespeichert) bei der Registrierung</li>
         <li style={li}>Lernfortschritt (welche Themen/Module du bearbeitet hast)</li>
@@ -87,12 +88,12 @@ export function Datenschutz({onClose}){
         <li style={li}>Protokoll erzeugter Lernnachweise (Zeitpunkt, Bereich, Ergebnis)</li>
         <li style={li}>Anfragen an den KI-Chat (werden zur Beantwortung an Anthropic übermittelt, siehe Punkt 4)</li>
         <li style={li}>Freiwillige Antworten auf kurze Feedback-Fragebögen (z. B. nach der Prüfungsvorbereitung), falls du diese ausfüllst</li>
-      </ul>
+      </ul></Reveal>
 
-      <h2 style={h2}>3. Zweck und Rechtsgrundlage</h2>
-      <p style={p}>Die Verarbeitung erfolgt zur Bereitstellung der Lernplattform (Art. 6 Abs. 1 lit. b DSGVO — Vertragserfüllung) sowie zum Schutz vor Missbrauch, z. B. Begrenzung der KI-Chat-Nutzung (Art. 6 Abs. 1 lit. f DSGVO — berechtigtes Interesse).</p>
+      <Reveal><h2 style={h2}>3. Zweck und Rechtsgrundlage</h2>
+      <p style={p}>Die Verarbeitung erfolgt zur Bereitstellung der Lernplattform (Art. 6 Abs. 1 lit. b DSGVO — Vertragserfüllung) sowie zum Schutz vor Missbrauch, z. B. Begrenzung der KI-Chat-Nutzung (Art. 6 Abs. 1 lit. f DSGVO — berechtigtes Interesse).</p></Reveal>
 
-      <h2 style={h2}>4. Empfänger / eingesetzte Dienstleister</h2>
+      <Reveal><h2 style={h2}>4. Empfänger / eingesetzte Dienstleister</h2>
       <p style={p}>Zur Bereitstellung des Angebots setzen wir folgende Auftragsverarbeiter bzw. Drittanbieter ein:</p>
       <ul style={{paddingLeft:20,marginBottom:10}}>
         <li style={li}><strong style={{color:C.t}}>Supabase</strong> (Datenbank, Login) — verarbeitet alle unter Punkt 2 genannten Daten</li>
@@ -101,16 +102,16 @@ export function Datenschutz({onClose}){
         <li style={li}><strong style={{color:C.t}}>Resend</strong> (USA) — Versand von Registrierungsbestätigungs-, Passwort-Reset- und Einladungs-E-Mails (verarbeitet dabei deine E-Mail-Adresse sowie den Zeitpunkt des Versands)</li>
       </ul>
       <p style={p}>Bei Übermittlung in die USA erfolgt dies auf Grundlage von Standardvertragsklauseln der jeweiligen Anbieter.</p>
-      <p style={p}>Ergänzend zur Vollständigkeit, ohne aktive Rolle bei der Bereitstellung des Lernangebots selbst: <strong style={{color:C.t}}>STRATO</strong> (Deutschland) verwaltet die Domain it-dart.de und das allgemeine Kontakt-Postfach kontakt@it-dart.de; <strong style={{color:C.t}}>GitHub Inc.</strong> (USA) speichert ein tägliches, GPG-verschlüsseltes Datenbank-Backup zu Notfallwiederherstellungszwecken — der Inhalt ist für GitHub selbst nicht lesbar.</p>
+      <p style={p}>Ergänzend zur Vollständigkeit, ohne aktive Rolle bei der Bereitstellung des Lernangebots selbst: <strong style={{color:C.t}}>STRATO</strong> (Deutschland) verwaltet die Domain it-dart.de und das allgemeine Kontakt-Postfach kontakt@it-dart.de; <strong style={{color:C.t}}>GitHub Inc.</strong> (USA) speichert ein tägliches, GPG-verschlüsseltes Datenbank-Backup zu Notfallwiederherstellungszwecken — der Inhalt ist für GitHub selbst nicht lesbar.</p></Reveal>
 
-      <h2 style={h2}>5. Speicherdauer</h2>
+      <Reveal><h2 style={h2}>5. Speicherdauer</h2>
       <p style={p}>Deine Daten werden gespeichert, solange dein Konto besteht. Du kannst dein Konto und alle damit verbundenen Daten jederzeit selbst und vollständig löschen (siehe Punkt 6).</p>
-      <p style={p}>Eine Ausnahme betrifft deine Fragen an den KI-Chat: Der Frage- und Antworttext selbst wird von uns nicht gespeichert — er existiert nur während der aktiven Sitzung in deinem Browser. Zur Beantwortung wird der Text an Anthropic übermittelt; dort wird er gemäß Anthropics eigener Aufbewahrungsrichtlinie automatisch innerhalb von 30 Tagen gelöscht und nicht zum Training von KI-Modellen verwendet. Bei uns gespeichert werden lediglich anonyme Nutzungsmetadaten (Zeitpunkt, Modell, Token-Anzahl, Kosten — kein Frage-/Antworttext), solange dein Konto besteht.</p>
+      <p style={p}>Eine Ausnahme betrifft deine Fragen an den KI-Chat: Der Frage- und Antworttext selbst wird von uns nicht gespeichert — er existiert nur während der aktiven Sitzung in deinem Browser. Zur Beantwortung wird der Text an Anthropic übermittelt; dort wird er gemäß Anthropics eigener Aufbewahrungsrichtlinie automatisch innerhalb von 30 Tagen gelöscht und nicht zum Training von KI-Modellen verwendet. Bei uns gespeichert werden lediglich anonyme Nutzungsmetadaten (Zeitpunkt, Modell, Token-Anzahl, Kosten — kein Frage-/Antworttext), solange dein Konto besteht.</p></Reveal>
 
-      <h2 style={h2}>6. Deine Rechte</h2>
-      <p style={p}>Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch. Dein Konto kannst du direkt in der App unter "Konto löschen" endgültig entfernen — das löscht automatisch auch deinen Lernfortschritt, Premium-Status und alle Protokolle. Unter "Meine Statistik" kannst du außerdem jederzeit selbst alle zu deinem Konto gespeicherten Daten als Datei herunterladen: Die Datei wird direkt in deinem Browser aus deinen eigenen, bereits über dein Konto abrufbaren Daten erzeugt — dabei werden keine zusätzlichen Daten an uns oder Dritte übermittelt, und wir erhalten weder eine Kopie der Datei noch Kenntnis davon, ob oder wann du sie herunterlädst. Nach dem Download liegt die Datei ausschließlich auf deinem eigenen Gerät; für ihre weitere Aufbewahrung oder Löschung bist ab diesem Zeitpunkt du selbst verantwortlich. Für alle anderen Anliegen erreichst du uns unter der oben genannten E-Mail-Adresse. Außerdem hast du das Recht, dich bei einer Datenschutz-Aufsichtsbehörde zu beschweren.</p>
+      <Reveal><h2 style={h2}>6. Deine Rechte</h2>
+      <p style={p}>Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Datenübertragbarkeit und Widerspruch. Dein Konto kannst du direkt in der App unter "Konto löschen" endgültig entfernen — das löscht automatisch auch deinen Lernfortschritt, Premium-Status und alle Protokolle. Unter "Meine Statistik" kannst du außerdem jederzeit selbst alle zu deinem Konto gespeicherten Daten als Datei herunterladen: Die Datei wird direkt in deinem Browser aus deinen eigenen, bereits über dein Konto abrufbaren Daten erzeugt — dabei werden keine zusätzlichen Daten an uns oder Dritte übermittelt, und wir erhalten weder eine Kopie der Datei noch Kenntnis davon, ob oder wann du sie herunterlädst. Nach dem Download liegt die Datei ausschließlich auf deinem eigenen Gerät; für ihre weitere Aufbewahrung oder Löschung bist ab diesem Zeitpunkt du selbst verantwortlich. Für alle anderen Anliegen erreichst du uns unter der oben genannten E-Mail-Adresse. Außerdem hast du das Recht, dich bei einer Datenschutz-Aufsichtsbehörde zu beschweren.</p></Reveal>
 
-      <h2 style={h2}>7. Datensicherheit</h2>
+      <Reveal><h2 style={h2}>7. Datensicherheit</h2>
       <p style={p}>Wir setzen folgende technische und organisatorische Maßnahmen ein, um deine Daten vor unbefugtem Zugriff, Verlust und Missbrauch zu schützen:</p>
       <ul style={{paddingLeft:20,marginBottom:10}}>
         <li style={li}>Verschlüsselte Datenübertragung zwischen deinem Gerät und unseren Servern (HTTPS/TLS)</li>
@@ -120,16 +121,16 @@ export function Datenschutz({onClose}){
         <li style={li}>Tägliche, verschlüsselte Datenbank-Sicherung sowie ein dokumentierter Notfall-Wiederherstellungsplan</li>
         <li style={li}>Regelmäßige technische Sicherheitsüberprüfung der Plattform</li>
         <li style={li}>Automatisierte Überwachung auf bekannt gewordene Sicherheitslücken in eingesetzten Software-Bausteinen sowie automatisierte Erkennung blockierter, potenziell schädlicher Fremdinhalte (Content-Security-Policy-Meldungen)</li>
-      </ul>
+      </ul></Reveal>
 
-      <h2 style={h2}>8. Speicherung im Browser</h2>
-      <p style={p}>Zur Aufrechterhaltung deiner Anmeldung wird ein Sitzungs-Token im lokalen Speicher (localStorage) deines Browsers abgelegt. Es werden keine Marketing- oder Tracking-Cookies eingesetzt.</p>
+      <Reveal><h2 style={h2}>8. Speicherung im Browser</h2>
+      <p style={p}>Zur Aufrechterhaltung deiner Anmeldung wird ein Sitzungs-Token im lokalen Speicher (localStorage) deines Browsers abgelegt. Es werden keine Marketing- oder Tracking-Cookies eingesetzt.</p></Reveal>
 
-      <h2 style={h2}>9. Minderjährige Nutzer</h2>
-      <p style={p}>Ein Teil unserer Nutzer befindet sich in einer Berufsausbildung und kann minderjährig sein. Die Registrierung erfolgt aktuell ausschließlich auf Einladung, häufig im Rahmen eines Ausbildungsverhältnisses über den Ausbildungsbetrieb (Trainer-Rolle). Trainer sehen dabei ohnehin Status und Lernfortschritt der von ihnen eingeladenen Auszubildenden — dieselbe Übersicht besteht unabhängig vom Alter der Person. Es werden keine über den in Punkt 2 genannten Umfang hinausgehenden Daten erhoben, unabhängig vom Alter der nutzenden Person.</p>
+      <Reveal><h2 style={h2}>9. Minderjährige Nutzer</h2>
+      <p style={p}>Ein Teil unserer Nutzer befindet sich in einer Berufsausbildung und kann minderjährig sein. Die Registrierung erfolgt aktuell ausschließlich auf Einladung, häufig im Rahmen eines Ausbildungsverhältnisses über den Ausbildungsbetrieb (Trainer-Rolle). Trainer sehen dabei ohnehin Status und Lernfortschritt der von ihnen eingeladenen Auszubildenden — dieselbe Übersicht besteht unabhängig vom Alter der Person. Es werden keine über den in Punkt 2 genannten Umfang hinausgehenden Daten erhoben, unabhängig vom Alter der nutzenden Person.</p></Reveal>
 
-      <h2 style={h2}>10. Änderungen</h2>
-      <p style={p}>Diese Datenschutzerklärung kann bei Weiterentwicklung des Angebots angepasst werden. Es gilt die jeweils aktuelle, hier abrufbare Fassung.</p>
+      <Reveal><h2 style={h2}>10. Änderungen</h2>
+      <p style={p}>Diese Datenschutzerklärung kann bei Weiterentwicklung des Angebots angepasst werden. Es gilt die jeweils aktuelle, hier abrufbare Fassung.</p></Reveal>
     </LegalLayout>
   );
 }
@@ -137,38 +138,38 @@ export function Datenschutz({onClose}){
 export function AGB({onClose}){
   return(
     <LegalLayout title="Allgemeine Geschäftsbedingungen" onClose={onClose}>
-      <h2 style={h2}>1. Geltungsbereich</h2>
-      <p style={p}>Diese Allgemeinen Geschäftsbedingungen (AGB) gelten für die Nutzung der digitalen Lernplattform IT-Dart ("Bleib am Dart!") unter it-dart.de, betrieben von Coskun Selim Bulut (Anbieter, siehe Impressum).</p>
+      <Reveal><h2 style={h2}>1. Geltungsbereich</h2>
+      <p style={p}>Diese Allgemeinen Geschäftsbedingungen (AGB) gelten für die Nutzung der digitalen Lernplattform IT-Dart ("Bleib am Dart!") unter it-dart.de, betrieben von Coskun Selim Bulut (Anbieter, siehe Impressum).</p></Reveal>
 
-      <h2 style={h2}>2. Leistungsbeschreibung</h2>
-      <p style={p}>IT-Dart bietet eine digitale Lernplattform für die Ausbildung zum Fachinformatiker für Systemintegration (FISI) — Lernmodule, Praxisfälle, ein KI-gestützter Lernassistent und eine Prüfungssimulation mit Lernnachweis. Details zum Funktionsumfang und den Konten-/Preisstufen: siehe „Leistungen & Pakete".</p>
+      <Reveal><h2 style={h2}>2. Leistungsbeschreibung</h2>
+      <p style={p}>IT-Dart bietet eine digitale Lernplattform für die Ausbildung zum Fachinformatiker für Systemintegration (FISI) — Lernmodule, Praxisfälle, ein KI-gestützter Lernassistent und eine Prüfungssimulation mit Lernnachweis. Details zum Funktionsumfang und den Konten-/Preisstufen: siehe „Leistungen & Pakete".</p></Reveal>
 
-      <h2 style={h2}>3. Registrierung und Nutzerkonto</h2>
-      <p style={p}>Der Zugang erfolgt aktuell auf Einladung. Bei der Registrierung sind wahrheitsgemäße Angaben zu machen. Zugangsdaten sind vertraulich zu behandeln und nicht an Dritte weiterzugeben. Für Aktivitäten unter dem eigenen Konto ist die registrierte Person verantwortlich, soweit sie diese zu vertreten hat. Welche Daten dabei erhoben werden, ist in der Datenschutzerklärung (Punkt 2) aufgeführt; erfolgt die Registrierung im Rahmen eines Ausbildungsverhältnisses, gilt zusätzlich der dort in Punkt 8 beschriebene Einblick des einladenden Ausbildungsbetriebs.</p>
+      <Reveal><h2 style={h2}>3. Registrierung und Nutzerkonto</h2>
+      <p style={p}>Der Zugang erfolgt aktuell auf Einladung. Bei der Registrierung sind wahrheitsgemäße Angaben zu machen. Zugangsdaten sind vertraulich zu behandeln und nicht an Dritte weiterzugeben. Für Aktivitäten unter dem eigenen Konto ist die registrierte Person verantwortlich, soweit sie diese zu vertreten hat. Welche Daten dabei erhoben werden, ist in der Datenschutzerklärung (Punkt 2) aufgeführt; erfolgt die Registrierung im Rahmen eines Ausbildungsverhältnisses, gilt zusätzlich der dort in Punkt 8 beschriebene Einblick des einladenden Ausbildungsbetriebs.</p></Reveal>
 
-      <h2 style={h2}>4. Nutzungsrechte und Pflichten</h2>
-      <p style={p}>Die Plattform darf ausschließlich für den persönlichen Lernzweck genutzt werden. Nicht gestattet sind insbesondere: die Weitergabe von Zugangsdaten an Dritte, automatisierte Zugriffe (z. B. Scraping) sowie Versuche, Sicherheitsmechanismen zu umgehen.</p>
+      <Reveal><h2 style={h2}>4. Nutzungsrechte und Pflichten</h2>
+      <p style={p}>Die Plattform darf ausschließlich für den persönlichen Lernzweck genutzt werden. Nicht gestattet sind insbesondere: die Weitergabe von Zugangsdaten an Dritte, automatisierte Zugriffe (z. B. Scraping) sowie Versuche, Sicherheitsmechanismen zu umgehen.</p></Reveal>
 
-      <h2 style={h2}>5. Kostenpflichtige Leistungen (Premium)</h2>
-      <p style={p}>Premium-Zugänge werden aktuell manuell vergeben; eine automatisierte Zahlungsabwicklung findet derzeit nicht statt. Konditionen für Einzel-, Gruppen- und Unternehmenszugänge werden individuell vereinbart (siehe „Leistungen & Pakete").</p>
+      <Reveal><h2 style={h2}>5. Kostenpflichtige Leistungen (Premium)</h2>
+      <p style={p}>Premium-Zugänge werden aktuell manuell vergeben; eine automatisierte Zahlungsabwicklung findet derzeit nicht statt. Konditionen für Einzel-, Gruppen- und Unternehmenszugänge werden individuell vereinbart (siehe „Leistungen & Pakete").</p></Reveal>
 
-      <h2 style={h2}>6. Verfügbarkeit</h2>
-      <p style={p}>Wir bemühen uns um eine hohe Verfügbarkeit der Plattform, können diese aber nicht garantieren — etwa bei Wartungsarbeiten oder Störungen bei vorgelagerten Dienstleistern (Hosting, Datenbank). Die eingesetzten Dienstleister sind in der Datenschutzerklärung (Punkt 4) benannt.</p>
+      <Reveal><h2 style={h2}>6. Verfügbarkeit</h2>
+      <p style={p}>Wir bemühen uns um eine hohe Verfügbarkeit der Plattform, können diese aber nicht garantieren — etwa bei Wartungsarbeiten oder Störungen bei vorgelagerten Dienstleistern (Hosting, Datenbank). Die eingesetzten Dienstleister sind in der Datenschutzerklärung (Punkt 4) benannt.</p></Reveal>
 
-      <h2 style={h2}>7. Haftung</h2>
-      <p style={p}>Wir haften unbeschränkt für Vorsatz und grobe Fahrlässigkeit, für die Verletzung des Lebens, des Körpers oder der Gesundheit sowie nach Maßgabe des Produkthaftungsgesetzes. Bei leicht fahrlässiger Verletzung wesentlicher Vertragspflichten (Kardinalpflichten) ist die Haftung auf den vertragstypisch vorhersehbaren Schaden begrenzt. Im Übrigen ist die Haftung für leichte Fahrlässigkeit ausgeschlossen. Inhalte der Plattform (Lernmodule, Praxisfälle, Quiz-Fragen, KI-Chat-Antworten) werden nach bestem Wissen erstellt, erheben jedoch keinen Anspruch auf Vollständigkeit oder Aktualität und ersetzen keine offizielle Prüfungsvorbereitung durch die zuständige IHK. Insbesondere bei Antworten des KI-gestützten Lernassistenten kann trotz sorgfältiger Gestaltung keine Garantie für inhaltliche Richtigkeit übernommen werden; für den Erfolg in der tatsächlichen Abschlussprüfung wird keine Gewähr übernommen.</p>
+      <Reveal><h2 style={h2}>7. Haftung</h2>
+      <p style={p}>Wir haften unbeschränkt für Vorsatz und grobe Fahrlässigkeit, für die Verletzung des Lebens, des Körpers oder der Gesundheit sowie nach Maßgabe des Produkthaftungsgesetzes. Bei leicht fahrlässiger Verletzung wesentlicher Vertragspflichten (Kardinalpflichten) ist die Haftung auf den vertragstypisch vorhersehbaren Schaden begrenzt. Im Übrigen ist die Haftung für leichte Fahrlässigkeit ausgeschlossen. Inhalte der Plattform (Lernmodule, Praxisfälle, Quiz-Fragen, KI-Chat-Antworten) werden nach bestem Wissen erstellt, erheben jedoch keinen Anspruch auf Vollständigkeit oder Aktualität und ersetzen keine offizielle Prüfungsvorbereitung durch die zuständige IHK. Insbesondere bei Antworten des KI-gestützten Lernassistenten kann trotz sorgfältiger Gestaltung keine Garantie für inhaltliche Richtigkeit übernommen werden; für den Erfolg in der tatsächlichen Abschlussprüfung wird keine Gewähr übernommen.</p></Reveal>
 
-      <h2 style={h2}>8. Vertragslaufzeit und Kündigung</h2>
-      <p style={p}>Das Nutzungsverhältnis kann jederzeit durch Löschung des eigenen Kontos beendet werden (siehe Datenschutzerklärung, Punkt 6). Wir behalten uns vor, Konten bei einem Verstoß gegen diese AGB zu sperren oder zu löschen. Bereits gezahlte Gebühren für Premium-Zugänge werden bei einer Kontolöschung nicht erstattet; der Zugang bleibt bis zum Ende des bereits bezahlten Zeitraums nutzbar.</p>
+      <Reveal><h2 style={h2}>8. Vertragslaufzeit und Kündigung</h2>
+      <p style={p}>Das Nutzungsverhältnis kann jederzeit durch Löschung des eigenen Kontos beendet werden (siehe Datenschutzerklärung, Punkt 6). Wir behalten uns vor, Konten bei einem Verstoß gegen diese AGB zu sperren oder zu löschen. Bereits gezahlte Gebühren für Premium-Zugänge werden bei einer Kontolöschung nicht erstattet; der Zugang bleibt bis zum Ende des bereits bezahlten Zeitraums nutzbar.</p></Reveal>
 
-      <h2 style={h2}>9. Minderjährige Nutzer</h2>
-      <p style={p}>Ein Teil unserer Nutzer befindet sich in einer Berufsausbildung und kann minderjährig sein. Bei einer Registrierung im Rahmen eines Ausbildungsverhältnisses gehen wir davon aus, dass die Nutzung im Einvernehmen mit dem Ausbildungsbetrieb erfolgt. Bei Fragen zur Nutzung durch minderjährige Personen außerhalb eines Ausbildungsverhältnisses bitten wir um vorherige Kontaktaufnahme. Weitere Einzelheiten zum Datenumgang mit minderjährigen Nutzern finden sich in der Datenschutzerklärung, Punkt 8.</p>
+      <Reveal><h2 style={h2}>9. Minderjährige Nutzer</h2>
+      <p style={p}>Ein Teil unserer Nutzer befindet sich in einer Berufsausbildung und kann minderjährig sein. Bei einer Registrierung im Rahmen eines Ausbildungsverhältnisses gehen wir davon aus, dass die Nutzung im Einvernehmen mit dem Ausbildungsbetrieb erfolgt. Bei Fragen zur Nutzung durch minderjährige Personen außerhalb eines Ausbildungsverhältnisses bitten wir um vorherige Kontaktaufnahme. Weitere Einzelheiten zum Datenumgang mit minderjährigen Nutzern finden sich in der Datenschutzerklärung, Punkt 8.</p></Reveal>
 
-      <h2 style={h2}>10. Änderungen dieser AGB</h2>
-      <p style={p}>Diese AGB können bei Weiterentwicklung des Angebots angepasst werden. Es gilt die jeweils aktuelle, hier abrufbare Fassung. Über wesentliche Änderungen informieren wir registrierte Nutzer in geeigneter Form.</p>
+      <Reveal><h2 style={h2}>10. Änderungen dieser AGB</h2>
+      <p style={p}>Diese AGB können bei Weiterentwicklung des Angebots angepasst werden. Es gilt die jeweils aktuelle, hier abrufbare Fassung. Über wesentliche Änderungen informieren wir registrierte Nutzer in geeigneter Form.</p></Reveal>
 
-      <h2 style={h2}>11. Schlussbestimmungen</h2>
-      <p style={p}>Es gilt deutsches Recht. Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: <a href="https://ec.europa.eu/consumers/odr/" target="_blank" rel="noreferrer" style={{color:C.cy}}>ec.europa.eu/consumers/odr</a>. Wir sind nicht verpflichtet und nicht bereit, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p>
+      <Reveal><h2 style={h2}>11. Schlussbestimmungen</h2>
+      <p style={p}>Es gilt deutsches Recht. Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: <a href="https://ec.europa.eu/consumers/odr/" target="_blank" rel="noreferrer" style={{color:C.cy}}>ec.europa.eu/consumers/odr</a>. Wir sind nicht verpflichtet und nicht bereit, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p></Reveal>
     </LegalLayout>
   );
 }
@@ -201,19 +202,19 @@ export function Leistungen({onClose}){
     <LegalLayout title="Leistungen & Pakete" onClose={onClose}>
       <p style={p}>IT-Dart ist eine digitale Lernplattform mit einem skalierbaren Account-Modell und flexibel anpassbaren Preis- und Lizenzstrukturen — von der einzelnen Auszubildenden-Person bis zum ganzen Ausbildungsbetrieb.</p>
 
-      <h2 style={h2}>1. IT-Dart Lernplattform</h2>
-      <p style={p}>Digitale Bildung und strukturierte Prüfungsvorbereitung für angehende Fachinformatiker/-innen für Systemintegration und Auszubildende: acht aufeinander aufbauende Lernmodule, praxisnahe Fallbeispiele, ein kontextbezogener KI-Lernassistent sowie eine Prüfungssimulation im Format der Abschlussprüfung mit automatischer Auswertung und Lernnachweis.</p>
+      <Reveal><h2 style={h2}>1. IT-Dart Lernplattform</h2>
+      <p style={p}>Digitale Bildung und strukturierte Prüfungsvorbereitung für angehende Fachinformatiker/-innen für Systemintegration und Auszubildende: acht aufeinander aufbauende Lernmodule, praxisnahe Fallbeispiele, ein kontextbezogener KI-Lernassistent sowie eine Prüfungssimulation im Format der Abschlussprüfung mit automatischer Auswertung und Lernnachweis.</p></Reveal>
 
-      <h2 style={h2}>2. Skalierbares Account- & Benutzermodell</h2>
+      <Reveal><h2 style={h2}>2. Skalierbares Account- & Benutzermodell</h2>
       <p style={p}>Sichere Authentifizierung und rollenbasierte Zugriffsrechte (RBAC) auf Basis von Supabase — vom Einzelkonto bis zu mehreren hundert Nutzenden:</p>
       <ul style={{paddingLeft:20,marginBottom:10}}>
         <li style={li}>Einladungsbasierter Zugang mit E-Mail-Bestätigung, kein offener Registrierungsprozess</li>
         <li style={li}>Abgestufte Rollen: Free-/Premium-Konto, Ausbilder-Konto mit eigener Gruppe, Verwaltung</li>
         <li style={li}>Durchgehende Rechtetrennung auf Datenbankebene (Row-Level-Security) statt reiner Oberflächenprüfung</li>
         <li style={li}>Selbstverwaltung für Ausbildungsbetriebe: eigene Auszubildende einladen, Status und Fortschritt einsehen, ohne dass wir bei jedem Vorgang eingebunden werden müssen</li>
-      </ul>
+      </ul></Reveal>
 
-      <h2 style={h2}>3. Flexibles Preis- & Lizenzmodell</h2>
+      <Reveal><h2 style={h2}>3. Flexibles Preis- & Lizenzmodell</h2>
       <p style={p}>Die Konditionen sind bewusst dynamisch konfigurierbar und richten sich nach Nutzerzahl, Lizenzdauer und gewünschtem Funktionsumfang — kein starres Einheitsmodell:</p>
       {PACKAGES.map(pkg=>(
         <div key={pkg.name} style={card}>
@@ -224,16 +225,16 @@ export function Leistungen({onClose}){
           </ul>
         </div>
       ))}
-      <p style={p}>Konkrete Preise erstellen wir individuell auf Anfrage, abgestimmt auf die jeweilige Nutzergruppe.</p>
+      <p style={p}>Konkrete Preise erstellen wir individuell auf Anfrage, abgestimmt auf die jeweilige Nutzergruppe.</p></Reveal>
 
-      <h2 style={h2}>4. Rollout & Seminare ("Bleib am Dart")</h2>
-      <p style={p}>Vor-Ort-Seminare bzw. Präsentationen durch unsere Trainer zur Einführung und Erklärung der IT-Dart-Plattform für Gruppen und Unternehmen — von der ersten Vorstellung bis zur praktischen Einweisung im Ausbildungsalltag. Der Aufwand und damit der Richtpreis richten sich nach Gruppengröße, Dauer und Durchführungsort (vor Ort oder remote) und werden individuell abgestimmt.</p>
+      <Reveal><h2 style={h2}>4. Rollout & Seminare ("Bleib am Dart")</h2>
+      <p style={p}>Vor-Ort-Seminare bzw. Präsentationen durch unsere Trainer zur Einführung und Erklärung der IT-Dart-Plattform für Gruppen und Unternehmen — von der ersten Vorstellung bis zur praktischen Einweisung im Ausbildungsalltag. Der Aufwand und damit der Richtpreis richten sich nach Gruppengröße, Dauer und Durchführungsort (vor Ort oder remote) und werden individuell abgestimmt.</p></Reveal>
 
-      <h2 style={h2}>5. Unternehmens-Services</h2>
-      <p style={p}>Auf Basis der bewährten IT-Dart-Architektur erstellen wir maßgeschneiderte Lernplattformen für andere Unternehmen, Fachbereiche oder Gruppen — inklusive cloudbasierter Bereitstellung (Setup und Hosting über Vercel und Supabase) und derselben Sicherheits- und Datenschutzgrundlage wie bei IT-Dart selbst.</p>
+      <Reveal><h2 style={h2}>5. Unternehmens-Services</h2>
+      <p style={p}>Auf Basis der bewährten IT-Dart-Architektur erstellen wir maßgeschneiderte Lernplattformen für andere Unternehmen, Fachbereiche oder Gruppen — inklusive cloudbasierter Bereitstellung (Setup und Hosting über Vercel und Supabase) und derselben Sicherheits- und Datenschutzgrundlage wie bei IT-Dart selbst.</p></Reveal>
 
-      <h2 style={h2}>Kontakt</h2>
-      <p style={p}>Für ein individuelles Angebot erreichst du uns unter <a href="mailto:kontakt@it-dart.de" style={{color:C.cy}}>kontakt@it-dart.de</a>.</p>
+      <Reveal><h2 style={h2}>Kontakt</h2>
+      <p style={p}>Für ein individuelles Angebot erreichst du uns unter <a href="mailto:kontakt@it-dart.de" style={{color:C.cy}}>kontakt@it-dart.de</a>.</p></Reveal>
     </LegalLayout>
   );
 }
