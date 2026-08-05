@@ -23,7 +23,7 @@ Länge ist nicht der eigentliche Grund für einen faden Praxisfall — **fehlend
 
 ## Modul-Architektur beachten
 
-Module mit **durchgehendem Praxisfall über alle Themen** (`o`, `si`, teilweise `pr`) erzählen bewusst eine einzige, fortlaufende Geschichte — das wurde im Didaktik-Review explizit als Stärke hervorgehoben. Hier **keinen zusätzlichen Pro-Thema-Übertitel** einführen; der situationsbenennende Einstieg (Punkt 1 oben) reicht als leiser Übergang zum nächsten Kapitel derselben Geschichte. Module mit **unabhängigen Einzelszenarien pro Thema** (`g`, `b`, `db`, `sk`, `bw`) profitieren am meisten von einem klar erkennbaren, eigenständigen Situations-Einstieg pro Thema, da hier keine übergreifende Erzählung existiert, an die angeknüpft werden könnte.
+Module mit **durchgehendem Praxisfall über alle Themen** (`o`, `si`, `sk` — dort das "50-Server-Monitoring"-Motiv —, teilweise `pr`) erzählen bewusst eine einzige, fortlaufende Geschichte — das wurde im Didaktik-Review explizit als Stärke hervorgehoben. Hier **keinen zusätzlichen Pro-Thema-Übertitel** einführen; der situationsbenennende Einstieg (Punkt 1 oben) reicht als leiser Übergang zum nächsten Kapitel derselben Geschichte. Module mit **unabhängigen Einzelszenarien pro Thema** (`g`, `b`, `db`, `bw`) profitieren am meisten von einem klar erkennbaren, eigenständigen Situations-Einstieg pro Thema, da hier keine übergreifende Erzählung existiert, an die angeknüpft werden könnte.
 
 ## Anwendung
 
