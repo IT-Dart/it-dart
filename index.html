@@ -28,6 +28,38 @@
     <meta name="twitter:title" content="IT-Dart – Bleib am Dart! – IT-Infrastruktur verstehen. Praxisorientiert lernen." />
     <meta name="twitter:description" content="Interaktive Lernplattform für Fachinformatiker Systemintegration – 8 Module inkl. Bewerbungs-Coaching, Praxisfälle, Prüfungsfragen im Format der Abschlussprüfung und KI-Tutor. Modul 1 komplett kostenlos, Modul 2 als Vorschau." />
     <meta name="twitter:image" content="https://www.it-dart.de/og-image.png" />
+
+    <!-- Strukturierte Daten (schema.org): gibt Suchmaschinen/KI-Übersichten ein
+         eindeutiges Signal, was "IT-Dart" ist -- unabhängig vom Namenskonflikt
+         mit unverwandten Fremdinhalten (z. B. ein gleichnamiges Dartscheiben-
+         Scoring-Projekt), die sonst in Googles KI-Übersicht einfließen können. -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@graph": [
+          {
+            "@type": "Organization",
+            "@id": "https://www.it-dart.de/#organization",
+            "name": "IT-Dart",
+            "legalName": "Coskun Selim Bulut",
+            "slogan": "Gezielt ans Ziel",
+            "url": "https://www.it-dart.de/",
+            "logo": "https://www.it-dart.de/email-logo.png",
+            "email": "kontakt@it-dart.de",
+            "description": "IT-Dart ist die Marke hinter „Bleib am Dart!\" — der digitalen Lernplattform für die Ausbildung zum Fachinformatiker für Systemintegration (FISI)."
+          },
+          {
+            "@type": "WebSite",
+            "@id": "https://www.it-dart.de/#website",
+            "name": "IT-Dart – Bleib am Dart!",
+            "url": "https://www.it-dart.de/",
+            "description": "Interaktive Lernplattform für Fachinformatiker Systemintegration – 8 Module inkl. Bewerbungs-Coaching, Praxisfälle, Prüfungsfragen im Format der Abschlussprüfung und KI-Tutor.",
+            "inLanguage": "de-DE",
+            "publisher": { "@id": "https://www.it-dart.de/#organization" }
+          }
+        ]
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
