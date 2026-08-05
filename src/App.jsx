@@ -38,10 +38,17 @@ function AppShell(){
   // alle anderen mode-Werte (login/register/einladung/...) verhalten sich
   // unverändert wie zuvor.
   const LEGAL_MODES=["impressum","datenschutz","agb","leistungen","trainer-vereinbarung"];
+  // "company" ist erst der endgueltige Default, sobald der Login-Status
+  // feststeht (siehe Effekt unten) -- bis dahin "null" (noch unentschieden).
+  // Ohne dieses Zwischenstadium wurde beim ersten Render nach jedem harten
+  // Neuladen (z. B. window.location.reload() in UsernameScreen.jsx,
+  // AgbConsentScreen.jsx, ...) kurz die echte Unternehmensseite gemalt, bevor
+  // der Effekt sie auf "app" korrigierte -- ein sichtbarer Flash zwischen
+  // Login und Lerntool (Regressions-Fund 2026-08-05).
   const [page,setPage]=useState(()=>{
     const mode=params.get("mode");
     if(LEGAL_MODES.includes(mode))return mode;
-    return params.has("mode")?"app":"company";
+    return params.has("mode")?"app":null;
   });
   // Sanfter Seitenuebergang bei jedem page-Wechsel (To-Do #126) -- geteilter
   // Helper mit ITDart.jsx, siehe lib/viewTransition.js.
@@ -76,8 +83,9 @@ function AppShell(){
     if(!loading&&!routed){
       setRouted(true);
       if(user)changePage("app");
+      else if(page===null)changePage("company"); // Default erst jetzt final setzen, siehe Kommentar oben bei useState(page)
     }
-  },[loading,user,routed]);
+  },[loading,user,routed]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Gleicher Grund wie in ITDart.jsx: ohne Router bleibt die Scroll-Position
   // sonst beim Seitenwechsel erhalten statt von oben zu starten.
@@ -102,6 +110,7 @@ function AppShell(){
   // angemeldeter Nutzer, der z. B. "Über IT-Dart" aus der App heraus
   // anklickt, muss die echte CompanyScreen sehen, nicht die Baustellenseite
   // mit ihrem eigenen (fälschlich wirkenden) "Hier anmelden"-Link.
+  if(page===null)return null; // Routing-Entscheidung company/app noch nicht getroffen, siehe useState(page) oben
   if(page==="company")return (WARTUNGSMODUS&&!user)?<WartungScreen onOpenLegal={changePage}/>:<CompanyScreen onEnterApp={()=>changePage("app")} onOpenLegal={changePage}/>;
   const backHome=()=>changePage(user?"app":"company");
   if(page==="username")return <UsernameScreen onClose={backHome}/>;
