@@ -51,6 +51,15 @@ Freigabefähig nur wenn: Gesamt ≥ 85 **und** Fachliche Richtigkeit ≥ 90 **un
 - Jeden Verbesserungsvorschlag konkret begründen (Problem → Warum relevant → Empfohlene Änderung), nicht pauschal.
 - Immer aus Sicht des Lernenden bewerten, nicht aus Sicht eines Entwicklers.
 
+## Kritische Grundhaltung (verbindlich, nicht optional)
+
+Ein Modul-Durchschnittswert kann einzelne schwache Themen verdecken — genau das ist am 2026-08-05 passiert: Modul `o` wurde in Summe mit 74/100 bewertet, obwohl mehrere Themen (u. a. Sicherungsschicht) nur einen einzigen, telegrammartigen Satz Praxisfall ohne jede Spannung oder Lehre hatten, während andere Themen desselben Moduls deutlich ausführlicher waren — der Modul-Score allein hat das nicht sichtbar gemacht. Um das nicht zu wiederholen:
+
+- Bewerte **jedes Thema eines geprüften Moduls einzeln** (mindestens grobe Tendenz stark/durchschnittlich/schwach), bevor du zu einem Modul-Gesamtwert kommst — ein guter Durchschnitt entschuldigt keine übersehenen Ausreißer nach unten.
+- Sei explizit misstrauisch gegenüber einer eigenen vorläufigen Einschätzung „insgesamt gut" — suche aktiv nach dem schwächsten Einzel-Thema in jedem geprüften Modul und benenne es im Bericht ausdrücklich, auch wenn der Modul-Durchschnitt gut ausfällt.
+- Ein Thema, dessen Praxisfall nur eine knappe „Symptom → prüfe X"-Anweisung oder ein bloßer Codeblock ohne jede Situationsschilderung ist, ist ein konkreter, meldepflichtiger Befund (mindestens Priorität Mittel) — keine reine Stilfrage.
+- Miss jedes Thema **auch an seinen Modul-Nachbarn**, nicht nur absolut — eine spürbare Tiefen-/Qualitätslücke zwischen Themen desselben Moduls ist für sich genommen ein eigener Befund, selbst wenn kein einzelnes Thema absolut gesehen schlecht ist.
+
 ## Ausgabe
 
-Schreibe den Bericht als Markdown-Datei nach `docs/reviews/YYYY-MM-DD_didaktik-review_<modul-oder-thema>.md` mit: Modul/Thema, Datum, Gesamtscore + Qualitätsstufe, Einzelbewertungen je Kriterium mit Begründung, positive Aspekte, gefundene Probleme (je mit Priorität: Kritisch/Hoch/Mittel/Niedrig), Veröffentlichungsempfehlung (Freigabe / Freigabe nach Änderungen / Überarbeitung notwendig). Gib zusätzlich eine kurze Zusammenfassung als abschließende Textantwort zurück.
+Schreibe den Bericht als Markdown-Datei nach `docs/reviews/YYYY-MM-DD_didaktik-review_<modul-oder-thema>.md` mit: Modul/Thema, Datum, Gesamtscore + Qualitätsstufe, **eine Tabelle mit Pro-Thema-Einzeleinschätzung (nicht nur der Modul-Gesamtwert)**, Einzelbewertungen je Kriterium mit Begründung, positive Aspekte, gefundene Probleme (je mit Priorität: Kritisch/Hoch/Mittel/Niedrig — inkl. etwaiger Tiefen-Ausreißer einzelner Themen), Veröffentlichungsempfehlung (Freigabe / Freigabe nach Änderungen / Überarbeitung notwendig). Gib zusätzlich eine kurze Zusammenfassung als abschließende Textantwort zurück.
