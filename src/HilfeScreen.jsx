@@ -188,12 +188,12 @@ export default function HilfeScreen({onClose}){
             <pre style={{fontSize:11,color:C.t2,margin:0,whiteSpace:"pre-wrap",fontFamily:"'Courier New',monospace",lineHeight:1.6}}>{diagText}</pre>
           </div>
           <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
-            <a href={mailtoHref} style={{...pri,fontSize:13,padding:"9px 16px",textDecoration:"none"}}>✉️ E-Mail an Support</a>
+            <a href={mailtoHref} className="btn-fx" style={{...pri,fontSize:13,padding:"9px 16px",textDecoration:"none"}}>✉️ E-Mail an Support</a>
             <button onClick={copyDiag} style={{...ghost,fontSize:13,padding:"9px 16px"}}>{copied?"✓ Kopiert":"Infos kopieren"}</button>
           </div>
           <p style={{fontSize:11,color:C.mu,marginTop:8,marginBottom:0,lineHeight:1.5}}>Diese Angaben werden nicht automatisch übermittelt — sie landen nur bei uns, wenn du oben aktiv auf „E-Mail an Support" klickst oder sie kopierst und selbst verschickst.</p>
         </>}
-        {!user&&<a href="mailto:kontakt@it-dart.de?subject=IT-Dart%20Support-Anfrage" style={{...pri,fontSize:13,padding:"9px 16px",textDecoration:"none",display:"inline-flex"}}>✉️ E-Mail an Support</a>}
+        {!user&&<a href="mailto:kontakt@it-dart.de?subject=IT-Dart%20Support-Anfrage" className="btn-fx" style={{...pri,fontSize:13,padding:"9px 16px",textDecoration:"none",display:"inline-flex"}}>✉️ E-Mail an Support</a>}
       </div>
     </div></div>
   );

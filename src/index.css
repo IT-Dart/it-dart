@@ -9,3 +9,17 @@
 body {
   margin: 0;
 }
+
+/* Hover-/Press-Feedback fuer alle Buttons -- inline style-Objekte (theme.js)
+   koennen kein :hover, daher hier zentral statt in jeder Komponente einzeln.
+   .btn-fx markiert die wenigen <a>-Tags, die optisch wie Buttons aussehen
+   (pri/ghost/ctaAccent-Style auf einem Link statt einem <button>). */
+button:not(:disabled), a.btn-fx {
+  transition: filter 0.15s ease, transform 0.1s ease;
+}
+button:not(:disabled):hover, a.btn-fx:hover {
+  filter: brightness(1.12);
+}
+button:not(:disabled):active, a.btn-fx:active {
+  transform: scale(0.97);
+}

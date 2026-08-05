@@ -3,7 +3,6 @@ import { C, pri, ghost, wrap, inner, ff } from "./lib/theme";
 import { useAuth } from "./lib/AuthContext";
 import { canonicalUrl } from "./lib/nav";
 import { Logo } from "./Logo";
-import bookCoverImg from "./assets/book-claude-praxis-cover.png";
 import heroImg from "./assets/company-hero.jpg";
 import iconLernplattform from "./assets/icon-lernplattform.jpg";
 import iconUnternehmen from "./assets/icon-unternehmen.jpg";
@@ -20,24 +19,9 @@ const VISION_TEXT="IT-Ausbildung soll nicht an trockenen Skripten und Frontalunt
 const ZIEL_TEXT="Kurzfristig: angehenden Fachinformatikern für Systemintegration eine Plattform geben, mit der Prüfungsvorbereitung strukturiert und nachvollziehbar gelingt. Mittelfristig: dasselbe Prinzip auf weitere IT-Ausbildungsberufe übertragen und Ausbildungsbetrieben ein eigenständiges Angebot für ihre Auszubildenden bieten.";
 const KOOPERATION_TEXT="IT-Dart sucht den Austausch mit Ausbildungsbetrieben, Bildungsträgern, Verlagen und anderen Partnern rund um die IT-Ausbildung. Denkbar sind gemeinsame Lerninhalte, die Einbindung von IT-Dart in bestehende Ausbildungsprogramme oder weitere Formen der Zusammenarbeit — im Mittelpunkt steht dabei, möglichst vielen Auszubildenden einen einfachen Zugang zu praxisnaher Prüfungsvorbereitung zu ermöglichen.";
 
-// Sobald die Unternehmensgründung abgeschlossen ist: hier reale Amazon-Links
-// eintragen und status auf "live" setzen — der Rest der Karte bleibt gleich.
-const EBOOKS=[
-  {
-    title:"Claude in der Praxis",
-    subtitle:"Der KI-Leitfaden für Fachinformatiker Systemintegration",
-    author:"Coşkun Selim Bulut",
-    languages:["Deutsch","English","Türkçe"],
-    cover:bookCoverImg,
-    status:"in_preparation",
-    amazonLinks:null,
-  },
-];
-
 const h2={fontSize:16,fontWeight:700,marginTop:32,marginBottom:10,color:C.t};
 const p={fontSize:14,color:C.t2,lineHeight:1.7,marginBottom:10};
 const card={background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:12,padding:"16px 18px",marginBottom:12};
-const badge=(bg,fg)=>({display:"inline-block",fontSize:11,fontWeight:600,padding:"3px 9px",borderRadius:20,background:bg,color:fg});
 // Auffälligere Variante der sekundären CTAs auf dieser Seite (Leistungen,
 // Partnerschaft) — bewusst nicht der globale `ghost`-Stil, der in 12 anderen
 // Screens für unauffällige Sekundär-Buttons verwendet wird und dort nicht
@@ -233,28 +217,9 @@ export default function CompanyScreen({onEnterApp,onOpenLegal}){
 
       <Reveal><h2 style={h2}>Kooperationen & Partnerschaften</h2>
       <p style={p}>{KOOPERATION_TEXT}</p>
-      <a href="mailto:kontakt@it-dart.de" style={{...ctaAccent,width:"100%",justifyContent:"center",textDecoration:"none",boxSizing:"border-box"}}>Partnerschaft anfragen →</a></Reveal>
+      <a href="mailto:kontakt@it-dart.de" className="btn-fx" style={{...ctaAccent,width:"100%",justifyContent:"center",textDecoration:"none",boxSizing:"border-box"}}>Partnerschaft anfragen →</a></Reveal>
 
-      <Reveal><h2 style={h2}>Materialien & Publikationen</h2>
-      <p style={p}>Der Verkauf startet, sobald die ersten Titel fertiggestellt sind.</p>
-
-      <p style={{...p,fontWeight:600,color:C.t,marginBottom:8}}>E-Books</p>
-      {EBOOKS.map(book=>(
-        <div key={book.title} style={{...card,display:"flex",gap:14}}>
-          <img src={book.cover} alt={`Cover: ${book.title}`} style={{width:84,borderRadius:6,flexShrink:0,boxShadow:"0 4px 14px rgba(0,0,0,0.35)"}}/>
-          <div>
-            <div style={{fontSize:14,fontWeight:700,color:C.t,marginBottom:2}}>{book.title}</div>
-            <div style={{fontSize:12,color:C.t2,marginBottom:6,lineHeight:1.5}}>{book.subtitle}</div>
-            <div style={{fontSize:11,color:C.mu,marginBottom:8}}>von {book.author}</div>
-            <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:8}}>
-              {book.languages.map(l=><span key={l} style={badge(C.bg,C.t2)}>{l}</span>)}
-            </div>
-            {book.status==="in_preparation"&&<span style={badge("#3a2e0f",C.am)}>Erscheint in Kürze</span>}
-          </div>
-        </div>
-      ))}</Reveal>
-
-      <Reveal><p style={{...p,fontWeight:600,color:C.t,marginTop:16,marginBottom:8}}>Kostenlose Lernmaterialien</p>
+      <Reveal><h2 style={h2}>Kostenlose Lernmaterialien</h2>
       <div style={card}>
         <p style={{...p,marginBottom:0}}>Ergänzend zur Plattform entstehen herunterladbare Lernmaterialien — zum Beispiel Cheat Sheets und Zusammenfassungen zu einzelnen Modulen.</p>
       </div></Reveal>
