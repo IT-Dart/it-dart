@@ -46,7 +46,7 @@ Vereinbart mit dem Nutzer am 2026-08-05, Ziel: Claudes eigener Datenbankzugriff 
 - **Bekannte Grenze:** Das lässt sich nicht innerhalb eines laufenden Gesprächs umschalten — die MCP-Verbindung wird pro Sitzung aufgebaut, eine Umkonfiguration braucht eine neue Sitzung/Reconnect. „Einmalig pro Auftrag" bedeutet praktisch „pro Sitzung", nicht „pro einzelner Nachricht".
 - **Noch zu klären, nicht Teil dieser Vereinbarung:** dieselbe Eingrenzung für den GitHub-Zugriff (`gh`-CLI-Token, aktuell dauerhaft-breit) — separat zu bewerten.
 - Siehe auch `dokumentation/30_Notfall_Gesamtwiederherstellungsplan.docx` (Credential-Inventar) für den Gesamtüberblick aller Zugriffswege.
-- Berichte von `security-review`/`datenschutz-review` werden unter `docs/reviews/` abgelegt, Dateiname `YYYY-MM-DD_<typ>_<commit-kurz>.md` — dauerhafte, nachvollziehbare Ablage statt nur im Chat-Verlauf.
+- Für Sicherheits-Reviews die eingebaute `/security-review`-Skill nutzen (kein eigener `.claude/agents/security-review.md` mehr — dupliziert eine bereits vorhandene Skill gleichen Namens/Zwecks, per `/simplify`-Review am 2026-08-05 gefunden und entfernt). Für Datenschutz-Reviews den Subagenten `.claude/agents/datenschutz-review.md` (keine eingebaute Entsprechung vorhanden, echte Ergänzung). Beide Berichte werden unter `docs/reviews/` abgelegt, Dateiname `YYYY-MM-DD_<typ>_<commit-kurz>.md` — dauerhafte, nachvollziehbare Ablage statt nur im Chat-Verlauf.
 
 ## Deployment — was ein reiner `git push` NICHT auslöst
 

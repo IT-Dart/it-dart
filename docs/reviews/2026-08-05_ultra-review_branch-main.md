@@ -31,6 +31,10 @@ Zwei Funde, beide echt und behoben.
 
 Bestätigt die eigene Einschätzung von vorhin: eine Selbstprüfung (auch mit einem Ersatz-Agenten) findet nicht dieselben Dinge wie ein unabhängiger, mehrstufiger Review. Der DELETE-Trigger-Fund ist ein direktes Beispiel für "denselben blinden Fleck bei der Korrektur wiederholen, den man bei der ursprünglichen Umsetzung schon hatte" — genau das Muster, das unabhängige Prüfung strukturell abfängt.
 
+## Nachtrag 2 (2026-08-05, nach `/simplify`-Review): `.claude/agents/security-review.md` wieder entfernt
+
+Der `/simplify`-Review (Reuse-Winkel) fand, dass diese Subagenten-Datei eine bereits eingebaute, gleichnamige Skill ("security-review: Complete a security review of the pending changes on the current branch") funktional dupliziert. Statt der hier beschriebenen Tool-Korrektur (ReportFindings → Write) wurde die Datei komplett gelöscht — CLAUDE.md verweist jetzt stattdessen auf die eingebaute Skill. `datenschutz-review.md` bleibt bestehen, da keine eingebaute Entsprechung existiert (echte, keine doppelte Ergänzung).
+
 ## Geprüfte/geänderte Dateien in diesem Nachgang
 
 - `supabase/migrations/20260805060000_admin_action_log_deletion_coverage.sql` (neu)

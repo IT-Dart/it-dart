@@ -19,13 +19,7 @@
 // e2e-trigger-run and website-check must keep JWT verification ENABLED -
 // both are called from the browser with a real admin session.
 import { createClient } from "jsr:@supabase/supabase-js@2";
-
-function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
-}
+import { timingSafeEqual } from "../_shared/timingSafeEqual.ts";
 
 Deno.serve(async (req) => {
   // Kein Origin-basiertes CORS hier — der Aufrufer ist ein CI-Runner ohne

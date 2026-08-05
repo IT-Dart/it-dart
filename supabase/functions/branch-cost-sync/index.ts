@@ -15,16 +15,7 @@
 // 2026-08-04/05), werden NICHT automatisch erfasst -- die Sitzung, die einen
 // solchen Branch anlegt, muss denselben Aufruf selbst nachziehen.
 import { createClient } from "jsr:@supabase/supabase-js@2";
-
-// Gleiches Muster wie e2e-report-ingest: timingSafeEqual statt eines
-// simplen !==, um Seitenkanal-Timing-Angriffe auf den Shared Secret zu
-// vermeiden.
-function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
-}
+import { timingSafeEqual } from "../_shared/timingSafeEqual.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { status: 204 });
@@ -53,29 +44,18 @@ Deno.serve(async (req) => {
   );
 
   if (event === "start") {
-    // Kein .upsert() mit ON-CONFLICT-Inferenz -- branch_cost_log_active_branch_idx
-    // ist ein PARTIELLER Unique-Index (nur status='active'), den Postgres für
-    // ON CONFLICT nicht ohne explizite WHERE-Klausel auflösen kann. Expliziter
-    // Select-dann-Insert stattdessen (ein doppelter "start" für dieselbe
-    // branch_id ist ohnehin nur bei einem echten Step-Retry innerhalb desselben
-    // Laufs denkbar, da branch_id pro Branch-Anlage eine frische UUID ist).
-    const { data: existing } = await supabase
-      .from("branch_cost_log")
-      .select("id")
-      .eq("branch_id", branch_id)
-      .eq("status", "active")
-      .maybeSingle();
-    const { error } = existing
-      ? await supabase.from("branch_cost_log").update({ last_seen_at: new Date().toISOString() }).eq("id", existing.id)
-      : await supabase.from("branch_cost_log").insert({
-          branch_id,
-          branch_name,
-          status: "active",
-          started_at: new Date().toISOString(),
-          last_seen_at: new Date().toISOString(),
-        });
+    // Ein Aufruf statt zwei sequenziellen (SELECT dann INSERT/UPDATE) --
+    // branch_cost_log_start() kapselt "INSERT ... ON CONFLICT (branch_id)
+    // WHERE status='active' DO UPDATE" (siehe Migration
+    // 20260805080000_branch_cost_log_start_upsert.sql; supabase-js'
+    // getyptes .upsert() kann diese partielle WHERE-Klausel nicht selbst
+    // ausdrücken).
+    const { error } = await supabase.rpc("branch_cost_log_start", {
+      p_branch_id: branch_id,
+      p_branch_name: branch_name,
+    });
     if (error) {
-      console.error("[branch-cost-sync] start-Insert fehlgeschlagen:", error.message);
+      console.error("[branch-cost-sync] start-Upsert fehlgeschlagen:", error.message);
       return new Response(JSON.stringify({ error: "Speichern fehlgeschlagen." }), { status: 500 });
     }
   } else {
