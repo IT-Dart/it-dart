@@ -53,6 +53,20 @@ const loginLinkRequested=authModeRequested==="login";
 
 export default function ITDart({onOpenExam,onOpenLegal,wartungsmodus}){
   const [view,setView]=useState(()=>(registerLinkRequested||loginLinkRequested)?"auth":"cover");
+  // Sanfter Seitenuebergang bei jedem view-Wechsel (To-Do #126): nutzt die
+  // native View-Transitions-API des Browsers statt einer eigenen Animations-
+  // Bibliothek -- automatischer Crossfade zwischen altem/neuem DOM, ganz ohne
+  // die bestehenden if(view===...)-Returns umzubauen. Faellt in Browsern ohne
+  // Unterstuetzung (z.B. Firefox) automatisch auf den bisherigen sofortigen
+  // Wechsel zurueck, respektiert prefers-reduced-motion wie AIChat.jsx.
+  const changeView=(v)=>{
+    const reduceMotion=typeof window!=="undefined"&&window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    if(!reduceMotion&&typeof document!=="undefined"&&document.startViewTransition){
+      document.startViewTransition(()=>setView(v));
+    }else{
+      setView(v);
+    }
+  };
   const [statTarget,setStatTarget]=useState(null); // Trainee {id,email}, wenn ein Trainer dessen Statistik ansieht
   const [mod,setMod]=useState(null);
   const [idx,setIdx]=useState(0);
@@ -109,8 +123,8 @@ export default function ITDart({onOpenExam,onOpenLegal,wartungsmodus}){
   const canOpen=m=>!!user&&(isFreeMod(m)||isPremium);
 
   const openMod=m=>{
-    if(!canOpen(m)){setMod(m);setView("locked");return;}
-    setMod(m);setIdx(0);setPhase(doneFor(m.id).size>0?"learn":"intro");setView("mod");
+    if(!canOpen(m)){setMod(m);changeView("locked");return;}
+    setMod(m);setIdx(0);setPhase(doneFor(m.id).size>0?"learn":"intro");changeView("mod");
   };
 
   // Im Wartungsmodus soll "Zurück" auf dem Login-Screen wirklich zur
@@ -125,28 +139,28 @@ export default function ITDart({onOpenExam,onOpenLegal,wartungsmodus}){
   // Single-Session-Enforcement die eigene, noch aktive erste Sitzung
   // hinauswerfen -- ein bereits angemeldeter Nutzer geht hier also einfach
   // direkt weiter in die App, statt erneut zur Eingabe aufgefordert zu werden.
-  if(view==="auth"&&!user)return <AuthScreen onClose={()=>{(wartungsmodus&&!user)?(window.location.href=canonicalUrl("/")):setView("overview");}} initialMode={registerLinkRequested?"register":"login"} onOpenLegal={onOpenLegal}/>;
-  if(view==="admin"||view==="junior-admin")return (isAdmin||isJuniorAdmin)?<AdminScreen onClose={()=>setView("overview")}/>:null;
-  if(view==="e2e-tests")return isAdmin?<E2ETestScreen onClose={()=>setView("overview")}/>:null;
-  if(view==="website-check")return isAdmin?<WebsiteCheckScreen onClose={()=>setView("overview")}/>:null;
-  if(view==="kosten")return isAdmin?<CostDashboardScreen onClose={()=>setView("overview")}/>:null;
-  if(view==="monitoring")return isAdmin?<MonitoringScreen onClose={()=>setView("overview")}/>:null;
-  if(view==="audit-log")return isAdmin?<AuditLogScreen onClose={()=>setView("overview")}/>:null;
-  if(view==="todo")return isAdmin?<TodoScreen onClose={()=>setView("overview")}/>:null;
-  if(view==="feedback")return isAdmin?<FeedbackScreen onClose={()=>setView("overview")}/>:null;
-  if(view==="delete-account")return <DeleteAccountScreen onClose={()=>setView("overview")}/>;
-  if(view==="statistik")return <StatistikScreen viewUser={statTarget} onClose={()=>{setView(statTarget?"trainer":"overview");setStatTarget(null);}}/>;
-  if(view==="trainer")return isTrainer?<TrainerScreen onClose={()=>setView("overview")} onOpenUser={(u)=>{setStatTarget(u);setView("statistik");}} onOpenLegal={onOpenLegal}/>:null;
-  if(view==="hilfe")return <HilfeScreen onClose={()=>setView(user?"overview":"cover")}/>;
+  if(view==="auth"&&!user)return <AuthScreen onClose={()=>{(wartungsmodus&&!user)?(window.location.href=canonicalUrl("/")):changeView("overview");}} initialMode={registerLinkRequested?"register":"login"} onOpenLegal={onOpenLegal}/>;
+  if(view==="admin"||view==="junior-admin")return (isAdmin||isJuniorAdmin)?<AdminScreen onClose={()=>changeView("overview")}/>:null;
+  if(view==="e2e-tests")return isAdmin?<E2ETestScreen onClose={()=>changeView("overview")}/>:null;
+  if(view==="website-check")return isAdmin?<WebsiteCheckScreen onClose={()=>changeView("overview")}/>:null;
+  if(view==="kosten")return isAdmin?<CostDashboardScreen onClose={()=>changeView("overview")}/>:null;
+  if(view==="monitoring")return isAdmin?<MonitoringScreen onClose={()=>changeView("overview")}/>:null;
+  if(view==="audit-log")return isAdmin?<AuditLogScreen onClose={()=>changeView("overview")}/>:null;
+  if(view==="todo")return isAdmin?<TodoScreen onClose={()=>changeView("overview")}/>:null;
+  if(view==="feedback")return isAdmin?<FeedbackScreen onClose={()=>changeView("overview")}/>:null;
+  if(view==="delete-account")return <DeleteAccountScreen onClose={()=>changeView("overview")}/>;
+  if(view==="statistik")return <StatistikScreen viewUser={statTarget} onClose={()=>{changeView(statTarget?"trainer":"overview");setStatTarget(null);}}/>;
+  if(view==="trainer")return isTrainer?<TrainerScreen onClose={()=>changeView("overview")} onOpenUser={(u)=>{setStatTarget(u);changeView("statistik");}} onOpenLegal={onOpenLegal}/>:null;
+  if(view==="hilfe")return <HilfeScreen onClose={()=>changeView(user?"overview":"cover")}/>;
 
   if(view==="locked"&&mod)return(
     <div style={wrap}><div style={{...inner,textAlign:"center",paddingTop:40}}>
-      <button onClick={()=>setView("overview")} style={{...ghost,marginBottom:24}}>← Übersicht</button>
+      <button onClick={()=>changeView("overview")} style={{...ghost,marginBottom:24}}>← Übersicht</button>
       <div style={{fontSize:48,marginBottom:12}}>🔒</div>
       <h2 style={{fontSize:20,fontWeight:700,marginBottom:8}} dangerouslySetInnerHTML={{__html:mod.t}}/>
       {!user?(<>
         <p style={{fontSize:14,color:C.t2,marginBottom:20,lineHeight:1.6}}>Dieses Modul ist Teil von IT-Dart Premium. Melde dich zuerst an, um deinen Zugang zu sehen.</p>
-        <button onClick={()=>setView("auth")} style={{...pri,width:"100%",justifyContent:"center"}}>Anmelden / Registrieren →</button>
+        <button onClick={()=>changeView("auth")} style={{...pri,width:"100%",justifyContent:"center"}}>Anmelden / Registrieren →</button>
       </>):(<>
         <p style={{fontSize:14,color:C.t2,marginBottom:20,lineHeight:1.6}}>Dieses Modul ist Teil von IT-Dart Premium. Dein Konto ({user.email}) hat noch keinen Premium-Zugang.</p>
         <p style={{fontSize:13,color:C.mu}}>Premium-Käufe sind noch nicht selbstständig möglich, da unsere Zahlungsabwicklung gerade eingerichtet wird. Schreib uns in der Zwischenzeit an <a href="mailto:kontakt@it-dart.de" style={{color:C.cy}}>kontakt@it-dart.de</a>, um Premium freizuschalten.</p>
@@ -180,15 +194,15 @@ export default function ITDart({onOpenExam,onOpenLegal,wartungsmodus}){
         ))}
       </div>
       {user?(
-        <button onClick={()=>setView("overview")} style={{...pri,width:"100%",justifyContent:"center",padding:"14px 18px",fontSize:15}}>Lernpfad starten →</button>
+        <button onClick={()=>changeView("overview")} style={{...pri,width:"100%",justifyContent:"center",padding:"14px 18px",fontSize:15}}>Lernpfad starten →</button>
       ):(
         <button disabled title="Bitte zuerst anmelden." style={{...pri,width:"100%",justifyContent:"center",padding:"14px 18px",fontSize:15,opacity:.4,cursor:"not-allowed"}}>Lernpfad starten →</button>
       )}
       <div style={{marginTop:14,textAlign:"center"}}>
         {user?(
-          <span style={{fontSize:12,color:C.mu}}>Angemeldet als {user.email} · <button onClick={()=>onOpenLegal?.("username")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Nutzername ändern</button> · <button onClick={handleSignOut} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Abmelden</button> · <button onClick={()=>setView("hilfe")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>❓ Hilfe</button></span>
+          <span style={{fontSize:12,color:C.mu}}>Angemeldet als {user.email} · <button onClick={()=>onOpenLegal?.("username")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Nutzername ändern</button> · <button onClick={handleSignOut} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Abmelden</button> · <button onClick={()=>changeView("hilfe")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>❓ Hilfe</button></span>
         ):(
-          <span style={{fontSize:12,color:C.mu}}><button onClick={()=>setView("auth")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Anmelden</button> · <span title="Registrierung derzeit geschlossen." style={{color:C.mu,opacity:.4,cursor:"not-allowed"}}>Registrieren</span> · <button onClick={()=>setView("hilfe")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>❓ Hilfe</button></span>
+          <span style={{fontSize:12,color:C.mu}}><button onClick={()=>changeView("auth")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Anmelden</button> · <span title="Registrierung derzeit geschlossen." style={{color:C.mu,opacity:.4,cursor:"not-allowed"}}>Registrieren</span> · <button onClick={()=>changeView("hilfe")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>❓ Hilfe</button></span>
         )}
       </div>
       {onOpenLegal&&<div style={{marginTop:20,textAlign:"center",display:"flex",gap:14,justifyContent:"center",flexWrap:"wrap"}}>
@@ -211,9 +225,9 @@ export default function ITDart({onOpenExam,onOpenLegal,wartungsmodus}){
       </div>
       <div style={{textAlign:"right",marginBottom:16}}>
         {user?(
-          <span style={{fontSize:12,color:C.mu}}>{user.email} {isPremium?(premiumUntilDate?`· ⭐ Premium bis ${premiumUntilDate}`:"· ⭐ Premium"):"· Free"} {isAdmin&&<>· <button onClick={()=>setView("admin")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>⚙️ Admin</button> · <button onClick={()=>setView("e2e-tests")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>🧪 E2E-Tests</button> · <button onClick={()=>setView("website-check")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>🌐 Website-Check</button> · <button onClick={()=>setView("kosten")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>💰 Kosten</button> · <button onClick={()=>setView("monitoring")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>🩺 Monitoring</button> · <button onClick={()=>setView("audit-log")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>📜 Audit-Log</button> · <button onClick={()=>setView("todo")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>✅ To-Do</button> · <button onClick={()=>setView("feedback")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>💬 Feedback</button></>} {!isAdmin&&isJuniorAdmin&&<>· <button onClick={()=>setView("junior-admin")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>🧑‍💼 Junior-Admin</button></>} {isTrainer&&<>· <button onClick={()=>setView("trainer")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>🎓 Trainer-Ansicht</button></>} · <button onClick={()=>setView("statistik")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>📊 Statistik</button> · <button onClick={()=>setView("hilfe")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>❓ Hilfe</button> · <button onClick={handleSignOut} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Abmelden</button> · <button onClick={()=>setView("delete-account")} style={{background:"none",border:"none",color:C.mu,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Konto löschen</button></span>
+          <span style={{fontSize:12,color:C.mu}}>{user.email} {isPremium?(premiumUntilDate?`· ⭐ Premium bis ${premiumUntilDate}`:"· ⭐ Premium"):"· Free"} {isAdmin&&<>· <button onClick={()=>changeView("admin")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>⚙️ Admin</button> · <button onClick={()=>changeView("e2e-tests")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>🧪 E2E-Tests</button> · <button onClick={()=>changeView("website-check")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>🌐 Website-Check</button> · <button onClick={()=>changeView("kosten")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>💰 Kosten</button> · <button onClick={()=>changeView("monitoring")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>🩺 Monitoring</button> · <button onClick={()=>changeView("audit-log")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>📜 Audit-Log</button> · <button onClick={()=>changeView("todo")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>✅ To-Do</button> · <button onClick={()=>changeView("feedback")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>💬 Feedback</button></>} {!isAdmin&&isJuniorAdmin&&<>· <button onClick={()=>changeView("junior-admin")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>🧑‍💼 Junior-Admin</button></>} {isTrainer&&<>· <button onClick={()=>changeView("trainer")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>🎓 Trainer-Ansicht</button></>} · <button onClick={()=>changeView("statistik")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>📊 Statistik</button> · <button onClick={()=>changeView("hilfe")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>❓ Hilfe</button> · <button onClick={handleSignOut} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Abmelden</button> · <button onClick={()=>changeView("delete-account")} style={{background:"none",border:"none",color:C.mu,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Konto löschen</button></span>
         ):(
-          <button onClick={()=>setView("auth")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Anmelden / Registrieren</button>
+          <button onClick={()=>changeView("auth")} style={{background:"none",border:"none",color:C.cy,cursor:"pointer",fontSize:12,textDecoration:"underline",padding:0,fontFamily:ff}}>Anmelden / Registrieren</button>
         )}
       </div>
       {user&&showOnboardingFeedback&&<FeedbackUmfrage type="onboarding" question="Was erwartest du von dieser Plattform?" placeholder="Kurz in eigenen Worten..." onDone={dismissOnboardingFeedback}/>}
@@ -244,17 +258,17 @@ export default function ITDart({onOpenExam,onOpenLegal,wartungsmodus}){
       </div>
       {onOpenExam&&<button onClick={onOpenExam} style={{...pri,width:"100%",justifyContent:"center",marginTop:20}}>🎯 Prüfungsvorbereitung →</button>}
       <div style={{textAlign:"center",marginTop:16}}>
-        <button onClick={()=>setView("cover")} style={{background:"none",border:"none",color:C.mu,fontSize:12,cursor:"pointer",textDecoration:"underline"}}>ℹ️ Über IT-Dart</button>
+        <button onClick={()=>changeView("cover")} style={{background:"none",border:"none",color:C.mu,fontSize:12,cursor:"pointer",textDecoration:"underline"}}>ℹ️ Über IT-Dart</button>
       </div>
     </div></div>
   );
 
   if(view==="mod"&&mod){
     const data=DATA[mod.id];
-    if(!data)return(<div style={wrap}><div style={inner}><Hdr back={()=>setView("overview")}/><div style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:10,padding:"2.5rem 1rem",textAlign:"center"}}><div style={{fontSize:36}}>{mod.e}</div><p style={{fontSize:16,fontWeight:600,margin:"12px 0 6px"}} dangerouslySetInnerHTML={{__html:mod.t}}/><p style={{fontSize:14,color:C.mu}}>Wird bald ausgearbeitet.</p><span style={{display:"inline-block",marginTop:10,fontSize:11,padding:"2px 8px",borderRadius:4,background:"#1e3a5f",color:"#93c5fd",fontWeight:500}}>Folgt bald</span></div></div></div>);
+    if(!data)return(<div style={wrap}><div style={inner}><Hdr back={()=>changeView("overview")}/><div style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:10,padding:"2.5rem 1rem",textAlign:"center"}}><div style={{fontSize:36}}>{mod.e}</div><p style={{fontSize:16,fontWeight:600,margin:"12px 0 6px"}} dangerouslySetInnerHTML={{__html:mod.t}}/><p style={{fontSize:14,color:C.mu}}>Wird bald ausgearbeitet.</p><span style={{display:"inline-block",marginTop:10,fontSize:11,padding:"2px 8px",borderRadius:4,background:"#1e3a5f",color:"#93c5fd",fontWeight:500}}>Folgt bald</span></div></div></div>);
     if(phase==="intro")return(
       <div style={wrap}><div style={inner}>
-        <Hdr back={()=>setView("overview")}/>
+        <Hdr back={()=>changeView("overview")}/>
         <p style={{fontSize:11,fontWeight:600,letterSpacing:".06em",textTransform:"uppercase",color:C.cy,marginBottom:6}}>Modul {MODS.findIndex(m=>m.id===mod.id)+1} von {MODS.length}</p>
         <h2 style={{fontSize:20,fontWeight:700,marginBottom:10}} dangerouslySetInnerHTML={{__html:data.title}}/>
         {data.intro&&<p style={{fontSize:14,color:C.t2,lineHeight:1.7,marginBottom:20}}>{data.intro}</p>}
@@ -278,11 +292,11 @@ export default function ITDart({onOpenExam,onOpenLegal,wartungsmodus}){
     );
     if(phase==="quiz")return(
       <div style={wrap}><div style={inner}>
-        <Hdr back={()=>setView("overview")}/>
+        <Hdr back={()=>changeView("overview")}/>
         <p style={{fontSize:11,fontWeight:600,letterSpacing:".06em",textTransform:"uppercase",color:C.cy,marginBottom:6}}>Modul {MODS.findIndex(m=>m.id===mod.id)+1} · Quiz</p>
         <h2 style={{fontSize:20,fontWeight:700,marginBottom:8}} dangerouslySetInnerHTML={{__html:`${mod.e} ${data.title}`}}/>
         {!isPremium&&data.quiz.length>FREE_QUIZ_N&&<p style={{fontSize:13,color:C.mu,marginBottom:16}}>Kostenlose Vorschau: {FREE_QUIZ_N} von {data.quiz.length} Fragen. Mit Premium: alle Fragen.</p>}
-        <Quiz qs={isPremium?data.quiz:data.quiz.slice(0,FREE_QUIZ_N)} onDone={()=>setView("overview")} title={data.title.replace(/&amp;/g,"&")} mid={mod.id} badgeImages={LERNNACHWEIS_BADGE_IMAGES}/>
+        <Quiz qs={isPremium?data.quiz:data.quiz.slice(0,FREE_QUIZ_N)} onDone={()=>changeView("overview")} title={data.title.replace(/&amp;/g,"&")} mid={mod.id} badgeImages={LERNNACHWEIS_BADGE_IMAGES}/>
       </div></div>
     );
     const item=data.items[idx];
@@ -290,7 +304,7 @@ export default function ITDart({onOpenExam,onOpenLegal,wartungsmodus}){
     const topicLocked=topicLimit!=null&&item.n>topicLimit;
     return(
       <div style={wrap}><div style={inner}>
-        <Hdr back={()=>setView("overview")}/>
+        <Hdr back={()=>changeView("overview")}/>
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
           <button onClick={()=>setPhase("intro")} title="Zur Modul-Startseite" style={{display:"flex",alignItems:"center",gap:6,background:"none",border:"none",padding:0,cursor:"pointer",fontSize:14,fontWeight:600,color:C.cy,fontFamily:"inherit",textAlign:"left"}}><span style={{fontSize:13}}>↩</span><span dangerouslySetInnerHTML={{__html:data.title}}/></button>
           <span style={{fontSize:12,color:C.mu}}>Thema {item.n} / {data.items.length}</span>
@@ -302,7 +316,7 @@ export default function ITDart({onOpenExam,onOpenLegal,wartungsmodus}){
             <p style={{fontSize:15,fontWeight:600,marginBottom:8}}>Ab hier geht's mit Premium weiter</p>
             <p style={{fontSize:13,color:C.t2,marginBottom:18,lineHeight:1.6}}>Die ersten {topicLimit} Themen von {data.title.replace(/&amp;/g,"&")} sind als Vorschau frei. Die restlichen {data.items.length-topicLimit} Themen sind Teil von IT-Dart Premium.</p>
             {!user?(
-              <button onClick={()=>setView("auth")} style={{...pri,width:"100%",justifyContent:"center"}}>Anmelden / Registrieren →</button>
+              <button onClick={()=>changeView("auth")} style={{...pri,width:"100%",justifyContent:"center"}}>Anmelden / Registrieren →</button>
             ):(
               <p style={{fontSize:13,color:C.mu}}>Dein Konto ({user.email}) hat noch keinen Premium-Zugang.</p>
             )}
@@ -322,7 +336,7 @@ export default function ITDart({onOpenExam,onOpenLegal,wartungsmodus}){
         </>)}
         <div style={{display:"flex",gap:8,marginBottom:20}}>
           <button disabled={idx===0} onClick={()=>setIdx(i=>i-1)} style={{...ghost,flex:1,justifyContent:"center",opacity:idx===0?.45:1}}>← Zurück</button>
-          {!topicLocked&&<button onClick={()=>{if(idx===data.items.length-1){if(data.quiz?.length)setPhase("quiz");else{mark(mod.id,item.n);setView("overview");}}else{const ni=idx+1;setIdx(ni);const n=data.items[ni].n;if(topicLimit==null||n<=topicLimit)mark(mod.id,n);}}} style={{...pri,flex:1,justifyContent:"center"}}>
+          {!topicLocked&&<button onClick={()=>{if(idx===data.items.length-1){if(data.quiz?.length)setPhase("quiz");else{mark(mod.id,item.n);changeView("overview");}}else{const ni=idx+1;setIdx(ni);const n=data.items[ni].n;if(topicLimit==null||n<=topicLimit)mark(mod.id,n);}}} style={{...pri,flex:1,justifyContent:"center"}}>
             {idx===data.items.length-1?(data.quiz?.length?"🎯 Zum Quiz →":"✓ Abschließen"):"Weiter →"}
           </button>}
         </div>
