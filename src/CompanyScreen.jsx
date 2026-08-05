@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { C, pri, ghost, wrap, inner, ff } from "./lib/theme";
 import { useAuth } from "./lib/AuthContext";
 import { canonicalUrl } from "./lib/nav";
@@ -149,6 +149,27 @@ function ParticleBackground(){
   return <canvas ref={canvasRef} style={{position:"absolute",inset:0,width:"100%",height:"100%",pointerEvents:"none"}}/>;
 }
 
+// Sanftes Fade-in-on-Scroll fuer die Abschnitte unterhalb des ersten
+// Bildschirms (Hero/Intro/CTA bleiben sofort sichtbar, kein verzoegerter
+// erster Eindruck). Zeigt Inhalte per IntersectionObserver einmalig an,
+// sobald sie ins Blickfeld kommen -- respektiert prefers-reduced-motion
+// genau wie ParticleBackground oben, dann sofort voll sichtbar ohne Observer.
+function Reveal({children}){
+  const ref=useRef(null);
+  const [visible,setVisible]=useState(()=>window.matchMedia?.("(prefers-reduced-motion: reduce)").matches);
+  useEffect(()=>{
+    if(visible)return;
+    const el=ref.current;
+    if(!el)return;
+    const io=new IntersectionObserver(([entry])=>{
+      if(entry.isIntersecting){setVisible(true);io.disconnect();}
+    },{threshold:0.15,rootMargin:"0px 0px -40px 0px"});
+    io.observe(el);
+    return()=>io.disconnect();
+  },[visible]);
+  return <div ref={ref} style={{opacity:visible?1:0,transform:visible?"none":"translateY(16px)",transition:"opacity 0.6s ease,transform 0.6s ease"}}>{children}</div>;
+}
+
 export default function CompanyScreen({onEnterApp,onOpenLegal}){
   const {user,signOutAndRedirect,signingOut}=useAuth();
   // Anonyme Besucher haben noch kein Konto zum Betreten der App — führt sie
@@ -185,13 +206,13 @@ export default function CompanyScreen({onEnterApp,onOpenLegal}){
       <button onClick={handleEnter} style={{...pri,width:"100%",justifyContent:"center",padding:"14px 18px",fontSize:15,marginTop:14}}>{user?"Zum Lerntool „Bleib am Dart!\" →":"Anmelden / Registrieren →"}</button>
       {!user&&<p style={{fontSize:11,color:C.mu,marginTop:8,marginBottom:0,textAlign:"center"}}>Registrierung und kostenlose Module sind bereits nutzbar. Premium-Käufe sind noch nicht selbstständig möglich, da unsere Zahlungsabwicklung gerade eingerichtet wird — <a href="mailto:kontakt@it-dart.de" style={{color:C.cy}}>kontakt@it-dart.de</a> für Premium-Zugang in der Zwischenzeit.</p>}
 
-      <h2 style={h2}>Vision</h2>
-      <p style={p}>{VISION_TEXT}</p>
+      <Reveal><h2 style={h2}>Vision</h2>
+      <p style={p}>{VISION_TEXT}</p></Reveal>
 
-      <h2 style={h2}>Ziel</h2>
-      <p style={p}>{ZIEL_TEXT}</p>
+      <Reveal><h2 style={h2}>Ziel</h2>
+      <p style={p}>{ZIEL_TEXT}</p></Reveal>
 
-      <h2 style={h2}>Leistungen</h2>
+      <Reveal><h2 style={h2}>Leistungen</h2>
       <div style={{display:"flex",flexDirection:"column",gap:10,marginBottom:14}}>
         {leistungenRow.map((f,i)=>(
           <div key={i} style={{display:"flex",alignItems:"center",gap:12,background:C.s2,borderRadius:10,padding:"10px 14px"}}>
@@ -199,22 +220,22 @@ export default function CompanyScreen({onEnterApp,onOpenLegal}){
           </div>
         ))}
       </div>
-      <button onClick={()=>onOpenLegal("leistungen")} style={{...ctaAccent,width:"100%",justifyContent:"center"}}>Alle Leistungen & Pakete ansehen →</button>
+      <button onClick={()=>onOpenLegal("leistungen")} style={{...ctaAccent,width:"100%",justifyContent:"center"}}>Alle Leistungen & Pakete ansehen →</button></Reveal>
 
-      <h2 style={h2}>Erweiterungen</h2>
+      <Reveal><h2 style={h2}>Erweiterungen</h2>
       <div style={{display:"flex",flexDirection:"column",gap:10}}>
         {featureRow.map((f,i)=>(
           <div key={i} style={{display:"flex",alignItems:"center",gap:12,background:C.s2,borderRadius:10,padding:"10px 14px"}}>
             <img src={f.icon} alt="" style={{width:48,height:48,borderRadius:10,flexShrink:0}}/><span style={{fontSize:14,color:C.t2}}>{f.t}</span>
           </div>
         ))}
-      </div>
+      </div></Reveal>
 
-      <h2 style={h2}>Kooperationen & Partnerschaften</h2>
+      <Reveal><h2 style={h2}>Kooperationen & Partnerschaften</h2>
       <p style={p}>{KOOPERATION_TEXT}</p>
-      <a href="mailto:kontakt@it-dart.de" style={{...ctaAccent,width:"100%",justifyContent:"center",textDecoration:"none",boxSizing:"border-box"}}>Partnerschaft anfragen →</a>
+      <a href="mailto:kontakt@it-dart.de" style={{...ctaAccent,width:"100%",justifyContent:"center",textDecoration:"none",boxSizing:"border-box"}}>Partnerschaft anfragen →</a></Reveal>
 
-      <h2 style={h2}>Materialien & Publikationen</h2>
+      <Reveal><h2 style={h2}>Materialien & Publikationen</h2>
       <p style={p}>Der Verkauf startet, sobald die ersten Titel fertiggestellt sind.</p>
 
       <p style={{...p,fontWeight:600,color:C.t,marginBottom:8}}>E-Books</p>
@@ -231,12 +252,12 @@ export default function CompanyScreen({onEnterApp,onOpenLegal}){
             {book.status==="in_preparation"&&<span style={badge("#3a2e0f",C.am)}>Erscheint in Kürze</span>}
           </div>
         </div>
-      ))}
+      ))}</Reveal>
 
-      <p style={{...p,fontWeight:600,color:C.t,marginTop:16,marginBottom:8}}>Kostenlose Lernmaterialien</p>
+      <Reveal><p style={{...p,fontWeight:600,color:C.t,marginTop:16,marginBottom:8}}>Kostenlose Lernmaterialien</p>
       <div style={card}>
         <p style={{...p,marginBottom:0}}>Ergänzend zur Plattform entstehen herunterladbare Lernmaterialien — zum Beispiel Cheat Sheets und Zusammenfassungen zu einzelnen Modulen.</p>
-      </div>
+      </div></Reveal>
 
       <button onClick={handleEnter} style={{...pri,width:"100%",justifyContent:"center",padding:"14px 18px",fontSize:15,marginTop:28}}>{user?"Zum Lerntool „Bleib am Dart!\" →":"Anmelden / Registrieren →"}</button>
 
