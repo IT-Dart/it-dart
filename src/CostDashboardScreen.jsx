@@ -18,6 +18,7 @@ export default function CostDashboardScreen({onClose}){
   const [newCost,setNewCost]=useState({provider:"",amount:"",currency:"USD",billing_cycle:"monthly",category:""});
   const [costBusyId,setCostBusyId]=useState(null);
   const [recurringMsg,setRecurringMsg]=useState(null);
+  const [branchCost,setBranchCost]=useState(null); // null=lädt noch
 
   const loadCostSummary=async()=>{
     const {data,error}=await supabase.rpc("get_ai_usage_cost_summary");
@@ -37,7 +38,12 @@ export default function CostDashboardScreen({onClose}){
     if(error){console.error("[CostDashboardScreen] loadRecurringCosts failed:",error.message);setRecurringCosts([]);return;}
     setRecurringCosts(data||[]);
   };
-  useEffect(()=>{loadCostSummary();loadToolOverview();loadRecurringCosts();},[]);
+  const loadBranchCost=async()=>{
+    const {data,error}=await supabase.rpc("get_branch_cost_summary").maybeSingle();
+    if(error){console.error("[CostDashboardScreen] loadBranchCost failed:",error.message);setBranchCost(false);return;}
+    setBranchCost(data);
+  };
+  useEffect(()=>{loadCostSummary();loadToolOverview();loadRecurringCosts();loadBranchCost();},[]);
 
   const addRecurringCost=async(e)=>{
     e.preventDefault();
@@ -238,6 +244,34 @@ export default function CostDashboardScreen({onClose}){
           <input placeholder="Kategorie (optional)" value={newCost.category} onChange={e=>setNewCost(n=>({...n,category:e.target.value}))} style={{...input,flex:"1 1 120px"}}/>
           <button type="submit" disabled={costBusyId==="__new__"} style={{...pri,flexShrink:0,opacity:costBusyId==="__new__"?.6:1}}>{costBusyId==="__new__"?"...":"Hinzufügen"}</button>
         </form>
+      </div>
+
+      <div style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:12,padding:"14px 16px",marginTop:24}}>
+        <p style={{fontSize:12,fontWeight:600,letterSpacing:".04em",textTransform:"uppercase",color:C.cy,marginBottom:10}}>Supabase-Branch-Kosten (E2E-Testläufe)</p>
+        {branchCost===null&&<p style={{fontSize:12,color:C.mu,margin:0}}>Lädt…</p>}
+        {branchCost===false&&<p style={{fontSize:12,color:C.mu,margin:0}}>Konnte nicht geladen werden.</p>}
+        {branchCost&&<>
+          <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}>
+            <span style={{width:8,height:8,borderRadius:"50%",background:branchCost.active_branches?.length>0?"#86efac":C.mu,flexShrink:0}}/>
+            <span style={{fontSize:13,fontWeight:600}}>{branchCost.active_branches?.length>0?`${branchCost.active_branches.length} Branch(es) aktiv`:"Keine Branch aktiv"}</span>
+          </div>
+          {branchCost.active_branches?.length>0&&<div style={{marginBottom:12}}>
+            {branchCost.active_branches.map(b=>(
+              <div key={b.branch_name} style={{display:"flex",gap:10,fontSize:12,color:C.t2,padding:"4px 0",flexWrap:"wrap"}}>
+                <span style={{fontWeight:600,color:C.t}}>{b.branch_name}</span>
+                <span>seit {Math.round(b.minutes_running)} Min.</span>
+                <span style={{marginLeft:"auto"}}>${Number(b.cost_so_far_usd).toFixed(4)} bisher</span>
+              </div>
+            ))}
+          </div>}
+          <div style={{display:"flex",gap:24,flexWrap:"wrap"}}>
+            <div><div style={{fontSize:20,fontWeight:700}}>${Number(branchCost.today_cost_usd).toFixed(4)}</div><span style={{fontSize:11,color:C.mu}}>heute</span></div>
+            <div><div style={{fontSize:20,fontWeight:700}}>${Number(branchCost.month_cost_usd).toFixed(4)}</div><span style={{fontSize:11,color:C.mu}}>diesen Monat</span></div>
+          </div>
+          <p style={{fontSize:11,color:C.mu,marginTop:8,marginBottom:0}}>
+            {branchCost.last_synced_at?`Letzte Meldung: ${new Date(branchCost.last_synced_at).toLocaleString("de-DE")}`:"Noch keine Meldung."} · Erfasst automatisch jeden E2E-Testlauf (nicht ad-hoc angelegte Debug-Branches) · Stützwert zur Zuordnung, für die Buchhaltung am Monatsende die echte Supabase-Rechnung heranziehen.
+          </p>
+        </>}
       </div>
     </div></div>
   );

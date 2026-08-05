@@ -61,6 +61,25 @@ jobs:
           echo "branch_ref=$branch_ref" >> "$GITHUB_OUTPUT"
           echo "Branch $branch_name angelegt (id=$branch_id, ref=$branch_ref)."
 
+      - name: "Branch-Kosten: Start melden"
+        # Meldet Branch-Anlage an branch-cost-sync (siehe Migration
+        # 20260805020000_branch_cost_tracking.sql) -- bewusst kein Poll gegen
+        # die Supabase-Management-API (Konto-weiter, unscoped Vollzugriffs-
+        # Token, dafür ein unverhältnismäßiges Risiko), sondern ein
+        # Shared-Secret-Push, gleiches Muster wie "Ergebnis an Supabase
+        # melden" unten. Nicht kritisch für den Testlauf selbst -- ein
+        # Fehlschlag hier darf die Tests nicht verhindern.
+        env:
+          BRANCH_COST_SECRET: ${{ secrets.BRANCH_COST_SECRET }}
+        run: |
+          branch_id="${{ steps.create_branch.outputs.branch_id }}"
+          branch_name="e2e-run-${{ inputs.run_id }}"
+          curl -s -o /dev/null -X POST "https://vukqjpqawzhfvpjjpipp.supabase.co/functions/v1/branch-cost-sync" \
+            -H "Content-Type: application/json" \
+            -H "X-Branch-Cost-Secret: $BRANCH_COST_SECRET" \
+            -d "{\"branch_id\":\"$branch_id\",\"branch_name\":\"$branch_name\",\"event\":\"start\"}" \
+            || echo "::warning::Branch-Kosten-Start konnte nicht gemeldet werden (nicht kritisch für den Testlauf)."
+
       - name: Auf Branch-Bereitschaft warten
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
@@ -268,6 +287,20 @@ jobs:
           fi
 
       # --- Aufräumen: Branch immer löschen, egal ob Tests bestanden haben -
+
+      - name: "Branch-Kosten: Ende melden"
+        if: always()
+        env:
+          BRANCH_COST_SECRET: ${{ secrets.BRANCH_COST_SECRET }}
+        run: |
+          branch_id="${{ steps.create_branch.outputs.branch_id }}"
+          branch_name="e2e-run-${{ inputs.run_id }}"
+          if [ -z "$branch_id" ]; then exit 0; fi
+          curl -s -o /dev/null -X POST "https://vukqjpqawzhfvpjjpipp.supabase.co/functions/v1/branch-cost-sync" \
+            -H "Content-Type: application/json" \
+            -H "X-Branch-Cost-Secret: $BRANCH_COST_SECRET" \
+            -d "{\"branch_id\":\"$branch_id\",\"branch_name\":\"$branch_name\",\"event\":\"end\"}" \
+            || echo "::warning::Branch-Kosten-Ende konnte nicht gemeldet werden (nicht kritisch)."
 
       - name: Sandbox-Branch löschen
         if: always()
