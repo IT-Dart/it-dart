@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { flushSync } from "react-dom";
 import { C, pri, ghost, wrap, inner, ff } from "./lib/theme";
 import { useAuth } from "./lib/AuthContext";
 import { supabase } from "./lib/supabaseClient";
@@ -59,13 +60,37 @@ export default function ITDart({onOpenExam,onOpenLegal,wartungsmodus}){
   // die bestehenden if(view===...)-Returns umzubauen. Faellt in Browsern ohne
   // Unterstuetzung (z.B. Firefox) automatisch auf den bisherigen sofortigen
   // Wechsel zurueck, respektiert prefers-reduced-motion wie AIChat.jsx.
+  // Haelt eine Referenz auf den zuletzt gestarteten Uebergang, damit er vor
+  // einem harten Seitenwechsel (siehe hardNavigate) gezielt abgebrochen
+  // werden kann -- ohne das konnte der Browser beim Reload noch einmal den
+  // alten, eingefrorenen Schnappschuss zeichnen (real beobachtet: die
+  // Wartungsseite blitzte beim Abmelden auf, weil zuvor anonym ein
+  // Uebergang von dort aus lief und dessen Overlay nicht sauber beendet war).
+  const activeTransitionRef=useRef(null);
   const changeView=(v)=>{
     const reduceMotion=typeof window!=="undefined"&&window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
     if(!reduceMotion&&typeof document!=="undefined"&&document.startViewTransition){
-      document.startViewTransition(()=>setView(v));
+      // flushSync zwingt React, das Update SYNCHRON innerhalb des Transition-
+      // Callbacks abzuschliessen. Ohne das committet React die eigentliche
+      // DOM-Aenderung erst NACH Rueckkehr des Callbacks (automatisches
+      // Batching) -- die View-Transitions-API sieht "vorher" und "nachher"
+      // dann oft identisch aus, wodurch der Uebergang bei manchen Klicks
+      // gar nicht sichtbar war ("funktioniert nicht fuer alle Klicks").
+      const t=document.startViewTransition(()=>flushSync(()=>setView(v)));
+      activeTransitionRef.current=t;
+      t.finished.finally(()=>{if(activeTransitionRef.current===t)activeTransitionRef.current=null;});
     }else{
       setView(v);
     }
+  };
+  // Fuer die beiden Stellen, an denen statt eines internen view-Wechsels ein
+  // echter Seiten-Reload ausgeloest wird (Abmelden, Wartungsmodus-Zurueck):
+  // einen evtl. noch nicht abgeschlossenen Uebergang zuerst hart abbrechen
+  // (skipTransition), damit sein Schnappschuss-Overlay nicht noch einmal ins
+  // Reload-Bild kommt.
+  const hardNavigate=(url)=>{
+    activeTransitionRef.current?.skipTransition?.();
+    window.location.href=url;
   };
   const [statTarget,setStatTarget]=useState(null); // Trainee {id,email}, wenn ein Trainer dessen Statistik ansieht
   const [mod,setMod]=useState(null);
@@ -78,7 +103,7 @@ export default function ITDart({onOpenExam,onOpenLegal,wartungsmodus}){
   // einer entrechteten Ansicht derselben Seite zu landen, die im
   // Wartungsmodus dann die Baustellenseite zeigt) -- gleiches ?mode=login-
   // Muster wie der Login-Link auf WartungScreen.jsx.
-  const handleSignOut=async()=>{await signOut();window.location.href=canonicalUrl("/?mode=login");};
+  const handleSignOut=async()=>{await signOut();hardNavigate(canonicalUrl("/?mode=login"));};
   // Einmaliger Onboarding-Feedback-Fragebogen (To-Do #68) -- per localStorage
   // gemerkt, damit er nach dem ersten Ausfüllen/Überspringen nicht erneut nervt.
   const [showOnboardingFeedback,setShowOnboardingFeedback]=useState(()=>!localStorage.getItem("it_dart_onboarding_feedback_done"));
@@ -139,7 +164,7 @@ export default function ITDart({onOpenExam,onOpenLegal,wartungsmodus}){
   // Single-Session-Enforcement die eigene, noch aktive erste Sitzung
   // hinauswerfen -- ein bereits angemeldeter Nutzer geht hier also einfach
   // direkt weiter in die App, statt erneut zur Eingabe aufgefordert zu werden.
-  if(view==="auth"&&!user)return <AuthScreen onClose={()=>{(wartungsmodus&&!user)?(window.location.href=canonicalUrl("/")):changeView("overview");}} initialMode={registerLinkRequested?"register":"login"} onOpenLegal={onOpenLegal}/>;
+  if(view==="auth"&&!user)return <AuthScreen onClose={()=>{(wartungsmodus&&!user)?hardNavigate(canonicalUrl("/")):changeView("overview");}} initialMode={registerLinkRequested?"register":"login"} onOpenLegal={onOpenLegal}/>;
   if(view==="admin"||view==="junior-admin")return (isAdmin||isJuniorAdmin)?<AdminScreen onClose={()=>changeView("overview")}/>:null;
   if(view==="e2e-tests")return isAdmin?<E2ETestScreen onClose={()=>changeView("overview")}/>:null;
   if(view==="website-check")return isAdmin?<WebsiteCheckScreen onClose={()=>changeView("overview")}/>:null;
