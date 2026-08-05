@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { C, ghost, wrap, inner } from "./lib/theme";
 import { supabase } from "./lib/supabaseClient";
 
-const FIELD_LABELS = { is_admin: "Admin", is_premium: "Premium", is_trainer: "Trainer", is_junior_admin: "Junior-Admin", trainee_limit: "Trainee-Limit", ai_enabled: "KI aktiv" };
+const FIELD_LABELS = { is_admin: "Admin", is_premium: "Premium", premium_until: "Premium bis", is_trainer: "Trainer", is_junior_admin: "Junior-Admin", trainee_limit: "Trainee-Limit", ai_enabled: "KI aktiv", interview_enabled: "Mock-Interview aktiv" };
 
 function diffFields(before, after) {
   if (!before || !after) return [];

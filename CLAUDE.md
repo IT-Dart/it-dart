@@ -87,7 +87,9 @@ Nach jeder Änderung an diesen drei Bereichen den Nutzer explizit auf die fälli
 
 ## Datenmodell — `profiles` (relevante Spalten)
 
-`id, email, is_admin, is_junior_admin, is_trainer, trainee_limit, is_premium, premium_until, ai_enabled, confirmed_at, created_at, needs_password_setup, birthdate, parent_email, parent_consent_confirmed, parent_consent_token, agb_consent_given, display_ref, username, username_changed_at, username_welcome_seen`
+`id, email, is_admin, is_junior_admin, is_trainer, trainee_limit, is_premium, premium_until, ai_enabled, interview_enabled, confirmed_at, created_at, needs_password_setup, birthdate, parent_email, parent_consent_confirmed, parent_consent_token, agb_consent_given, display_ref, username, username_changed_at, username_welcome_seen`
+
+`interview_enabled` steuert separat vom allgemeinen `ai_enabled` gezielt den Zugriff auf das KI-Mock-Interview (RPC `set_interview_enabled()`) — war in dieser Liste bisher nicht aufgeführt (2026-08-05 nachgetragen, im Zuge einer Vollständigkeitsprüfung des Admin-Aktions-Protokolls gefunden).
 
 `display_ref` ist eine rein kosmetische, fortlaufende Nummer (kein Sicherheits-/Auth-Bezug) zum Wiedererkennen im Supabase-Studio, seit dort `email` als sensible Spalte maskiert wird — niemals für Lookups/Autorisierung im App-Code verwenden, die echte `id`-UUID bleibt die einzige tatsächlich genutzte Identität. `username` ist ein änderbarer Anzeigename (Adjektiv+Tier+Zahl generiert, z. B. „SchnellerFuchs42"), ebenfalls kein Login-Ersatz — Login bleibt ausschließlich E-Mail-basiert. `UsernameScreen.jsx` zeigt ihn einmalig nach dem ersten Login (`username_welcome_seen`, gated wie `needs_password_setup`) und ist über „Nutzername ändern" auf dem Cover-Screen jederzeit erreichbar; Änderungen laufen über die eng gefasste RPC `set_username()` (30-Tage-Cooldown, Sperrliste, Eindeutigkeitsprüfung).
 

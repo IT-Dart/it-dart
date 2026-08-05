@@ -27,6 +27,19 @@
 - `actor_email`/`target_email` sind Live-Snapshots zum Abfragezeitpunkt (aktueller `profiles.email`-Stand), keine historischen Snapshots — bei späterer E-Mail-Änderung zeigt ein alter Log-Eintrag die neue Adresse. Nur der Löschpfad snapshotet die E-Mail (`before`-Feld), Frontend fängt das korrekt mit einem Fallback ab.
 - Hinweis des Agents, die Migration könnte noch manuell angewendet werden müssen (übliches Deployment-Risiko laut CLAUDE.md) — **bereits erledigt**: Migration wurde diese Sitzung per `apply_migration` angewendet und live mit einem echten Toggle-Test verifiziert (Trigger feuert korrekt, siehe PROJEKT-STATUS.md Teil 21).
 
+## Nachtrag (2026-08-05, nach Nutzer-Rückfrage): Vollständigkeitslücke gefunden
+
+Der Nutzer fragte gezielt nach, ob "RLS auf `admin_action_log`" allein ausreicht, oder ob wichtige Konfigurationen zur **Erfassung aller relevanten Daten** fehlen — eine andere Frage als Zugriffskontrolle, die dieser Review nicht abgedeckt hatte. Nachprüfung ergab zwei echte, verifizierte Lücken (kein Bypass-Risiko, aber unvollständige Protokollierung):
+
+1. **`premium_until` wurde nicht verglichen.** `AdminScreen.jsx`s "+1 Monat"-Button (`grantMonth()`) setzt ausschließlich `premium_until`, nie `is_premium` — eine befristete Premium-Vergabe blieb dadurch komplett unprotokolliert.
+2. **`interview_enabled` wurde nicht verglichen.** Die RPC `set_interview_enabled()` sperrt/entsperrt den Zugriff aufs KI-Mock-Interview, ebenfalls unprotokolliert.
+
+Zusätzlich geprüft und **ausgeschlossen**: ob neue Konten direkt mit Rechten angelegt werden können (würde den reinen `AFTER UPDATE`-Trigger umgehen) — `handle_new_user()` setzt beim Anlegen nie Rechte-Spalten direkt, jede Vergabe läuft über ein nachträgliches UPDATE, das der Trigger erfasst.
+
+**Behoben** durch `supabase/migrations/20260805050000_admin_action_log_fix_coverage.sql` — beide Spalten in `log_profile_privilege_change()` ergänzt, live per echtem Toggle-Test auf `premium_until` verifiziert (Log-Eintrag mit korrektem before/after entstand). `AuditLogScreen.jsx`s `FIELD_LABELS` ebenfalls ergänzt, CLAUDE.md-Spaltenliste um `interview_enabled` korrigiert (fehlte dort ebenfalls).
+
+**Lehre:** ein Security-Review, der nur auf Zugriffskontrolle/Bypass prüft, findet keine Vollständigkeits-/Abdeckungslücken bei einem Audit-Log — das braucht eine eigene, gezielte Frage ("erfasst dieser Trigger wirklich jede relevante Spalte, gegen die volle Spaltenliste geprüft").
+
 ## Geprüfte Dateien
 
 - `supabase/migrations/20260805040000_admin_action_log.sql` (vollständig, neu)
