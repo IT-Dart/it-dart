@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { transitionState } from "./lib/viewTransition";
 import ITDart from "./ITDart";
 import Pruefung from "./Pruefung";
 import ResetPasswordScreen from "./ResetPasswordScreen";
@@ -42,6 +43,9 @@ function AppShell(){
     if(LEGAL_MODES.includes(mode))return mode;
     return params.has("mode")?"app":"company";
   });
+  // Sanfter Seitenuebergang bei jedem page-Wechsel (To-Do #126) -- geteilter
+  // Helper mit ITDart.jsx, siehe lib/viewTransition.js.
+  const changePage=(p)=>{transitionState(setPage,p);};
   const [routed,setRouted]=useState(false);
 
   // Einladungs-Wrapper (siehe EinladungScreen.jsx): der eigentliche
@@ -71,7 +75,7 @@ function AppShell(){
   useEffect(()=>{
     if(!loading&&!routed){
       setRouted(true);
-      if(user)setPage("app");
+      if(user)changePage("app");
     }
   },[loading,user,routed]);
 
@@ -81,12 +85,12 @@ function AppShell(){
 
   if(einladungLink)return <EinladungScreen link={einladungLink}/>;
   if(parentConsentToken)return <ParentConsentConfirmScreen token={parentConsentToken}/>;
-  if(authError)return <AuthErrorScreen authError={authError} onDismiss={()=>{dismissAuthError();setPage("company");}}/>;
+  if(authError)return <AuthErrorScreen authError={authError} onDismiss={()=>{dismissAuthError();changePage("company");}}/>;
   if(recoveryMode)return <ResetPasswordScreen/>;
   if(loading)return null;
-  if(kickedOut)return <KickedOutScreen onDismiss={()=>{dismissKickedOut();setPage("company");}}/>;
+  if(kickedOut)return <KickedOutScreen onDismiss={()=>{dismissKickedOut();changePage("company");}}/>;
   if(user&&needsPasswordSetup)return <PasswordSetupScreen/>;
-  if(user&&needsAgbConsent)return <AgbConsentScreen onOpenLegal={setPage}/>;
+  if(user&&needsAgbConsent)return <AgbConsentScreen onOpenLegal={changePage}/>;
   if(user&&needsUsernameWelcome)return <UsernameScreen mandatory/>;
   if(user&&(needsBirthdateSetup||pendingParentConsent))return <BirthdateSetupScreen/>;
   // Vercel liefert dank vercel.json-Rewrite für jeden unbekannten Pfad diese
@@ -98,8 +102,8 @@ function AppShell(){
   // angemeldeter Nutzer, der z. B. "Über IT-Dart" aus der App heraus
   // anklickt, muss die echte CompanyScreen sehen, nicht die Baustellenseite
   // mit ihrem eigenen (fälschlich wirkenden) "Hier anmelden"-Link.
-  if(page==="company")return (WARTUNGSMODUS&&!user)?<WartungScreen onOpenLegal={setPage}/>:<CompanyScreen onEnterApp={()=>setPage("app")} onOpenLegal={setPage}/>;
-  const backHome=()=>setPage(user?"app":"company");
+  if(page==="company")return (WARTUNGSMODUS&&!user)?<WartungScreen onOpenLegal={changePage}/>:<CompanyScreen onEnterApp={()=>changePage("app")} onOpenLegal={changePage}/>;
+  const backHome=()=>changePage(user?"app":"company");
   if(page==="username")return <UsernameScreen onClose={backHome}/>;
   if(page==="impressum")return <Impressum onClose={backHome}/>;
   if(page==="datenschutz")return <Datenschutz onClose={backHome}/>;
@@ -110,9 +114,9 @@ function AppShell(){
   return (
     <>
       <div style={{display:page==="pruefung"?"none":"block"}}>
-        <ITDart onOpenExam={()=>setPage("pruefung")} onOpenLegal={setPage} wartungsmodus={WARTUNGSMODUS}/>
+        <ITDart onOpenExam={()=>changePage("pruefung")} onOpenLegal={changePage} wartungsmodus={WARTUNGSMODUS}/>
       </div>
-      {page==="pruefung"&&<Pruefung onExit={()=>setPage("app")}/>}
+      {page==="pruefung"&&<Pruefung onExit={()=>changePage("app")}/>}
     </>
   );
 }

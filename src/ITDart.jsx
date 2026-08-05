@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from "react";
-import { flushSync } from "react-dom";
 import { C, pri, ghost, wrap, inner, ff } from "./lib/theme";
 import { useAuth } from "./lib/AuthContext";
 import { supabase } from "./lib/supabaseClient";
 import { canonicalUrl } from "./lib/nav";
+import { transitionState } from "./lib/viewTransition";
 import { MODS } from "./lib/modules";
 import AuthScreen from "./AuthScreen";
 import AdminScreen from "./AdminScreen";
@@ -54,35 +54,16 @@ const loginLinkRequested=authModeRequested==="login";
 
 export default function ITDart({onOpenExam,onOpenLegal,wartungsmodus}){
   const [view,setView]=useState(()=>(registerLinkRequested||loginLinkRequested)?"auth":"cover");
-  // Sanfter Seitenuebergang bei jedem view-Wechsel (To-Do #126): nutzt die
-  // native View-Transitions-API des Browsers statt einer eigenen Animations-
-  // Bibliothek -- automatischer Crossfade zwischen altem/neuem DOM, ganz ohne
-  // die bestehenden if(view===...)-Returns umzubauen. Faellt in Browsern ohne
-  // Unterstuetzung (z.B. Firefox) automatisch auf den bisherigen sofortigen
-  // Wechsel zurueck, respektiert prefers-reduced-motion wie AIChat.jsx.
-  // Haelt eine Referenz auf den zuletzt gestarteten Uebergang, damit er vor
-  // einem harten Seitenwechsel (siehe hardNavigate) gezielt abgebrochen
-  // werden kann -- ohne das konnte der Browser beim Reload noch einmal den
-  // alten, eingefrorenen Schnappschuss zeichnen (real beobachtet: die
-  // Wartungsseite blitzte beim Abmelden auf, weil zuvor anonym ein
-  // Uebergang von dort aus lief und dessen Overlay nicht sauber beendet war).
+  // Sanfter Seitenuebergang bei jedem view-Wechsel (To-Do #126) -- geteilter
+  // Helper mit App.jsx, siehe lib/viewTransition.js fuer die Begruendung
+  // (flushSync, Fallback, Rueckgabe des ViewTransition-Objekts). Die
+  // Referenz auf den zuletzt gestarteten Uebergang wird gebraucht, damit
+  // hardNavigate ihn vor einem harten Seitenwechsel gezielt abbrechen kann
+  // (sonst konnte der Browser beim Reload noch einmal den alten,
+  // eingefrorenen Schnappschuss zeichnen -- real beobachteter Regressions-
+  // Fund).
   const activeTransitionRef=useRef(null);
-  const changeView=(v)=>{
-    const reduceMotion=typeof window!=="undefined"&&window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-    if(!reduceMotion&&typeof document!=="undefined"&&document.startViewTransition){
-      // flushSync zwingt React, das Update SYNCHRON innerhalb des Transition-
-      // Callbacks abzuschliessen. Ohne das committet React die eigentliche
-      // DOM-Aenderung erst NACH Rueckkehr des Callbacks (automatisches
-      // Batching) -- die View-Transitions-API sieht "vorher" und "nachher"
-      // dann oft identisch aus, wodurch der Uebergang bei manchen Klicks
-      // gar nicht sichtbar war ("funktioniert nicht fuer alle Klicks").
-      const t=document.startViewTransition(()=>flushSync(()=>setView(v)));
-      activeTransitionRef.current=t;
-      t.finished.finally(()=>{if(activeTransitionRef.current===t)activeTransitionRef.current=null;});
-    }else{
-      setView(v);
-    }
-  };
+  const changeView=(v)=>{activeTransitionRef.current=transitionState(setView,v);};
   // Fuer die beiden Stellen, an denen statt eines internen view-Wechsels ein
   // echter Seiten-Reload ausgeloest wird (Abmelden, Wartungsmodus-Zurueck):
   // einen evtl. noch nicht abgeschlossenen Uebergang zuerst hart abbrechen
