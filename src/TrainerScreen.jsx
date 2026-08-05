@@ -52,7 +52,7 @@ export default function TrainerScreen({onClose,onOpenUser,onOpenLegal}){
     if(traineeIds.length===0){setTrainees([]);return;}
 
     const [{data:profiles,error:profErr},{data:nachweise,error:nachErr}]=await Promise.all([
-      supabase.from("profiles").select("id,email,username,confirmed_at,ai_enabled,interview_enabled,is_premium,premium_until,created_at").in("id",traineeIds),
+      supabase.from("profiles").select("id,email,username,confirmed_at,ai_enabled,interview_enabled,is_premium,premium_until,created_at,session_last_seen_at").in("id",traineeIds),
       supabase.from("lernnachweise").select("user_id,percent,kind,title,created_at").in("user_id",traineeIds),
     ]);
     if(profErr||nachErr){setErr(describeError(profErr||nachErr));setTrainees([]);return;}
@@ -67,7 +67,12 @@ export default function TrainerScreen({onClose,onOpenUser,onOpenLegal}){
     });
     setTrainees((profiles||[]).map(p=>{
       const s=stats[p.id];
-      return {...p,attempts:s?.count||0,avgPct:s?Math.round(s.sum/s.count):null,moduleCount:s?s.modules.size:0,lastActive:s?.last||null};
+      // "zuletzt aktiv" = juengster von zwei Werten: letzter Lernnachweis
+      // ODER letzter Herzschlag (session_last_seen_at) -- Lernnachweise allein
+      // erfassen nicht echte Nutzung ohne abgeschlossenes Modul/Test.
+      const candidates=[s?.last,p.session_last_seen_at].filter(Boolean);
+      const lastActive=candidates.length?candidates.reduce((a,b)=>new Date(a)>new Date(b)?a:b):null;
+      return {...p,attempts:s?.count||0,avgPct:s?Math.round(s.sum/s.count):null,moduleCount:s?s.modules.size:0,lastActive};
     }));
   };
 
@@ -195,7 +200,6 @@ export default function TrainerScreen({onClose,onOpenUser,onOpenLegal}){
             <div key={t.id} style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:12,padding:"12px 14px",display:"flex",justifyContent:"space-between",alignItems:"center",gap:8,flexWrap:"wrap"}}>
               <span style={{display:"flex",flexDirection:"column"}}>
                 <span style={{fontSize:13,fontWeight:600,color:C.t,wordBreak:"break-all"}}>{t.username||t.email}</span>
-                {t.username&&<span style={{fontSize:11,color:C.mu,wordBreak:"break-all"}}>{t.email}</span>}
               </span>
               <div style={{display:"flex",gap:6,flexShrink:0}}>
                 <button disabled={actionBusy===t.id} onClick={()=>managePending(t.id,"resend")} style={{...ghost,fontSize:11,padding:"5px 10px",opacity:actionBusy===t.id?.6:1}}>🔁 Erneut senden</button>
@@ -214,11 +218,10 @@ export default function TrainerScreen({onClose,onOpenUser,onOpenLegal}){
               <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:8,flexWrap:"wrap",marginBottom:4}}>
                 <button onClick={()=>onOpenUser?.(t)} style={{background:"none",border:"none",padding:0,cursor:"pointer",textAlign:"left",fontFamily:ff,display:"flex",flexDirection:"column"}}>
                   <span style={{fontSize:13,fontWeight:600,color:C.cy,textDecoration:"underline",wordBreak:"break-all"}}>{t.username||t.email}</span>
-                  {t.username&&<span style={{fontSize:11,color:C.mu,wordBreak:"break-all",textDecoration:"none"}}>{t.email}</span>}
                 </button>
                 <button disabled={actionBusy===t.id} onClick={()=>removeActive(t.id)} style={{background:"none",border:"none",color:"#fca5a5",cursor:"pointer",fontSize:11,padding:0,fontFamily:ff,opacity:actionBusy===t.id?.6:1}}>Entfernen</button>
               </div>
-              <p style={{fontSize:11,color:C.mu,margin:"0 0 4px"}}>{t.attempts>0?`${t.moduleCount} Modul${t.moduleCount===1?"":"e"} · Ø ${t.avgPct}% · zuletzt aktiv ${fmtRelative(t.lastActive)}`:"Noch keine Aktivität"}</p>
+              <p style={{fontSize:11,color:C.mu,margin:"0 0 4px"}}>{t.attempts>0?`${t.moduleCount} Modul${t.moduleCount===1?"":"e"} · Ø ${t.avgPct}% · zuletzt aktiv ${fmtRelative(t.lastActive)}`:t.lastActive?`Noch keine Testergebnisse · zuletzt aktiv ${fmtRelative(t.lastActive)}`:"Noch keine Aktivität"}</p>
               <p style={{fontSize:11,color:C.mu,margin:"0 0 8px"}}>Registriert am {fmtDate(t.created_at)} · {t.is_premium?"⭐ Premium (dauerhaft)":fmtUntil(t.premium_until)?`⭐ Premium bis ${fmtUntil(t.premium_until)}`:"Free"}</p>
               <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
                 <button disabled={actionBusy===t.id} onClick={()=>toggleAi(t)} style={{...ghost,fontSize:11,padding:"5px 10px",opacity:actionBusy===t.id?.6:1}}>
