@@ -39,8 +39,20 @@ export default function AdminScreen({onClose}){
   const [assignPanels,setAssignPanels]=useState({}); // traineeId -> { open, loading, trainers, select, err }
   const [allUsers,setAllUsers]=useState(null); // alle Accounts, für die Testende-Auswahl per Dropdown
   const [usageCounts,setUsageCounts]=useState({}); // userId -> Anzahl KI-Anfragen insgesamt
+  // Welche Nutzer-Zeilen aufgeklappt sind (Aktions-Buttons + Unterpanels
+  // sichtbar) -- Set statt Objekt, da hier nur ein einzelnes Bool pro Nutzer
+  // gebraucht wird, kein zusaetzlicher Lade-/Fehler-Zustand wie bei
+  // traineePanels/assignPanels. Alle Zeilen starten zugeklappt, damit die
+  // Liste bei vielen Treffern uebersichtlich bleibt (nur Zeilen aufklappen,
+  // die man tatsaechlich bearbeiten will).
+  const [expandedUsers,setExpandedUsers]=useState(()=>new Set());
 
   const flash=(text)=>{setActionMsg(text);setTimeout(()=>setActionMsg(null),3000);};
+  const toggleUserExpanded=(id)=>setExpandedUsers(s=>{
+    const next=new Set(s);
+    next.has(id)?next.delete(id):next.add(id);
+    return next;
+  });
 
   const loadTrainerList=async()=>{
     const {data:trainers,error:tErr}=await supabase.from("profiles").select("id,email,trainee_limit").eq("is_trainer",true).order("email");
@@ -383,10 +395,14 @@ export default function AdminScreen({onClose}){
           const grantDisabled=busyId===r.id||juniorOnly;
           const rowDisabled=busyId===r.id||locked;
           const canDeleteThis=isAdmin||(!r.confirmed_at&&!locked);
+          const expanded=expandedUsers.has(r.id);
           return(
             <div key={r.id} style={{background:C.s1,border:`0.5px solid ${C.bd}`,borderRadius:12,padding:"14px 16px"}}>
-              <div style={{display:"flex",flexWrap:"wrap",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:10}}>
-                <span style={{fontSize:14,fontWeight:600,overflowWrap:"anywhere"}}>{r.email}</span>
+              <div onClick={()=>toggleUserExpanded(r.id)} style={{display:"flex",flexWrap:"wrap",justifyContent:"space-between",alignItems:"flex-start",gap:8,marginBottom:expanded?10:0,cursor:"pointer"}}>
+                <span style={{display:"flex",alignItems:"center",gap:6,fontSize:14,fontWeight:600,overflowWrap:"anywhere"}}>
+                  <span style={{display:"inline-block",transition:"transform .15s",transform:expanded?"rotate(90deg)":"none",color:C.mu,fontSize:12}}>▸</span>
+                  {r.email}
+                </span>
                 <div style={{display:"flex",gap:6,flexShrink:0,flexWrap:"wrap",justifyContent:"flex-end"}}>
                   <span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:500,background:active?"#14532d":"#2a1a0f",color:active?"#86efac":"#fbbf24"}}>
                     {r.is_premium?"⭐ Dauerhaft":until?`Bis ${until}`:"Free"}
@@ -401,6 +417,7 @@ export default function AdminScreen({onClose}){
                   {!r.confirmed_at&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:500,background:"#3a2a0f",color:"#fbbf24"}}>⏳ Einladung ausstehend</span>}
                 </div>
               </div>
+              {expanded&&(<>
               <p style={{fontSize:12,color:C.mu,margin:"0 0 10px"}}>Registriert am {fmtDate(r.created_at)} · {usageCounts[r.id]??0} KI-Anfragen insgesamt</p>
               <div style={{display:"flex",gap:8,flexWrap:"wrap"}}>
                 <button disabled={grantDisabled} title={juniorOnly?"Nur Admins können Rechte vergeben.":undefined} onClick={()=>togglePermanent(r)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:grantDisabled?.4:1,cursor:grantDisabled?"not-allowed":"pointer"}}>
@@ -509,6 +526,7 @@ export default function AdminScreen({onClose}){
                   )}
                 </div>
               )}
+              </>)}
             </div>
           );
         })}
