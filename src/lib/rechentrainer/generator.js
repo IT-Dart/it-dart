@@ -156,7 +156,10 @@ function bitBreakdown(value) {
 }
 
 const ZAHLEN_TYPES = ["dez-bin", "bin-dez", "dez-hex", "hex-dez"];
-const ORDINALS = ["ersten", "zweiten", "dritten", "vierten"];
+// "das Oktett" ist Neutrum Akkusativ -- schwache Adjektivdeklination nach
+// bestimmtem Artikel verlangt hier die Endung "-e" (das erste/zweite/...
+// Oktett), nicht "-en" (das waere nur bei "den" richtig, hier aber falsch).
+const ORDINALS = ["erste", "zweite", "dritte", "vierte"];
 
 function generateZahlenProblem(difficulty) {
   const type = pick(ZAHLEN_TYPES);

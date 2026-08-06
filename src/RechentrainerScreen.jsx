@@ -68,7 +68,7 @@ const GRUNDLAGEN = {
     intro: "Computer verarbeiten alles binär, also nur mit den Ziffern 0 und 1. Jedes Oktett einer IPv4-Adresse ist eine 8-Bit-Binärzahl, die zur besseren Lesbarkeit als Dezimalzahl (0 bis 255) geschrieben wird. Hexadezimal ist eine kompakte Alternative: eine Hex-Ziffer steht immer für genau 4 Bit.",
     beispiel: "Beispiel: Das Oktett 192 entspricht binär 11000000 — die Bit-Wertigkeiten 128, 64, 32, 16, 8, 4, 2, 1 werden an den gesetzten (1-)Stellen addiert: 128 + 64 = 192. In Hexadezimal wird dasselbe Oktett in zwei 4er-Gruppen (Nibbles) zerlegt: 1100 = C, 0000 = 0, also C0.",
     visual: <BitWeights value={192} />,
-    schluss: "Diese Umrechnung braucht vor allem Übung, keine komplizierte Formel — genau das trainiert dieser Abschnitt. Für eine ausführlichere Einführung: Modul Grundlagen IT and Hardware, Thema Zahlensysteme.",
+    schluss: "Diese Umrechnung braucht vor allem Übung, keine komplizierte Formel — genau das trainiert dieser Abschnitt. Für eine ausführlichere Einführung: Modul Grundlagen IT & Hardware, Thema Zahlensysteme.",
   },
   klassen: {
     title: "IP-Klassen",
