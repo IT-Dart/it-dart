@@ -356,7 +356,7 @@ export default function ITDart({onOpenExam,onOpenLegal,wartungsmodus}){
             <p style={{fontSize:14,color:C.t2,lineHeight:1.7}}>{item.th}</p>
           </div>
           <div style={{background:C.s2,border:`0.5px solid ${C.bd}`,borderRadius:10,padding:"14px 16px",marginBottom:8}}>
-            <p style={{fontSize:11,fontWeight:600,letterSpacing:".06em",textTransform:"uppercase",color:C.mu,marginBottom:6}}>{data.case} Praxisfall: {data.caseTitle}</p>
+            <p style={{fontSize:11,fontWeight:600,letterSpacing:".06em",textTransform:"uppercase",color:C.cy,marginBottom:6}}>{data.case} Praxisfall: {data.caseTitle}</p>
             <p style={{fontSize:14,color:C.t2,lineHeight:1.7}}>{item.pc}</p>
           </div>
           {item.osi&&<OSIBezug text={item.osi}/>}
