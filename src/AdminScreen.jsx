@@ -99,7 +99,7 @@ export default function AdminScreen({onClose}){
     setBusy(true);setErr(null);
     const {data,error}=await supabase
       .from("profiles")
-      .select("id,email,is_premium,premium_until,ai_enabled,interview_enabled,is_trainer,is_junior_admin,confirmed_at,trainee_limit,created_at")
+      .select("id,email,is_premium,premium_until,rechentrainer_enabled,rechentrainer_until,ai_enabled,interview_enabled,is_trainer,is_junior_admin,confirmed_at,trainee_limit,created_at")
       .ilike("email",`%${query.trim()}%`)
       .order("created_at",{ascending:false})
       .limit(25);
@@ -123,6 +123,13 @@ export default function AdminScreen({onClose}){
   };
 
   const grantMonth=(r)=>updateUser(r.id,{premium_until:new Date(Date.now()+30*24*60*60*1000).toISOString()});
+
+  // Rechentrainer-Freischaltung ist ein eigener Kaufvorgang, unabhaengig von
+  // Premium -- bewusst kein Zusammenlegen der beiden Zustaende, ein Nutzer
+  // kann das eine ohne das andere haben.
+  const toggleRechentrainerPermanent=(r)=>updateUser(r.id,r.rechentrainer_enabled?{rechentrainer_enabled:false}:{rechentrainer_enabled:true});
+  const grantRechentrainerMonth=(r)=>updateUser(r.id,{rechentrainer_until:new Date(Date.now()+30*24*60*60*1000).toISOString()});
+  const revokeRechentrainer=(r)=>updateUser(r.id,{rechentrainer_enabled:false,rechentrainer_until:null});
 
   // Wer aufhört Trainer zu sein, soll auch keine Testenden mehr zugewiesen
   // haben — sonst taucht er dort weiterhin als "zugewiesener Trainer" auf.
@@ -348,6 +355,8 @@ export default function AdminScreen({onClose}){
         {results?.map(r=>{
           const until=fmtUntil(r.premium_until);
           const active=r.is_premium||until;
+          const rechentrainerUntilFmt=fmtUntil(r.rechentrainer_until);
+          const rechentrainerActive=r.rechentrainer_enabled||rechentrainerUntilFmt;
           const aiOn=r.ai_enabled??true;
           const interviewOn=r.interview_enabled??true;
           const panel=panelFor(r.id);
@@ -369,6 +378,9 @@ export default function AdminScreen({onClose}){
                   <span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:500,background:active?"#14532d":"#2a1a0f",color:active?"#86efac":"#fbbf24"}}>
                     {r.is_premium?"⭐ Dauerhaft":until?`Bis ${until}`:"Free"}
                   </span>
+                  {rechentrainerActive&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:500,background:"#14532d",color:"#86efac"}}>
+                    🧮 {r.rechentrainer_enabled?"Dauerhaft":`Bis ${rechentrainerUntilFmt}`}
+                  </span>}
                   {!aiOn&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:500,background:"#450a0a",color:"#fca5a5"}}>🤖 Gesperrt</span>}
                   {!interviewOn&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:500,background:"#450a0a",color:"#fca5a5"}}>🎤 Gesperrt</span>}
                   {r.is_trainer&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:500,background:"#1e3a5f",color:"#93c5fd"}}>🎓 Trainer</span>}
@@ -383,6 +395,11 @@ export default function AdminScreen({onClose}){
                 </button>
                 <button disabled={grantDisabled} title={juniorOnly?"Nur Admins können Rechte vergeben.":undefined} onClick={()=>grantMonth(r)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:grantDisabled?.4:1,cursor:grantDisabled?"not-allowed":"pointer"}}>+1 Monat</button>
                 {active&&<button disabled={grantDisabled} title={juniorOnly?"Nur Admins können Rechte entziehen.":undefined} onClick={()=>revoke(r)} style={{...ghost,fontSize:12,padding:"7px 12px",color:"#fca5a5",borderColor:"#7f1d1d",opacity:grantDisabled?.4:1,cursor:grantDisabled?"not-allowed":"pointer"}}>Zugang entziehen</button>}
+                <button disabled={grantDisabled} title={juniorOnly?"Nur Admins können Rechte vergeben.":undefined} onClick={()=>toggleRechentrainerPermanent(r)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:grantDisabled?.4:1,cursor:grantDisabled?"not-allowed":"pointer"}}>
+                  {r.rechentrainer_enabled?"🧮 Dauerhaft ausschalten":"🧮 Dauerhaft freischalten"}
+                </button>
+                <button disabled={grantDisabled} title={juniorOnly?"Nur Admins können Rechte vergeben.":undefined} onClick={()=>grantRechentrainerMonth(r)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:grantDisabled?.4:1,cursor:grantDisabled?"not-allowed":"pointer"}}>🧮 +1 Monat</button>
+                {rechentrainerActive&&<button disabled={grantDisabled} title={juniorOnly?"Nur Admins können Rechte entziehen.":undefined} onClick={()=>revokeRechentrainer(r)} style={{...ghost,fontSize:12,padding:"7px 12px",color:"#fca5a5",borderColor:"#7f1d1d",opacity:grantDisabled?.4:1,cursor:grantDisabled?"not-allowed":"pointer"}}>🧮 Zugang entziehen</button>}
                 <button disabled={rowDisabled} title={locked?"Dieses Konto ist geschützt.":undefined} onClick={()=>toggleAi(r)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:rowDisabled?.5:1,cursor:rowDisabled?"not-allowed":"pointer"}}>
                   {aiOn?"🤖 KI sperren":"🤖 KI freischalten"}
                 </button>

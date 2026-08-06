@@ -25,6 +25,10 @@ Länge ist nicht der eigentliche Grund für einen faden Praxisfall — **fehlend
 
 Module mit **durchgehendem Praxisfall über alle Themen** (`o`, `si`, `sk` — dort das "50-Server-Monitoring"-Motiv —, teilweise `pr`) erzählen bewusst eine einzige, fortlaufende Geschichte — das wurde im Didaktik-Review explizit als Stärke hervorgehoben. Hier **keinen zusätzlichen Pro-Thema-Übertitel** einführen; der situationsbenennende Einstieg (Punkt 1 oben) reicht als leiser Übergang zum nächsten Kapitel derselben Geschichte. Module mit **unabhängigen Einzelszenarien pro Thema** (`g`, `b`, `db`, `bw`) profitieren am meisten von einem klar erkennbaren, eigenständigen Situations-Einstieg pro Thema, da hier keine übergreifende Erzählung existiert, an die angeknüpft werden könnte.
 
+## Ausnahme: Drill-/Übungswerkzeuge
+
+Dieser Standard gilt für Modulinhalte (`th`/`pc` in `moduleContent.js`) — nicht für Drill-Werkzeuge wie den Rechentrainer (`RechentrainerScreen.jsx`, 2026-08-06), die strukturell kein Theorie+Praxisfall+Fragen-Schema haben, sondern unbegrenzt wiederholbare, zufällig generierte Übungsaufgaben mit sofortigem Feedback sind (näher an der Prüfungsvorbereitung als an einem Modul-Thema). Die Theorie/Praxisfall-Struktur und die Anti-Langweilig-Regel oben gelten dafür NICHT direkt. Es gilt aber derselbe Grundsatz übertragen: Feedback muss den vollständigen Rechenweg zeigen, nicht nur „richtig"/„falsch" — eine Erklärung ohne nachvollziehbaren Weg ist für ein Rechenwerkzeug dieselbe Art von Qualitätslücke wie eine reine Zustandsbeschreibung ohne Handlung bei einem Praxisfall.
+
 ## Anwendung
 
 Dieser Standard gilt rückwirkend für alle 46 bestehenden Themen (vollständiger Konformitäts-Durchlauf, siehe `todos`) ebenso wie für jedes künftig neu verfasste Thema. Der `didaktik-content-review`-Agent prüft explizit gegen dieses Dokument, nicht gegen eigenes Wissen über "guten Aufbau" — sonst wäre die Prüfung nicht reproduzierbar.

@@ -94,11 +94,11 @@ export function AuthProvider({ children }) {
     let cancelled = false;
 
     const fetchProfile = () => {
-      supabase.from("profiles").select("is_premium, premium_until, is_admin, is_trainer, is_junior_admin, email, needs_password_setup, birthdate, parent_consent_confirmed, agb_consent_given, username, username_welcome_seen").eq("id", user.id).single()
+      supabase.from("profiles").select("is_premium, premium_until, rechentrainer_enabled, rechentrainer_until, is_admin, is_trainer, is_junior_admin, email, needs_password_setup, birthdate, parent_consent_confirmed, agb_consent_given, username, username_welcome_seen").eq("id", user.id).single()
         .then(({ data, error }) => {
           if (cancelled) return;
           if (error) console.error("Profil konnte nicht geladen werden:", error.message);
-          setProfile(data ?? { is_premium: false, premium_until: null, is_admin: false, is_trainer: false, is_junior_admin: false, needs_password_setup: false, birthdate: null, parent_consent_confirmed: false, agb_consent_given: true, username: null, username_welcome_seen: true });
+          setProfile(data ?? { is_premium: false, premium_until: null, rechentrainer_enabled: false, rechentrainer_until: null, is_admin: false, is_trainer: false, is_junior_admin: false, needs_password_setup: false, birthdate: null, parent_consent_confirmed: false, agb_consent_given: true, username: null, username_welcome_seen: true });
         });
     };
 
@@ -194,6 +194,7 @@ export function AuthProvider({ children }) {
   }, [session?.user?.id, recoveryMode]);
 
   const hasTimedPremium = !!profile?.premium_until && new Date(profile.premium_until) > new Date();
+  const hasTimedRechentrainer = !!profile?.rechentrainer_until && new Date(profile.rechentrainer_until) > new Date();
 
   // Eigenstaendige Funktion statt Inline-Definition im value-Objekt, damit
   // signOutAndRedirect unten dieselbe Logik aufrufen kann, ohne sie zu
@@ -216,6 +217,8 @@ export function AuthProvider({ children }) {
     loading: session === undefined,
     isPremium: !!profile?.is_premium || hasTimedPremium,
     premiumUntil: profile?.premium_until ?? null,
+    isRechentrainerUnlocked: !!profile?.rechentrainer_enabled || hasTimedRechentrainer,
+    rechentrainerUntil: profile?.rechentrainer_until ?? null,
     isAdmin: !!profile?.is_admin,
     isTrainer: !!profile?.is_trainer,
     isJuniorAdmin: !!profile?.is_junior_admin,
