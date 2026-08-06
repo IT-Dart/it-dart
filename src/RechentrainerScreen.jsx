@@ -2,7 +2,7 @@ import { useState } from "react";
 import { C, pri, ghost, wrap, inner, ff, fm } from "./lib/theme";
 import { useAuth } from "./lib/AuthContext";
 import { Reveal } from "./Reveal";
-import { generateProblem, checkAnswer, explainProblem } from "./lib/rechentrainer/generator";
+import { generateProblem, checkAnswer, explainProblem, parseIp, ipToInt, intToIp, maskIntFromPrefix, networkInt, broadcastInt, usableHostCount, decToBin8, decToHex2, ipClassOf } from "./lib/rechentrainer/generator";
 
 const card = { background: C.s1, border: `0.5px solid ${C.bd}`, borderRadius: 12, padding: "16px 18px", marginBottom: 12 };
 const chip = (active) => ({ ...ghost, fontSize: 12, padding: "6px 12px", background: active ? "rgba(56,189,248,0.12)" : ghost.background, borderColor: active ? C.cy : C.bd, color: active ? C.cy : ghost.color });
@@ -100,13 +100,22 @@ const GRUNDLAGEN = {
 // AdminScreen.jsx). Freischaltung aktuell manuell wie bei Premium, kein
 // Preis im Code verankert (siehe CompanyScreen.jsx-Muster).
 export default function RechentrainerScreen({ onClose }) {
-  const { user, isRechentrainerUnlocked } = useAuth();
+  const { user, isRechentrainerUnlocked, rechentrainerToolEnabled } = useAuth();
   // Landet bewusst zuerst auf "grundlagen", nicht "training" -- jeder
   // Aufruf des Screens (nicht nur der allererste) soll zunaechst die
   // Einfuehrung zeigen, bevor trainiert wird.
-  // "grundlagen" | "training" | "summary" | "pruefung-setup" | "pruefung-laufend" | "pruefung-ergebnis"
+  // "grundlagen" | "training" | "summary" | "pruefung-setup" | "pruefung-laufend" | "pruefung-ergebnis" | "rechner"
   const [mode, setMode] = useState("grundlagen");
   const [grundlagenCat, setGrundlagenCat] = useState("zahlensysteme");
+  // "Rechner"-Modus: direkte Umrechnung statt Uebungsaufgabe -- separat per
+  // rechentrainer_tool_enabled abstellbar (siehe AuthContext.jsx), falls ein
+  // Ausbildungsbetrieb den Sofort-Umrechner didaktisch nicht moechte.
+  const [rechnerTool, setRechnerTool] = useState("subnetz");
+  const [snIp, setSnIp] = useState("192.168.1.100");
+  const [snPrefix, setSnPrefix] = useState("26");
+  const [zDec, setZDec] = useState("192");
+  const [zBin, setZBin] = useState(decToBin8(192));
+  const [zHex, setZHex] = useState(decToHex2(192));
   const [difficulty, setDifficulty] = useState("leicht");
   const [categories, setCategories] = useState(["subnetting"]);
   const [problem, setProblem] = useState(() => generateProblem({ difficulty: "leicht", categories: ["subnetting"] }));
@@ -132,6 +141,16 @@ export default function RechentrainerScreen({ onClose }) {
       const next = cs.includes(cat) ? cs.filter((c) => c !== cat) : [...cs, cat];
       return next.length ? next : cs; // mindestens eine Kategorie muss aktiv bleiben
     });
+  };
+
+  // Einzige Quelle der Wahrheit im Zahlensystem-Umrechner ist immer der
+  // zuletzt gueltige Dezimalwert -- alle drei Felder werden von hier aus
+  // synchronisiert, egal welches Feld der Ausloeser war.
+  const applyDecimal = (n) => {
+    const clamped = Math.max(0, Math.min(255, n));
+    setZDec(String(clamped));
+    setZBin(decToBin8(clamped));
+    setZHex(decToHex2(clamped));
   };
 
   const newProblem = (diff = difficulty, cats = categories) => {
@@ -182,6 +201,31 @@ export default function RechentrainerScreen({ onClose }) {
 
   const mailtoHref = `mailto:kontakt@it-dart.de?subject=${encodeURIComponent("Interesse am Rechentrainer")}&body=${encodeURIComponent(`Hallo,\n\nich habe Interesse am Rechentrainer (Subnetting-Übungswerkzeug).\n\nKonto-E-Mail: ${user?.email || ""}`)}`;
 
+  // Reine Ableitung aus snIp/snPrefix bei jedem Render -- kein eigener
+  // Ergebnis-State noetig, die Eingabefelder selbst sind die Quelle.
+  const snParsedIp = parseIp(snIp);
+  const snPrefixNum = Number(snPrefix);
+  const snPrefixValid = snPrefix.trim() !== "" && Number.isInteger(snPrefixNum) && snPrefixNum >= 0 && snPrefixNum <= 32;
+  const snValid = !!snParsedIp && snPrefixValid;
+  let snResult = null;
+  if (snValid) {
+    const ipInt = ipToInt(snParsedIp);
+    const maskInt = maskIntFromPrefix(snPrefixNum);
+    const netInt = networkInt(ipInt, maskInt);
+    const bcastInt = broadcastInt(netInt, maskInt);
+    const hosts = usableHostCount(snPrefixNum);
+    snResult = {
+      mask: intToIp(maskInt),
+      net: intToIp(netInt),
+      bcast: intToIp(bcastInt),
+      hosts,
+      range: hosts > 0 ? `${intToIp(netInt + 1)} – ${intToIp(bcastInt - 1)}` : "keine (Punkt-zu-Punkt bzw. Einzeladresse)",
+      cls: ipClassOf(snParsedIp[0]),
+    };
+  }
+  const zDecNum = parseInt(zDec, 10);
+  const zDecValid = !isNaN(zDecNum) && zDecNum >= 0 && zDecNum <= 255;
+
   return (
     <div style={wrap}><div style={inner}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20, paddingBottom: 16, borderBottom: `0.5px solid ${C.bd}`, flexWrap: "wrap" }}>
@@ -190,6 +234,7 @@ export default function RechentrainerScreen({ onClose }) {
           <button onClick={() => setMode("grundlagen")} style={chip(mode === "grundlagen")}>📖 Grundlagen</button>
           <button onClick={() => setMode("training")} style={chip(mode === "training" || mode === "summary")}>🧮 Training</button>
           <button onClick={() => setMode("pruefung-setup")} style={chip(mode.startsWith("pruefung"))}>🎓 Prüfung</button>
+          {rechentrainerToolEnabled && <button onClick={() => setMode("rechner")} style={chip(mode === "rechner")}>🛠️ Rechner</button>}
         </div>}
         <button onClick={onClose} style={{ ...ghost, marginLeft: "auto", fontSize: 13, padding: "6px 12px" }}>← Zurück</button>
       </div>
@@ -333,7 +378,70 @@ export default function RechentrainerScreen({ onClose }) {
           </div>
         </div>
 
-      ) : (<>
+      ) : mode === "rechner" ? (<>
+        <div style={{ background: "rgba(56,189,248,0.08)", border: `0.5px solid ${C.cy}`, borderRadius: 10, padding: "10px 14px", marginBottom: 14, fontSize: 12, color: C.t2, lineHeight: 1.6 }}>
+          🛠️ <strong style={{ color: C.cy }}>Für den Berufsalltag</strong> — kein Prüfungstraining. In der echten Prüfung musst du das ohne Hilfsmittel selbst rechnen können; dafür sind Training und Prüfungsmodus da.
+        </div>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+          <button onClick={() => setRechnerTool("subnetz")} style={chip(rechnerTool === "subnetz")}>IP / Subnetz</button>
+          <button onClick={() => setRechnerTool("zahlen")} style={chip(rechnerTool === "zahlen")}>Zahlensystem</button>
+        </div>
+
+        {rechnerTool === "subnetz" ? (<>
+          <div style={card}>
+            <p style={{ fontSize: 12, fontWeight: 600, color: C.cy, textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 10 }}>Eingabe</p>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <div style={{ flex: "2 1 200px" }}>
+                <label style={{ fontSize: 11, color: C.mu, display: "block", marginBottom: 4 }}>IP-Adresse</label>
+                <input value={snIp} onChange={(e) => setSnIp(e.target.value)} type="text" placeholder="192.168.1.100" style={{ width: "100%", background: C.s2, border: `0.5px solid ${C.bd}`, borderRadius: 10, color: C.t, padding: "10px 12px", fontSize: 14, outline: "none", fontFamily: fm, boxSizing: "border-box" }} />
+              </div>
+              <div style={{ flex: "1 1 90px" }}>
+                <label style={{ fontSize: 11, color: C.mu, display: "block", marginBottom: 4 }}>Präfix</label>
+                <input value={snPrefix} onChange={(e) => setSnPrefix(e.target.value.replace(/[^0-9]/g, "").slice(0, 2))} type="text" placeholder="26" style={{ width: "100%", background: C.s2, border: `0.5px solid ${C.bd}`, borderRadius: 10, color: C.t, padding: "10px 12px", fontSize: 14, outline: "none", fontFamily: fm, boxSizing: "border-box" }} />
+              </div>
+            </div>
+            {!snValid && <p style={{ fontSize: 12, color: C.co, margin: "10px 0 0" }}>Bitte eine gültige IPv4-Adresse (z. B. 192.168.1.100) und ein Präfix von 0–32 eingeben.</p>}
+          </div>
+
+          {snResult && (<div style={card}>
+            <p style={{ fontSize: 12, fontWeight: 600, color: C.cy, textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 10 }}>Ergebnis</p>
+            {[
+              ["Subnetzmaske", snResult.mask],
+              ["Netzwerkadresse", snResult.net],
+              ["Broadcast-Adresse", snResult.bcast],
+              ["Nutzbare Hosts", String(snResult.hosts)],
+              ["Host-Bereich", snResult.range],
+              ["IP-Klasse", snResult.cls ? `Klasse ${snResult.cls}` : "kein Standard A/B/C (privat/reserviert)"],
+            ].map(([label, value]) => (
+              <div key={label} style={{ display: "flex", justifyContent: "space-between", padding: "6px 0", borderBottom: `0.5px solid ${C.bd}` }}>
+                <span style={{ fontSize: 13, color: C.t2 }}>{label}</span>
+                <span style={{ fontSize: 13, color: C.t, fontFamily: fm, fontWeight: 600 }}>{value}</span>
+              </div>
+            ))}
+            <SubnetBits prefix={snPrefixNum} />
+          </div>)}
+        </>) : (<>
+          <div style={card}>
+            <p style={{ fontSize: 12, fontWeight: 600, color: C.cy, textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 10 }}>Ein Oktett (0–255) umrechnen</p>
+            <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+              <div style={{ flex: "1 1 90px" }}>
+                <label style={{ fontSize: 11, color: C.mu, display: "block", marginBottom: 4 }}>Dezimal</label>
+                <input value={zDec} onChange={(e) => { const raw = e.target.value.replace(/[^0-9]/g, "").slice(0, 3); setZDec(raw); const n = parseInt(raw, 10); if (!isNaN(n) && n >= 0 && n <= 255) applyDecimal(n); }} type="text" style={{ width: "100%", background: C.s2, border: `0.5px solid ${C.bd}`, borderRadius: 10, color: C.t, padding: "10px 12px", fontSize: 14, outline: "none", fontFamily: fm, boxSizing: "border-box" }} />
+              </div>
+              <div style={{ flex: "2 1 140px" }}>
+                <label style={{ fontSize: 11, color: C.mu, display: "block", marginBottom: 4 }}>Binär (8 Bit)</label>
+                <input value={zBin} onChange={(e) => { const raw = e.target.value.replace(/[^01]/g, "").slice(0, 8); setZBin(raw); if (raw.length === 8) applyDecimal(parseInt(raw, 2)); }} type="text" style={{ width: "100%", background: C.s2, border: `0.5px solid ${C.bd}`, borderRadius: 10, color: C.t, padding: "10px 12px", fontSize: 14, outline: "none", fontFamily: fm, boxSizing: "border-box" }} />
+              </div>
+              <div style={{ flex: "1 1 90px" }}>
+                <label style={{ fontSize: 11, color: C.mu, display: "block", marginBottom: 4 }}>Hex</label>
+                <input value={zHex} onChange={(e) => { const raw = e.target.value.replace(/[^0-9a-fA-F]/g, "").slice(0, 2).toUpperCase(); setZHex(raw); if (raw.length > 0) applyDecimal(parseInt(raw, 16)); }} type="text" style={{ width: "100%", background: C.s2, border: `0.5px solid ${C.bd}`, borderRadius: 10, color: C.t, padding: "10px 12px", fontSize: 14, outline: "none", fontFamily: fm, boxSizing: "border-box" }} />
+              </div>
+            </div>
+            {!zDecValid && <p style={{ fontSize: 12, color: C.co, margin: "10px 0 0" }}>Bitte eine Zahl zwischen 0 und 255 eingeben (ein Oktett hat 8 Bit).</p>}
+            <BitWeights value={zDecValid ? zDecNum : 0} />
+          </div>
+        </>)}
+      </>) : (<>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
           <button onClick={() => { setDifficulty("leicht"); newProblem("leicht", categories); }} style={chip(difficulty === "leicht")}>Leicht</button>
           <button onClick={() => { setDifficulty("schwer"); newProblem("schwer", categories); }} style={chip(difficulty === "schwer")}>Schwer</button>

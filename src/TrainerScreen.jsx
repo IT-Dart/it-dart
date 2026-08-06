@@ -52,7 +52,7 @@ export default function TrainerScreen({onClose,onOpenUser,onOpenLegal}){
     if(traineeIds.length===0){setTrainees([]);return;}
 
     const [{data:profiles,error:profErr},{data:nachweise,error:nachErr}]=await Promise.all([
-      supabase.from("profiles").select("id,email,username,confirmed_at,ai_enabled,interview_enabled,is_premium,premium_until,created_at,session_last_seen_at").in("id",traineeIds),
+      supabase.from("profiles").select("id,email,username,confirmed_at,ai_enabled,interview_enabled,rechentrainer_tool_enabled,is_premium,premium_until,created_at,session_last_seen_at").in("id",traineeIds),
       supabase.from("lernnachweise").select("user_id,percent,kind,title,created_at").in("user_id",traineeIds),
     ]);
     if(profErr||nachErr){setErr(describeError(profErr||nachErr));setTrainees([]);return;}
@@ -144,6 +144,14 @@ export default function TrainerScreen({onClose,onOpenUser,onOpenLegal}){
     if(error){setErr(describeError(error));return;}
     setTrainees(ts=>ts.map(x=>x.id===t.id?{...x,interview_enabled:next}:x));
   };
+  const toggleRechentrainerTool=async(t)=>{
+    const next=!(t.rechentrainer_tool_enabled??true);
+    setActionBusy(t.id);
+    const {error}=await supabase.rpc("set_rechentrainer_tool_enabled",{target_id:t.id,enabled:next});
+    setActionBusy(null);
+    if(error){setErr(describeError(error));return;}
+    setTrainees(ts=>ts.map(x=>x.id===t.id?{...x,rechentrainer_tool_enabled:next}:x));
+  };
 
   const pending=trainees?.filter(t=>!t.confirmed_at)||[];
   const active=trainees?.filter(t=>t.confirmed_at)||[];
@@ -229,6 +237,9 @@ export default function TrainerScreen({onClose,onOpenUser,onOpenLegal}){
                 </button>
                 <button disabled={actionBusy===t.id} onClick={()=>toggleInterview(t)} style={{...ghost,fontSize:11,padding:"5px 10px",opacity:actionBusy===t.id?.6:1}}>
                   {(t.interview_enabled??true)?"🎤 Mock-Interview sperren":"🎤 Mock-Interview freischalten"}
+                </button>
+                <button disabled={actionBusy===t.id} onClick={()=>toggleRechentrainerTool(t)} style={{...ghost,fontSize:11,padding:"5px 10px",opacity:actionBusy===t.id?.6:1}}>
+                  {(t.rechentrainer_tool_enabled??true)?"🛠️ Rechner sperren":"🛠️ Rechner freischalten"}
                 </button>
               </div>
             </div>

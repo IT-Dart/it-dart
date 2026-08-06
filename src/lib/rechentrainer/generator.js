@@ -13,16 +13,39 @@ const PRIVATE_BLOCKS = [
 const LEICHT_PREFIXES = [24, 25, 26, 27, 28];
 const LEICHT_OCTETS = [0, 16, 32, 64, 128, 192, 224, 240, 248, 252, 254, 255];
 
-function ipToInt([a, b, c, d]) {
+export function ipToInt([a, b, c, d]) {
   return ((a << 24) | (b << 16) | (c << 8) | d) >>> 0;
 }
 
-function intToIp(int) {
+export function intToIp(int) {
   return [(int >>> 24) & 255, (int >>> 16) & 255, (int >>> 8) & 255, int & 255].join(".");
 }
 
-function maskIntFromPrefix(prefix) {
+export function maskIntFromPrefix(prefix) {
   return prefix === 0 ? 0 : (0xffffffff << (32 - prefix)) >>> 0;
+}
+
+// Zerlegt eine Nutzereingabe wie "192.168.1.100" in 4 gueltige Oktette
+// (0-255) oder liefert null bei ungueltiger Eingabe -- fuer den "Rechner"-
+// Modus (freie Eingabe statt generierter Aufgabe), keine Verwendung im
+// Aufgaben-Generator selbst.
+export function parseIp(str) {
+  const parts = String(str).trim().split(".");
+  if (parts.length !== 4) return null;
+  const nums = parts.map((p) => Number(p));
+  if (nums.some((n) => !Number.isInteger(n) || n < 0 || n > 255)) return null;
+  return nums;
+}
+
+// Klassische IP-Klasse (A/B/C) allein anhand des ersten Oktetts -- gleiche
+// Bereichsgrenzen wie generateKlasseProblem(). Liefert null fuer Adressen
+// außerhalb A/B/C (z. B. Loopback 127.x oder die reservierten Bereiche
+// 224-255), statt eine falsche Klasse zu behaupten.
+export function ipClassOf(first) {
+  if (first >= 1 && first <= 126) return "A";
+  if (first >= 128 && first <= 191) return "B";
+  if (first >= 192 && first <= 223) return "C";
+  return null;
 }
 
 export function networkInt(ipInt, maskInt) {
@@ -143,10 +166,10 @@ function generateSubnettingProblem(difficulty) {
 
 // --- Kategorie 2: Zahlensysteme (an IP-Oktetten verankert) -------------
 
-function decToBin8(n) {
+export function decToBin8(n) {
   return n.toString(2).padStart(8, "0");
 }
-function decToHex2(n) {
+export function decToHex2(n) {
   return n.toString(16).toUpperCase().padStart(2, "0");
 }
 function bitBreakdown(value) {

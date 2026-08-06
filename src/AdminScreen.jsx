@@ -99,7 +99,7 @@ export default function AdminScreen({onClose}){
     setBusy(true);setErr(null);
     const {data,error}=await supabase
       .from("profiles")
-      .select("id,email,is_premium,premium_until,rechentrainer_enabled,rechentrainer_until,ai_enabled,interview_enabled,is_trainer,is_junior_admin,confirmed_at,trainee_limit,created_at")
+      .select("id,email,is_premium,premium_until,rechentrainer_enabled,rechentrainer_until,rechentrainer_tool_enabled,ai_enabled,interview_enabled,is_trainer,is_junior_admin,confirmed_at,trainee_limit,created_at")
       .ilike("email",`%${query.trim()}%`)
       .order("created_at",{ascending:false})
       .limit(25);
@@ -169,6 +169,18 @@ export default function AdminScreen({onClose}){
       return;
     }
     updateUser(r.id,{interview_enabled:next});
+  };
+  const toggleRechentrainerTool=async(r)=>{
+    const next=!(r.rechentrainer_tool_enabled??true);
+    if(juniorOnly){
+      setBusyId(r.id);
+      const {error}=await supabase.rpc("set_rechentrainer_tool_enabled",{target_id:r.id,enabled:next});
+      setBusyId(null);
+      if(error){setErr(describeError(error));return;}
+      setResults(rs=>rs.map(x=>x.id===r.id?{...x,rechentrainer_tool_enabled:next}:x));
+      return;
+    }
+    updateUser(r.id,{rechentrainer_tool_enabled:next});
   };
   const toggleTrainer=async(r)=>{
     if(r.is_trainer)await unassignAllTrainees(r.id);
@@ -359,6 +371,7 @@ export default function AdminScreen({onClose}){
           const rechentrainerActive=r.rechentrainer_enabled||rechentrainerUntilFmt;
           const aiOn=r.ai_enabled??true;
           const interviewOn=r.interview_enabled??true;
+          const rechentrainerToolOn=r.rechentrainer_tool_enabled??true;
           const panel=panelFor(r.id);
           const assignPanel=assignPanelFor(r.id);
           const atCapacity=panel.trainees!=null&&panel.trainees.length>=r.trainee_limit;
@@ -405,6 +418,9 @@ export default function AdminScreen({onClose}){
                 </button>
                 <button disabled={rowDisabled} title={locked?"Dieses Konto ist geschützt.":undefined} onClick={()=>toggleInterview(r)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:rowDisabled?.5:1,cursor:rowDisabled?"not-allowed":"pointer"}}>
                   {interviewOn?"🎤 Mock-Interview sperren":"🎤 Mock-Interview freischalten"}
+                </button>
+                <button disabled={rowDisabled} title={locked?"Dieses Konto ist geschützt.":undefined} onClick={()=>toggleRechentrainerTool(r)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:rowDisabled?.5:1,cursor:rowDisabled?"not-allowed":"pointer"}}>
+                  {rechentrainerToolOn?"🛠️ Rechner sperren":"🛠️ Rechner freischalten"}
                 </button>
                 <button disabled={grantDisabled} title={juniorOnly?"Nur Admins können Rechte vergeben.":undefined} onClick={()=>toggleTrainer(r)} style={{...ghost,fontSize:12,padding:"7px 12px",opacity:grantDisabled?.4:1,cursor:grantDisabled?"not-allowed":"pointer"}}>
                   {r.is_trainer?"🎓 Trainer entfernen":"🎓 Zum Trainer machen"}
