@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { C, pri, ghost, wrap, inner, ff } from "./lib/theme";
+import { C, pri, ghost, wrap, inner, ff, fm } from "./lib/theme";
 import { useAuth } from "./lib/AuthContext";
 import { Reveal } from "./Reveal";
 import { generateProblem, checkAnswer, explainProblem } from "./lib/rechentrainer/generator";
@@ -9,8 +9,20 @@ const chip = (active) => ({ ...ghost, fontSize: 12, padding: "6px 12px", backgro
 
 const CATEGORY_LABELS = { subnetting: "Subnetting", zahlensysteme: "Zahlensysteme", klassen: "IP-Klassen" };
 
-// Kleine Bit-Visualisierung: zeigt, welcher Anteil der 32 Adress-Bits durch
-// das Praefix als Netz-Anteil festgelegt ist (blau) vs. als Host-Anteil frei
+// Kleine, an jeder Ecke offene Rahmenmarkierung fuer den "HUD"-Look der
+// Aufgaben-Card -- rein dekorativ, braucht position:relative am Elternteil.
+function CornerBrackets() {
+  const base = { position: "absolute", width: 14, height: 14 };
+  return (<>
+    <span style={{ ...base, top: -1, left: -1, borderTop: `2px solid ${C.cy}`, borderLeft: `2px solid ${C.cy}`, borderTopLeftRadius: 6 }} />
+    <span style={{ ...base, top: -1, right: -1, borderTop: `2px solid ${C.cy}`, borderRight: `2px solid ${C.cy}`, borderTopRightRadius: 6 }} />
+    <span style={{ ...base, bottom: -1, left: -1, borderBottom: `2px solid ${C.cy}`, borderLeft: `2px solid ${C.cy}`, borderBottomLeftRadius: 6 }} />
+    <span style={{ ...base, bottom: -1, right: -1, borderBottom: `2px solid ${C.cy}`, borderRight: `2px solid ${C.cy}`, borderBottomRightRadius: 6 }} />
+  </>);
+}
+
+// Bit-Visualisierung: zeigt, welcher Anteil der 32 Adress-Bits durch das
+// Praefix als Netz-Anteil festgelegt ist (blau) vs. als Host-Anteil frei
 // bleibt (grau) -- nur fuer die Subnetting-Kategorie sinnvoll.
 function SubnetBits({ prefix }) {
   return (
@@ -30,10 +42,52 @@ function SubnetBits({ prefix }) {
   );
 }
 
-const GRUNDLAGEN_TEXT = {
-  intro: "Subnetting teilt ein großes IP-Netz in kleinere Teilnetze auf. Jede IPv4-Adresse hat 32 Bit — die CIDR-Schreibweise (z. B. /26) legt fest, wie viele dieser Bit von links den Netz-Anteil bilden. Der Rest sind Host-Bits, mit denen sich einzelne Geräte im Teilnetz unterscheiden lassen.",
-  beispiel: "Beispiel 192.168.1.0/26: 26 Netz-Bits bedeuten 6 freie Host-Bits, also 2^6 = 64 Adressen insgesamt. Die erste Adresse eines Blocks (192.168.1.0) ist die Netzwerkadresse, die letzte (192.168.1.63) die Broadcast-Adresse — beide sind für Geräte nicht nutzbar. Nutzbare Hosts sind deshalb 64 − 2 = 62, mit gültigem Bereich 192.168.1.1 bis 192.168.1.62.",
-  schluss: "Diese Formel — nutzbare Hosts = 2 hoch (Anzahl freier Bits) minus 2 — reicht für jede Subnetzgröße. Für eine Auffrischung von Binär- und Hexadezimalzahlen: siehe Modul „Grundlagen IT & Hardware“, Thema Zahlensysteme.",
+// Bit-Wertigkeiten eines einzelnen Oktetts, fuer die Zahlensysteme-Grundlagen.
+function BitWeights({ value }) {
+  const weights = [128, 64, 32, 16, 8, 4, 2, 1];
+  const bits = value.toString(2).padStart(8, "0").split("").map(Number);
+  return (
+    <div style={{ display: "flex", gap: 4, marginTop: 10, marginBottom: 4 }}>
+      {weights.map((w, i) => (
+        <div key={i} style={{ flex: 1, textAlign: "center" }}>
+          <div style={{ fontSize: 10, color: C.mu, marginBottom: 2, fontFamily: fm }}>{w}</div>
+          <div style={{ height: 26, display: "flex", alignItems: "center", justifyContent: "center", borderRadius: 4, background: bits[i] ? C.bl : C.s2, border: `0.5px solid ${bits[i] ? C.bl : C.bd}`, color: bits[i] ? "#fff" : C.mu, fontSize: 13, fontWeight: 700, fontFamily: fm }}>{bits[i]}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const GRUNDLAGEN = {
+  subnetting: {
+    title: "Subnetting",
+    intro: "Subnetting teilt ein großes IP-Netz in kleinere Teilnetze auf. Jede IPv4-Adresse hat 32 Bit — die CIDR-Schreibweise (z. B. /26) legt fest, wie viele dieser Bit von links den Netz-Anteil bilden. Der Rest sind Host-Bits, mit denen sich einzelne Geräte im Teilnetz unterscheiden lassen.",
+    beispiel: "Beispiel 192.168.1.0/26: 26 Netz-Bits bedeuten 6 freie Host-Bits, also 2^6 = 64 Adressen insgesamt. Die erste Adresse eines Blocks (192.168.1.0) ist die Netzwerkadresse, die letzte (192.168.1.63) die Broadcast-Adresse — beide sind für Geräte nicht nutzbar. Nutzbare Hosts sind deshalb 64 − 2 = 62, mit gültigem Bereich 192.168.1.1 bis 192.168.1.62.",
+    visual: <SubnetBits prefix={26} />,
+    schluss: "Diese Formel — nutzbare Hosts = 2 hoch Anzahl freier Bits, minus 2 — reicht für jede Subnetzgröße. Für eine Auffrischung von Binär- und Hexadezimalzahlen: siehe den Abschnitt Zahlensysteme hier im Rechentrainer.",
+  },
+  zahlensysteme: {
+    title: "Zahlensysteme",
+    intro: "Computer verarbeiten alles binär, also nur mit den Ziffern 0 und 1. Jedes Oktett einer IPv4-Adresse ist eine 8-Bit-Binärzahl, die zur besseren Lesbarkeit als Dezimalzahl (0 bis 255) geschrieben wird. Hexadezimal ist eine kompakte Alternative: eine Hex-Ziffer steht immer für genau 4 Bit.",
+    beispiel: "Beispiel: Das Oktett 192 entspricht binär 11000000 — die Bit-Wertigkeiten 128, 64, 32, 16, 8, 4, 2, 1 werden an den gesetzten (1-)Stellen addiert: 128 + 64 = 192. In Hexadezimal wird dasselbe Oktett in zwei 4er-Gruppen (Nibbles) zerlegt: 1100 = C, 0000 = 0, also C0.",
+    visual: <BitWeights value={192} />,
+    schluss: "Diese Umrechnung braucht vor allem Übung, keine komplizierte Formel — genau das trainiert dieser Abschnitt. Für eine ausführlichere Einführung: Modul Grundlagen IT and Hardware, Thema Zahlensysteme.",
+  },
+  klassen: {
+    title: "IP-Klassen",
+    intro: "Bevor sich CIDR durchsetzte, wurden IPv4-Netze in feste Klassen A, B und C eingeteilt — erkennbar allein am ersten Oktett der Adresse. Jede Klasse hatte eine feste Standard-Subnetzmaske.",
+    beispiel: "Beispiel: Das erste Oktett 172 liegt im Bereich 128 bis 191 — das ist Klasse B mit der Standardmaske 255.255.0.0 (/16).",
+    visual: (
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 10 }}>
+        {[["A", "1–126", "/8"], ["B", "128–191", "/16"], ["C", "192–223", "/24"]].map(([k, range, mask]) => (
+          <div key={k} style={{ display: "flex", justifyContent: "space-between", background: C.s2, borderRadius: 8, padding: "8px 12px", fontSize: 12, fontFamily: fm }}>
+            <span style={{ color: C.cy, fontWeight: 700 }}>Klasse {k}</span><span style={{ color: C.t2 }}>{range}</span><span style={{ color: C.mu }}>{mask}</span>
+          </div>
+        ))}
+      </div>
+    ),
+    schluss: "In der Praxis hat CIDR die starren Klassengrenzen abgelöst — Netze werden heute flexibel nach Bedarf zugeschnitten, nicht mehr nur in diesen drei festen Größen. Die Klasseneinteilung bleibt aber Prüfungsstoff und hilft, typische private Adressbereiche (10.x, 172.16 bis 31.x, 192.168.x) einzuordnen.",
+  },
 };
 
 // Add-on-Werkzeug mit unbegrenzten, zufaellig generierten Uebungsaufgaben
@@ -43,7 +97,11 @@ const GRUNDLAGEN_TEXT = {
 // Preis im Code verankert (siehe CompanyScreen.jsx-Muster).
 export default function RechentrainerScreen({ onClose }) {
   const { user, isRechentrainerUnlocked } = useAuth();
-  const [mode, setMode] = useState("training"); // "grundlagen" | "training" | "summary"
+  // Landet bewusst zuerst auf "grundlagen", nicht "training" -- jeder
+  // Aufruf des Screens (nicht nur der allererste) soll zunaechst die
+  // Einfuehrung zeigen, bevor trainiert wird.
+  const [mode, setMode] = useState("grundlagen"); // "grundlagen" | "training" | "summary"
+  const [grundlagenCat, setGrundlagenCat] = useState("subnetting");
   const [difficulty, setDifficulty] = useState("leicht");
   const [categories, setCategories] = useState(["subnetting"]);
   const [problem, setProblem] = useState(() => generateProblem({ difficulty: "leicht", categories: ["subnetting"] }));
@@ -102,14 +160,19 @@ export default function RechentrainerScreen({ onClose }) {
         </div>
 
       ) : mode === "grundlagen" ? (<>
-        <Reveal><h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Grundlagen: Subnetting</h2>
-        <p style={{ fontSize: 13, color: C.t2, lineHeight: 1.7, marginBottom: 14 }}>{GRUNDLAGEN_TEXT.intro}</p></Reveal>
-        <Reveal><div style={card}>
+        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 16 }}>
+          {Object.keys(GRUNDLAGEN).map((cat, i) => (
+            <button key={cat} onClick={() => setGrundlagenCat(cat)} style={chip(grundlagenCat === cat)}>{i + 1}. {GRUNDLAGEN[cat].title}</button>
+          ))}
+        </div>
+        <Reveal key={`${grundlagenCat}-intro`}><h2 style={{ fontSize: 18, fontWeight: 700, marginBottom: 8 }}>Grundlagen: {GRUNDLAGEN[grundlagenCat].title}</h2>
+        <p style={{ fontSize: 13, color: C.t2, lineHeight: 1.7, marginBottom: 14 }}>{GRUNDLAGEN[grundlagenCat].intro}</p></Reveal>
+        <Reveal key={`${grundlagenCat}-beispiel`}><div style={card}>
           <p style={{ fontSize: 12, fontWeight: 600, color: C.cy, textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 8 }}>Beispiel</p>
-          <p style={{ fontSize: 13, color: C.t2, lineHeight: 1.7, marginBottom: 0 }}>{GRUNDLAGEN_TEXT.beispiel}</p>
-          <SubnetBits prefix={26} />
+          <p style={{ fontSize: 13, color: C.t2, lineHeight: 1.7, marginBottom: 0 }}>{GRUNDLAGEN[grundlagenCat].beispiel}</p>
+          {GRUNDLAGEN[grundlagenCat].visual}
         </div></Reveal>
-        <Reveal><p style={{ fontSize: 13, color: C.t2, lineHeight: 1.7, marginBottom: 20 }}>{GRUNDLAGEN_TEXT.schluss}</p></Reveal>
+        <Reveal key={`${grundlagenCat}-schluss`}><p style={{ fontSize: 13, color: C.t2, lineHeight: 1.7, marginBottom: 20 }}>{GRUNDLAGEN[grundlagenCat].schluss}</p></Reveal>
         <button onClick={() => setMode("training")} style={{ ...pri, width: "100%", justifyContent: "center" }}>Jetzt trainieren →</button>
       </>) : mode === "summary" ? (
         <div style={{ textAlign: "center", padding: "10px 0" }}>
@@ -157,18 +220,22 @@ export default function RechentrainerScreen({ onClose }) {
           <span style={{ fontSize: 12, color: streak >= 3 ? C.am : C.mu }}>{streak >= 2 ? `🔥 ${streak} in Folge` : ""}</span>
         </div>
 
-        <div style={card}>
-          <p style={{ fontSize: 15, color: C.t, lineHeight: 1.6, marginBottom: 10 }}>{problem.question}</p>
+        <div style={{ position: "relative", background: "linear-gradient(180deg, rgba(56,189,248,0.07), rgba(26,37,53,0) 55%)", border: `0.5px solid ${C.bd}`, borderRadius: 12, padding: "18px 18px 16px", marginBottom: 12 }}>
+          <CornerBrackets />
+          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: C.cy, marginBottom: 10 }}>▹ Aufgabe · {CATEGORY_LABELS[problem.category]}</p>
+          <p style={{ fontSize: 15, color: C.t, lineHeight: 1.7, marginBottom: 10, fontFamily: fm }}>{problem.question}</p>
 
           {hintCount > 0 && (
-            <div style={{ background: C.s2, borderRadius: 8, padding: "8px 12px", marginBottom: 10 }}>
+            <div style={{ background: C.s2, borderLeft: `3px solid ${C.cy}`, borderRadius: "0 8px 8px 0", padding: "8px 12px", marginBottom: 10 }}>
               {problem.hintSteps.slice(0, hintCount).map((h, i) => (
-                <p key={i} style={{ fontSize: 12, color: C.t2, margin: i === 0 ? 0 : "4px 0 0", lineHeight: 1.5 }}>💡 {h}</p>
+                <p key={i} style={{ fontSize: 12, color: C.t2, margin: i === 0 ? 0 : "4px 0 0", lineHeight: 1.5, fontFamily: fm }}>{h}</p>
               ))}
             </div>
           )}
           {!feedback && hintCount < problem.hintSteps.length && (
-            <button type="button" onClick={() => setHintCount((h) => h + 1)} style={{ background: "none", border: "none", color: C.cy, cursor: "pointer", fontSize: 12, textDecoration: "underline", padding: 0, fontFamily: ff, marginBottom: 12 }}>💡 Tipp ({hintCount}/{problem.hintSteps.length})</button>
+            <button type="button" onClick={() => setHintCount((h) => h + 1)} style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(56,189,248,0.1)", border: `1px solid ${C.cy}`, borderRadius: 20, color: C.cy, cursor: "pointer", fontSize: 12, fontWeight: 600, padding: "6px 14px 6px 12px", fontFamily: ff, marginBottom: 12 }}>
+              💡 Tipp <span style={{ background: C.cy, color: C.bg, borderRadius: 10, padding: "1px 7px", fontSize: 11, fontWeight: 700 }}>{hintCount}/{problem.hintSteps.length}</span>
+            </button>
           )}
 
           <form onSubmit={submit}>
@@ -178,14 +245,14 @@ export default function RechentrainerScreen({ onClose }) {
               type="text"
               disabled={!!feedback}
               placeholder="Antwort"
-              style={{ width: "100%", background: C.s2, border: `0.5px solid ${C.bd}`, borderRadius: 10, color: C.t, padding: "11px 14px", fontSize: 14, outline: "none", fontFamily: "inherit", marginTop: 10, marginBottom: 14, boxSizing: "border-box" }}
+              style={{ width: "100%", background: C.s2, border: `0.5px solid ${C.bd}`, borderRadius: 10, color: C.t, padding: "11px 14px", fontSize: 14, outline: "none", fontFamily: fm, marginTop: 10, marginBottom: 14, boxSizing: "border-box" }}
             />
             {!feedback && <button type="submit" disabled={!answer.trim()} style={{ ...pri, width: "100%", justifyContent: "center", opacity: answer.trim() ? 1 : .6 }}>Prüfen →</button>}
           </form>
           {feedback && (
             <div style={{ background: feedback.correct ? "#052e16" : "#450a0a", border: `0.5px solid ${feedback.correct ? "#22c55e" : "#ef4444"}`, borderRadius: 10, padding: "10px 14px" }}>
               <p style={{ fontSize: 13, fontWeight: 700, color: feedback.correct ? "#86efac" : "#fca5a5", margin: "0 0 6px" }}>{feedback.correct ? "Richtig!" : "Nicht ganz."}</p>
-              <p style={{ fontSize: 12, color: C.t2, margin: 0, lineHeight: 1.6, fontFamily: ff }}>{feedback.explanation}</p>
+              <p style={{ fontSize: 12, color: C.t2, margin: 0, lineHeight: 1.6, fontFamily: fm }}>{feedback.explanation}</p>
               {problem.category === "subnetting" && <SubnetBits prefix={problem.prefix} />}
             </div>
           )}
