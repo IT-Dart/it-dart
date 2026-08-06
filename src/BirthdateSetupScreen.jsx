@@ -92,10 +92,10 @@ export default function BirthdateSetupScreen(){
 
   return(
     <div style={wrap}><div style={{...inner,paddingTop:60}}>
-      <h2 style={{fontSize:22,fontWeight:700,marginBottom:6}}>Geburtsdatum angeben</h2>
-      <p style={{fontSize:13,color:C.t2,marginBottom:16}}>Bitte gib einmalig dein Geburtsdatum an, um fortzufahren.</p>
+      <h2 style={{fontSize:22,fontWeight:700,marginBottom:6,textAlign:"center"}}>Geburtsdatum angeben</h2>
+      <p style={{fontSize:13,color:C.t2,marginBottom:16,textAlign:"center"}}>Bitte gib einmalig dein Geburtsdatum an, um fortzufahren.</p>
       <div style={{background:C.s1,border:`0.5px solid ${C.bl}`,borderRadius:12,padding:"12px 14px",marginBottom:20}}>
-        <p style={{fontSize:11,fontWeight:700,color:C.bl,textTransform:"uppercase",letterSpacing:".05em",margin:"0 0 6px"}}>ℹ️ Warum wir das brauchen</p>
+        <p style={{fontSize:11,fontWeight:700,color:C.bl,textTransform:"uppercase",letterSpacing:".05em",margin:"0 0 6px"}}>ℹ️ Warum wir das fragen</p>
         <p style={{fontSize:12,color:C.t2,margin:0,lineHeight:1.6}}>Für Online-Dienste gilt ab 16 Jahren eine eigene Einwilligung (Art. 8 DSGVO) — darunter braucht es zusätzlich die Bestätigung einer erziehungsberechtigten Person. Für die Kontoerstellung selbst gilt außerdem: Minderjährige zwischen 7 und 17 Jahren sind nur beschränkt geschäftsfähig (§§ 106 ff. BGB). Wir fragen ausschließlich das Datum ab — keine weiteren Angaben, keine Weitergabe an Dritte.</p>
       </div>
       <form onSubmit={submit}>
