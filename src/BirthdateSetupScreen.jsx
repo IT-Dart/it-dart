@@ -30,16 +30,7 @@ export default function BirthdateSetupScreen(){
     setBusy(true);setMsg(null);
     try{
       const r=await authFetch("parent-consent",{action:"submit",birthdate,parentEmail:parentEmail.trim()||undefined});
-      if(r.status===401){
-        // TEMP-DIAGNOSE 2026-08-07: rohen Antworttext mitloggen/anzeigen, um
-        // zwischen Plattform-verify_jwt-Ablehnung und der eigenen "Nicht
-        // angemeldet."-Antwort der Function zu unterscheiden -- nach Klaerung
-        // wieder auf die schlichte Meldung zurueckbauen.
-        const raw=await r.text().catch(()=>"(kein Text)");
-        console.error("[BirthdateSetupScreen] 401 raw body:",raw);
-        setMsg({type:"error",text:`Deine Sitzung ist abgelaufen. Bitte lade die Seite neu und melde dich erneut an. [Diagnose: ${raw.slice(0,200)}]`});
-        setBusy(false);return;
-      }
+      if(r.status===401){setMsg({type:"error",text:"Deine Sitzung ist abgelaufen. Bitte lade die Seite neu und melde dich erneut an."});setBusy(false);return;}
       const d=await r.json();
       if(!r.ok){
         if(d.error?.includes("Erziehungsberechtigten")&&!needsParentEmail){setNeedsParentEmail(true);setBusy(false);return;}
