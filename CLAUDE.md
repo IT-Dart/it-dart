@@ -56,6 +56,10 @@ Vereinbart mit dem Nutzer am 2026-08-05, Ziel: Claudes eigener Datenbankzugriff 
 
 Nach jeder Änderung an diesen drei Bereichen den Nutzer explizit auf die fällige manuelle Aktion hinweisen.
 
+## Scheduled Jobs (pg_cron)
+
+- `cleanup-unconfirmed-signups-daily` (Migration `20260806020000_cleanup_unconfirmed_signups.sql`, täglich 04:00 UTC): löscht `auth.users`-Zeilen, deren E-Mail-Adresse nach 48h nie bestätigt wurde (`confirmed_at is null`), hart via `DELETE FROM auth.users` — kaskadiert zu `profiles`/Fortschritt/`ai_usage`/Lernnachweisen wie bei `admin-delete-user`. Bewusst nur dieser Fall automatisiert; Konten, die zwar bestätigt haben, aber bei AGB/Passwort hängen geblieben sind, könnten ein echter, nur langsamer Azubi sein — die werden stattdessen über den Button „📝 Unvollständige Registrierungen anzeigen" in `AdminScreen.jsx` sichtbar gemacht, nicht automatisch gelöscht.
+
 ## Bekannte Stolperfallen (bereits gelöst — nicht wieder einführen)
 
 - `auth.admin.deleteUser()` **immer** mit `shouldSoftDelete: false` aufrufen, sonst bleibt die `auth.users`-Zeile bestehen und blockiert eine erneute Einladung derselben E-Mail.

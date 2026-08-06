@@ -106,15 +106,9 @@ export default function AdminScreen({onClose}){
     setTimeout(()=>setCopied(false),1500);
   };
 
-  const search=async(e)=>{
-    e?.preventDefault();
-    setBusy(true);setErr(null);
-    const {data,error}=await supabase
-      .from("profiles")
-      .select("id,email,is_premium,premium_until,rechentrainer_enabled,rechentrainer_until,rechentrainer_tool_enabled,ai_enabled,interview_enabled,is_trainer,is_junior_admin,confirmed_at,trainee_limit,created_at")
-      .ilike("email",`%${query.trim()}%`)
-      .order("created_at",{ascending:false})
-      .limit(25);
+  const SEARCH_COLS="id,email,is_premium,premium_until,rechentrainer_enabled,rechentrainer_until,rechentrainer_tool_enabled,ai_enabled,interview_enabled,is_trainer,is_junior_admin,confirmed_at,trainee_limit,created_at,agb_consent_given,needs_password_setup";
+
+  const applyResults=async(data,error)=>{
     setBusy(false);
     if(error){setErr(describeError(error));return;}
     setResults(data||[]);
@@ -124,6 +118,33 @@ export default function AdminScreen({onClose}){
     }else{
       setUsageCounts({});
     }
+  };
+
+  const search=async(e)=>{
+    e?.preventDefault();
+    setBusy(true);setErr(null);
+    const {data,error}=await supabase.from("profiles").select(SEARCH_COLS)
+      .ilike("email",`%${query.trim()}%`)
+      .order("created_at",{ascending:false})
+      .limit(25);
+    await applyResults(data,error);
+  };
+
+  // "Schwebende Anmeldungen" (To-Do 2026-08-06): bestaetigte Konten, die
+  // trotzdem bei AGB oder Passwort-Vergabe haengen geblieben sind -- bewusst
+  // OHNE Geburtsdatum-Kriterium, sonst waeren fast alle Bestandskonten
+  // dabei, die seit der MINOR_CONSENT_ENABLED-Aktivierung schlicht noch
+  // nicht neu eingeloggt waren, nicht nur echte Karteileichen. Nie
+  // bestaetigte Adressen tauchen hier nicht auf, die raeumt
+  // cleanup_unconfirmed_signups() nach 48h automatisch weg.
+  const searchIncomplete=async()=>{
+    setQuery("");setBusy(true);setErr(null);
+    const {data,error}=await supabase.from("profiles").select(SEARCH_COLS)
+      .not("confirmed_at","is",null)
+      .or("agb_consent_given.eq.false,needs_password_setup.eq.true")
+      .order("created_at",{ascending:false})
+      .limit(50);
+    await applyResults(data,error);
   };
 
   const updateUser=async(id,patch)=>{
@@ -360,10 +381,11 @@ export default function AdminScreen({onClose}){
         </div>}
       </div>
 
-      <form onSubmit={search} style={{display:"flex",gap:8,marginBottom:20}}>
+      <form onSubmit={search} style={{display:"flex",gap:8,marginBottom:10}}>
         <input value={query} onChange={e=>setQuery(e.target.value)} placeholder="E-Mail suchen..." style={input} autoFocus/>
         <button type="submit" disabled={busy} style={{...pri,flexShrink:0,opacity:busy?.6:1}}>{busy?"...":"Suchen"}</button>
       </form>
+      <button onClick={searchIncomplete} disabled={busy} title="Bestätigte Konten, die bei AGB/Datenschutz oder Passwort-Vergabe hängen geblieben sind" style={{...ghost,fontSize:12,padding:"7px 12px",marginBottom:20,opacity:busy?.6:1}}>📝 Unvollständige Registrierungen anzeigen</button>
 
       {err&&<div style={{background:"#450a0a",border:"0.5px solid #ef4444",borderRadius:10,padding:"10px 14px",marginBottom:16}}>
         <p style={{fontSize:13,color:"#fca5a5",margin:0}}>{err}</p>
@@ -415,6 +437,7 @@ export default function AdminScreen({onClose}){
                   {r.is_trainer&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:500,background:"#1e3a5f",color:"#93c5fd"}}>🎓 Trainer</span>}
                   {r.is_junior_admin&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:500,background:"#312e81",color:"#c4b5fd"}}>🧑‍💼 Junior-Admin</span>}
                   {!r.confirmed_at&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:500,background:"#3a2a0f",color:"#fbbf24"}}>⏳ Einladung ausstehend</span>}
+                  {!!r.confirmed_at&&(r.agb_consent_given===false||r.needs_password_setup)&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:4,fontWeight:500,background:"#3a2a0f",color:"#fbbf24"}}>📝 Registrierung unvollständig</span>}
                 </div>
               </div>
               {expanded&&(<>
