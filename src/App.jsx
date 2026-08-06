@@ -97,6 +97,22 @@ function AppShell(){
   if(recoveryMode)return <ResetPasswordScreen/>;
   if(loading)return null;
   if(kickedOut)return <KickedOutScreen onDismiss={()=>{dismissKickedOut();changePage("company");}}/>;
+  // Rechtstexte muessen auch waehrend eines noch offenen Onboarding-Gates
+  // (Passwort/AGB/Username/Geburtsdatum) erreichbar sein -- sonst fuehrt ein
+  // Klick auf "AGB"/"Datenschutzerklaerung" aus AgbConsentScreen.jsx ins
+  // Leere, weil die Gate-Pruefungen unten sonst bei jedem Render Vorrang
+  // haetten und immer wieder denselben Gate-Screen zeigen wuerden (realer
+  // Nutzerbericht 2026-08-06: Links "funktionieren nicht"). Zurueck fuehrt
+  // ganz bewusst wieder auf "app"/"company" und damit automatisch zurueck
+  // zum noch offenen Gate, nicht am Gate vorbei.
+  const legalBackHome=()=>changePage(user?"app":"company");
+  if(user&&LEGAL_MODES.includes(page)){
+    if(page==="impressum")return <Impressum onClose={legalBackHome}/>;
+    if(page==="datenschutz")return <Datenschutz onClose={legalBackHome}/>;
+    if(page==="leistungen")return <Leistungen onClose={legalBackHome}/>;
+    if(page==="agb")return <AGB onClose={legalBackHome}/>;
+    if(page==="trainer-vereinbarung")return <TrainerVereinbarung onClose={legalBackHome}/>;
+  }
   if(user&&needsPasswordSetup)return <PasswordSetupScreen/>;
   if(user&&needsAgbConsent)return <AgbConsentScreen onOpenLegal={changePage}/>;
   if(user&&needsUsernameWelcome)return <UsernameScreen mandatory/>;
