@@ -37,6 +37,17 @@ const HEARTBEAT_INTERVAL_MS = 2 * 60 * 1000;
 // own session detection consumes and strips it.
 const inviteFromUrl = typeof window !== "undefined" && window.location.hash.includes("type=invite");
 
+// AgbConsentScreen.jsx soll VOR ResetPasswordScreen.jsx laufen (frisch
+// eingeladene Konten sollen erst zustimmen, dann ein Passwort setzen), macht
+// dazwischen aber einen eigenen window.location.reload() -- der entfernt den
+// type=invite-Hash endgueltig (Supabase raeumt ihn beim ersten Laden auf),
+// inviteFromUrl waere danach faelschlich false. sessionStorage ueberlebt den
+// Reload innerhalb desselben Tabs und haelt "Passwort steht noch aus" bis zum
+// tatsaechlichen updatePassword()-Erfolg fest.
+const INVITE_PENDING_KEY = "it_dart_invite_pending";
+if (inviteFromUrl && typeof sessionStorage !== "undefined") sessionStorage.setItem(INVITE_PENDING_KEY, "1");
+const invitePasswordPending = typeof sessionStorage !== "undefined" && sessionStorage.getItem(INVITE_PENDING_KEY) === "1";
+
 // To-Do #108: `type=recovery` HAT zwar ein eigenes Event (PASSWORD_RECOVERY),
 // das feuert aber erst asynchron (per setTimeout in supabase-js), NACHDEM die
 // Session bereits per _saveSession() gesetzt wurde -- der getSession()-Aufruf
@@ -64,7 +75,7 @@ const authErrorFromUrl = (() => {
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(undefined); // undefined = loading, null = logged out
   const [profile, setProfile] = useState(null);
-  const [recoveryMode, setRecoveryMode] = useState(inviteFromUrl || recoveryFromUrl);
+  const [recoveryMode, setRecoveryMode] = useState(inviteFromUrl || recoveryFromUrl || invitePasswordPending);
   const [kickedOut, setKickedOut] = useState(false);
   const [authError, setAuthError] = useState(authErrorFromUrl);
   // Real beobachteter Fehler (2026-08-05): ITDart.jsx und CompanyScreen.jsx
@@ -298,7 +309,11 @@ export function AuthProvider({ children }) {
         // (reproduziert per Diagnose-Log 2026-08-04: newActive zeigte die
         // ID des alten, eigentlich verworfenen Claims). Der anschließende
         // Reload räumt das von selbst auf: ohne Hash im Fragment startet
-        // recoveryMode auf der neuen Seite ohnehin mit false.
+        // recoveryMode auf der neuen Seite ohnehin mit false. Das
+        // sessionStorage-Pendant (invitePasswordPending oben) raeumt sich
+        // dagegen nicht von selbst auf -- explizit hier loeschen, sobald das
+        // Passwort tatsaechlich gesetzt ist.
+        if (typeof sessionStorage !== "undefined") sessionStorage.removeItem(INVITE_PENDING_KEY);
         if (profile?.needs_password_setup) {
           const { error } = await supabase.rpc("clear_needs_password_setup");
           if (error) console.error("[AuthContext] needs_password_setup clear failed:", error.message);

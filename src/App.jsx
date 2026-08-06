@@ -94,11 +94,8 @@ function AppShell(){
   if(einladungLink)return <EinladungScreen link={einladungLink}/>;
   if(parentConsentToken)return <ParentConsentConfirmScreen token={parentConsentToken}/>;
   if(authError)return <AuthErrorScreen authError={authError} onDismiss={()=>{dismissAuthError();changePage("company");}}/>;
-  if(recoveryMode)return <ResetPasswordScreen/>;
-  if(loading)return null;
-  if(kickedOut)return <KickedOutScreen onDismiss={()=>{dismissKickedOut();changePage("company");}}/>;
   // Rechtstexte muessen auch waehrend eines noch offenen Onboarding-Gates
-  // (Passwort/AGB/Username/Geburtsdatum) erreichbar sein -- sonst fuehrt ein
+  // (AGB/Passwort/Username/Geburtsdatum) erreichbar sein -- sonst fuehrt ein
   // Klick auf "AGB"/"Datenschutzerklaerung" aus AgbConsentScreen.jsx ins
   // Leere, weil die Gate-Pruefungen unten sonst bei jedem Render Vorrang
   // haetten und immer wieder denselben Gate-Screen zeigen wuerden (realer
@@ -113,8 +110,19 @@ function AppShell(){
     if(page==="agb")return <AGB onClose={legalBackHome}/>;
     if(page==="trainer-vereinbarung")return <TrainerVereinbarung onClose={legalBackHome}/>;
   }
-  if(user&&needsPasswordSetup)return <PasswordSetupScreen/>;
+  // Bewusst VOR recoveryMode/ResetPasswordScreen: ein frisch per Einladung
+  // angelegtes Konto soll erst AGB/Datenschutz bestaetigen und danach ein
+  // Passwort setzen, nicht umgekehrt (realer Nutzerbericht 2026-08-06). Das
+  // dabei durchlaufene, kurze Zeitfenster ohne geladenes profile faellt sonst
+  // auf recoveryMode zurueck (needsAgbConsent ist bis dahin false) -- siehe
+  // invitePasswordPending/sessionStorage in AuthContext.jsx, das dafuer
+  // sorgt, dass ResetPasswordScreen trotz des zwischenzeitlichen Reloads in
+  // AgbConsentScreen.jsx danach zuverlaessig noch drankommt.
   if(user&&needsAgbConsent)return <AgbConsentScreen onOpenLegal={changePage}/>;
+  if(recoveryMode)return <ResetPasswordScreen/>;
+  if(loading)return null;
+  if(kickedOut)return <KickedOutScreen onDismiss={()=>{dismissKickedOut();changePage("company");}}/>;
+  if(user&&needsPasswordSetup)return <PasswordSetupScreen/>;
   if(user&&needsUsernameWelcome)return <UsernameScreen mandatory/>;
   if(user&&(needsBirthdateSetup||pendingParentConsent))return <BirthdateSetupScreen/>;
   // Vercel liefert dank vercel.json-Rewrite für jeden unbekannten Pfad diese
