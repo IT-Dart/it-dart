@@ -367,6 +367,68 @@ const Scene=({mid,n})=>{
           <text key={i} x="205" y={74+i*20} fill={l.c} fontSize="12" fontFamily={fm}>{l.t}</text>
         ))}
       </>}
+      {mid==="b"&&n===7&&<>
+        <text x="430" y="26" textAnchor="middle" fill={C.cy} fontSize="13" fontWeight="600" fontFamily={ff}>Ein Host, mehrere unabhängige VMs</text>
+        {[{l:"Windows Server",e:"🪟",x:200,c:C.bl},{l:"Ubuntu",e:"🐧",x:345,c:C.gr},{l:"Test-VM",e:"🧪",x:490,c:C.am,snap:true}].map((vm,i)=>(
+          <g key={i}>
+            <rect x={vm.x} y="42" width="140" height="72" rx="8" fill="#0f2744" stroke={vm.c} strokeWidth="1.5"/>
+            <text x={vm.x+70} y="76" textAnchor="middle" fontSize="24" fontFamily={ff}>{vm.e}</text>
+            <text x={vm.x+70} y="100" textAnchor="middle" fill={C.t2} fontSize="12" fontWeight="600" fontFamily={ff}>{vm.l}</text>
+            {vm.snap&&<circle cx={vm.x+124} cy="54" r="12" fill="#2a1a0f" stroke={C.am} strokeWidth="1.5"/>}
+            {vm.snap&&<text x={vm.x+124} y="59" textAnchor="middle" fontSize="13" fontFamily={ff}>📸</text>}
+            <line x1={vm.x+70} y1="114" x2={vm.x+70} y2="126" stroke={C.bd} strokeWidth="1.5" strokeDasharray="3 2"/>
+          </g>
+        ))}
+        <rect x="195" y="126" width="460" height="32" rx="6" fill="#1e2d42" stroke={C.cy} strokeWidth="1.5"/>
+        <text x="425" y="147" textAnchor="middle" fill={C.cy} fontSize="13" fontWeight="600" fontFamily={ff}>Hypervisor</text>
+        <rect x="195" y="170" width="460" height="32" rx="6" fill="#0c1a2e" stroke={C.bd} strokeWidth="1.5"/>
+        <text x="425" y="191" textAnchor="middle" fill={C.t2} fontSize="13" fontWeight="600" fontFamily={ff}>Host (physischer Server)</text>
+        <text x="425" y="222" textAnchor="middle" fill={C.mu} fontSize="12" fontFamily={ff}>📸 Snapshot friert den VM-Zustand ein – bei Fehlern ein Klick zurück</text>
+      </>}
+      {mid==="b"&&n===8&&<>
+        <text x="430" y="20" textAnchor="middle" fill={C.cy} fontSize="13" fontWeight="600" fontFamily={ff}>RAID-Level im Vergleich</text>
+        {[
+          {l:"RAID 0",s:"Striping",disks:2,c:C.co,bg:"#2a0f1a",res:"✗ 1 Ausfall = alle Daten weg"},
+          {l:"RAID 1",s:"Spiegelung",disks:2,c:C.gr,bg:"#14532d",res:"✓ 1 Ausfall = läuft weiter"},
+          {l:"RAID 5",s:"Parität",disks:3,c:C.cy,bg:"#0c2a2a",res:"✓ 1 Ausfall = rekonstruierbar"},
+        ].map((r,i)=>{
+          const x=200+i*160;
+          return(<g key={i}>
+            <rect x={x} y="36" width="145" height="118" rx="8" fill={r.bg} stroke={r.c} strokeWidth="1.5"/>
+            <text x={x+72} y="58" textAnchor="middle" fill={r.c} fontSize="13" fontWeight="700" fontFamily={ff}>{r.l}</text>
+            <text x={x+72} y="74" textAnchor="middle" fill={C.t2} fontSize="11" fontFamily={ff}>{r.s}</text>
+            {Array.from({length:r.disks}).map((_,d)=>(
+              <rect key={d} x={x+20+d*38} y="84" width="28" height="36" rx="3" fill="#0c1a2e" stroke={r.c} strokeWidth="1"/>
+            ))}
+            <text x={x+72} y="140" textAnchor="middle" fill={r.c} fontSize="10.5" fontFamily={ff}>{r.res}</text>
+          </g>);
+        })}
+        <text x="430" y="175" textAnchor="middle" fill={C.cy} fontSize="13" fontWeight="600" fontFamily={ff}>Die 3-2-1-Backup-Regel</text>
+        {[{e:"💾",l:"3 Kopien"},{e:"📼",l:"2 Medien"},{e:"☁️",l:"1 extern"}].map((b,i)=>(
+          <g key={i}>
+            <text x={330+i*90} y="205" textAnchor="middle" fontSize="20" fontFamily={ff}>{b.e}</text>
+            <text x={330+i*90} y="222" textAnchor="middle" fill={C.t2} fontSize="11" fontFamily={ff}>{b.l}</text>
+          </g>
+        ))}
+      </>}
+      {mid==="b"&&n===9&&<>
+        <text x="430" y="22" textAnchor="middle" fill={C.cy} fontSize="13" fontWeight="600" fontFamily={ff}>Sensor → Gateway → richtig vs. falsch angebunden</text>
+        <rect x="195" y="80" width="90" height="90" rx="8" fill="#0f2744" stroke={C.bl} strokeWidth="1.5"/>
+        <text x="240" y="120" textAnchor="middle" fontSize="26" fontFamily={ff}>🌡️</text>
+        <text x="240" y="150" textAnchor="middle" fill={C.t2} fontSize="12" fontWeight="600" fontFamily={ff}>Sensor</text>
+        {[9,17,25].map((r,i)=>(<path key={i} d={`M ${330-r} ${125-r*0.35} A ${r} ${r} 0 0 1 ${330+r} ${125-r*0.35}`} fill="none" stroke={C.cy} strokeWidth="1.5" opacity={0.9-i*0.25}/>))}
+        <rect x="310" y="80" width="90" height="90" rx="8" fill="#0f2744" stroke={C.cy} strokeWidth="1.5"/>
+        <text x="355" y="120" textAnchor="middle" fontSize="24" fontFamily={ff}>📡</text>
+        <text x="355" y="150" textAnchor="middle" fill={C.cy} fontSize="12" fontWeight="600" fontFamily={ff}>IoT-Gateway</text>
+        <line x1="400" y1="100" x2="470" y2="60" stroke={C.gr} strokeWidth="2"/>
+        <rect x="470" y="36" width="165" height="48" rx="8" fill="#14532d" stroke={C.gr} strokeWidth="1.5"/>
+        <text x="552" y="56" textAnchor="middle" fill="#86efac" fontSize="12" fontWeight="600" fontFamily={ff}>✓ Eigenes VLAN</text>
+        <text x="552" y="72" textAnchor="middle" fill="#86efac" fontSize="11" fontFamily={ff}>isoliert vom Firmennetz</text>
+        <line x1="400" y1="150" x2="470" y2="185" stroke={C.co} strokeWidth="2" strokeDasharray="5 3"/>
+        <rect x="470" y="162" width="165" height="48" rx="8" fill="#450a0a" stroke={C.co} strokeWidth="1.5"/>
+        <text x="552" y="182" textAnchor="middle" fill="#fca5a5" fontSize="12" fontWeight="600" fontFamily={ff}>✗ Direkt im Firmennetz</text>
+        <text x="552" y="198" textAnchor="middle" fill="#fca5a5" fontSize="11" fontFamily={ff}>Standard-Login = Risiko</text>
+      </>}
       {mid==="si"&&n===1&&<>
         {[{l:"Vertraulichkeit",s:"Nur Berechtigte sehen Daten",e:"🔒",y:48,c:"#0f2744",b:C.cy},{l:"Integrität",s:"Daten sind unverändert",e:"✅",y:102,c:"#14532d",b:C.gr},{l:"Verfügbarkeit",s:"Systeme sind erreichbar",e:"⚡",y:156,c:"#2a1a0f",b:C.am}].map((z,i)=>(
           <g key={i}><rect x="195" y={z.y} width="455" height="44" rx="8" fill={z.c} stroke={z.b} strokeWidth="1.5"/>
