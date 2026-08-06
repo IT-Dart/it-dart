@@ -156,7 +156,17 @@ export function AuthProvider({ children }) {
       stopped = true;
       localStorage.removeItem(SESSION_ID_KEY);
       setKickedOut(true);
-      supabase.auth.signOut();
+      // scope "local" ist hier zwingend: der Standard von signOut() ist
+      // "global" und widerruft ALLE Sitzungen des Kontos -- also auch die
+      // gerade eben angemeldete auf dem neuen Geraet, die diesen Kick-out
+      // ueberhaupt erst ausgeloest hat. Genau das war der Fehler vom
+      // 2026-08-07: nach jedem Zweit-Login lieferte GoTrue fuer die NEUE
+      // Sitzung 401, waehrend PostgREST (das nur die JWT-Signatur prueft,
+      // nicht die Sitzung) weiter 200 lieferte -- die App sah angemeldet aus,
+      // aber jede Edge Function schlug mit "Sitzung abgelaufen" fehl, und
+      // Neuladen half nicht, weil das Access-Token in localStorage gueltig
+      // blieb. Das verdraengte Geraet darf nur sich selbst abmelden.
+      supabase.auth.signOut({ scope: "local" });
     };
 
     const beat = () => {
