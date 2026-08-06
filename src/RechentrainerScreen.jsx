@@ -58,14 +58,11 @@ function BitWeights({ value }) {
   );
 }
 
+// Reihenfolge bewusst didaktisch aufbauend: Zahlensysteme (Grundlage fuer
+// alles Weitere, auch Modul g steht im Lehrplan vor Modul o) -> IP-Klassen
+// (fuehrt Netz-/Host-Anteil in einfacher, fester Form ein) -> Subnetting
+// (verallgemeinert dasselbe Prinzip auf beliebige Bit-Grenzen).
 const GRUNDLAGEN = {
-  subnetting: {
-    title: "Subnetting",
-    intro: "Subnetting teilt ein großes IP-Netz in kleinere Teilnetze auf. Jede IPv4-Adresse hat 32 Bit — die CIDR-Schreibweise (z. B. /26) legt fest, wie viele dieser Bit von links den Netz-Anteil bilden. Der Rest sind Host-Bits, mit denen sich einzelne Geräte im Teilnetz unterscheiden lassen.",
-    beispiel: "Beispiel 192.168.1.0/26: 26 Netz-Bits bedeuten 6 freie Host-Bits, also 2^6 = 64 Adressen insgesamt. Die erste Adresse eines Blocks (192.168.1.0) ist die Netzwerkadresse, die letzte (192.168.1.63) die Broadcast-Adresse — beide sind für Geräte nicht nutzbar. Nutzbare Hosts sind deshalb 64 − 2 = 62, mit gültigem Bereich 192.168.1.1 bis 192.168.1.62.",
-    visual: <SubnetBits prefix={26} />,
-    schluss: "Diese Formel — nutzbare Hosts = 2 hoch Anzahl freier Bits, minus 2 — reicht für jede Subnetzgröße. Für eine Auffrischung von Binär- und Hexadezimalzahlen: siehe den Abschnitt Zahlensysteme hier im Rechentrainer.",
-  },
   zahlensysteme: {
     title: "Zahlensysteme",
     intro: "Computer verarbeiten alles binär, also nur mit den Ziffern 0 und 1. Jedes Oktett einer IPv4-Adresse ist eine 8-Bit-Binärzahl, die zur besseren Lesbarkeit als Dezimalzahl (0 bis 255) geschrieben wird. Hexadezimal ist eine kompakte Alternative: eine Hex-Ziffer steht immer für genau 4 Bit.",
@@ -88,6 +85,13 @@ const GRUNDLAGEN = {
     ),
     schluss: "In der Praxis hat CIDR die starren Klassengrenzen abgelöst — Netze werden heute flexibel nach Bedarf zugeschnitten, nicht mehr nur in diesen drei festen Größen. Die Klasseneinteilung bleibt aber Prüfungsstoff und hilft, typische private Adressbereiche (10.x, 172.16 bis 31.x, 192.168.x) einzuordnen.",
   },
+  subnetting: {
+    title: "Subnetting",
+    intro: "Subnetting teilt ein großes IP-Netz in kleinere Teilnetze auf. Jede IPv4-Adresse hat 32 Bit — die CIDR-Schreibweise (z. B. /26) legt fest, wie viele dieser Bit von links den Netz-Anteil bilden. Der Rest sind Host-Bits, mit denen sich einzelne Geräte im Teilnetz unterscheiden lassen.",
+    beispiel: "Beispiel 192.168.1.0/26: 26 Netz-Bits bedeuten 6 freie Host-Bits, also 2^6 = 64 Adressen insgesamt. Die erste Adresse eines Blocks (192.168.1.0) ist die Netzwerkadresse, die letzte (192.168.1.63) die Broadcast-Adresse — beide sind für Geräte nicht nutzbar. Nutzbare Hosts sind deshalb 64 − 2 = 62, mit gültigem Bereich 192.168.1.1 bis 192.168.1.62.",
+    visual: <SubnetBits prefix={26} />,
+    schluss: "Diese Formel — nutzbare Hosts = 2 hoch Anzahl freier Bits, minus 2 — reicht für jede Subnetzgröße.",
+  },
 };
 
 // Add-on-Werkzeug mit unbegrenzten, zufaellig generierten Uebungsaufgaben
@@ -101,7 +105,7 @@ export default function RechentrainerScreen({ onClose }) {
   // Aufruf des Screens (nicht nur der allererste) soll zunaechst die
   // Einfuehrung zeigen, bevor trainiert wird.
   const [mode, setMode] = useState("grundlagen"); // "grundlagen" | "training" | "summary"
-  const [grundlagenCat, setGrundlagenCat] = useState("subnetting");
+  const [grundlagenCat, setGrundlagenCat] = useState("zahlensysteme");
   const [difficulty, setDifficulty] = useState("leicht");
   const [categories, setCategories] = useState(["subnetting"]);
   const [problem, setProblem] = useState(() => generateProblem({ difficulty: "leicht", categories: ["subnetting"] }));
