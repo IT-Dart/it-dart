@@ -228,15 +228,22 @@ export default function RechentrainerScreen({ onClose }) {
 
   return (
     <div style={wrap}><div style={inner}>
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20, paddingBottom: 16, borderBottom: `0.5px solid ${C.bd}`, flexWrap: "wrap" }}>
+      <div style={{ marginBottom: 20, paddingBottom: 16, borderBottom: `0.5px solid ${C.bd}` }}>
         <span style={{ fontSize: 16, fontWeight: 700 }}>🧮 Rechentrainer</span>
-        {isRechentrainerUnlocked && <div style={{ display: "flex", gap: 6, marginLeft: 12, flexWrap: "wrap" }}>
+        {/* Tabs und Zurück bewusst als EINE Flex-Reihe (nicht mehr verschachtelt
+            mit dem Titel) -- so bleibt Zurück immer auf derselben Zeile/Höhe wie
+            der letzte Tab, statt bei zu wenig Platz unvorhersehbar woanders zu
+            landen. Auf sehr schmalen Bildschirmen kann diese Reihe selbst noch
+            umbrechen, das ist inhaltsbedingt (5 Elemente) und bleibt dabei aber
+            weiterhin als zusammenhängende Gruppe erkennbar. */}
+        {isRechentrainerUnlocked && <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12, flexWrap: "wrap" }}>
           <button onClick={() => setMode("grundlagen")} style={chip(mode === "grundlagen")}>📖 Grundlagen</button>
           <button onClick={() => setMode("training")} style={chip(mode === "training" || mode === "summary")}>🧮 Training</button>
           <button onClick={() => setMode("pruefung-setup")} style={chip(mode.startsWith("pruefung"))}>🎓 Prüfung</button>
           {rechentrainerToolEnabled && <button onClick={() => setMode("rechner")} style={chip(mode === "rechner")}>🛠️ Rechner</button>}
+          <button onClick={onClose} style={{ ...ghost, marginLeft: "auto", fontSize: 13, padding: "6px 12px" }}>← Zurück</button>
         </div>}
-        <button onClick={onClose} style={{ ...ghost, marginLeft: "auto", fontSize: 13, padding: "6px 12px" }}>← Zurück</button>
+        {!isRechentrainerUnlocked && <button onClick={onClose} style={{ ...ghost, marginTop: 12, fontSize: 13, padding: "6px 12px" }}>← Zurück</button>}
       </div>
 
       {!isRechentrainerUnlocked ? (
