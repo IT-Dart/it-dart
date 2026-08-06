@@ -50,7 +50,13 @@ export default function UsernameScreen({ mandatory = false, onClose }) {
         {msg && <div style={{ background: msg.type === "error" ? "#450a0a" : "#052e16", border: `0.5px solid ${msg.type === "error" ? "#ef4444" : "#22c55e"}`, borderRadius: 10, padding: "10px 14px", marginBottom: 14 }}>
           <p style={{ fontSize: 13, color: msg.type === "error" ? "#fca5a5" : "#86efac", margin: 0, lineHeight: 1.5 }}>{msg.text}</p>
         </div>}
-        <button type="submit" disabled={busy || !value.trim()} style={{ ...pri, width: "100%", justifyContent: "center", opacity: busy ? .6 : 1, marginBottom: mandatory ? 10 : 0 }}>
+        {/* Im Pflicht-Modus ist "Speichern" bewusst nur aktiv, wenn der Name
+            tatsaechlich geaendert wurde -- sonst sind Speichern und "Diesen
+            Namen uebernehmen" fuer den generierten Namen ununterscheidbar,
+            und ein Klick auf Speichern wuerde unnoetig den 30-Tage-Cooldown
+            starten, obwohl sich nichts geaendert hat (realer Nutzerfund
+            2026-08-07). */}
+        <button type="submit" disabled={busy || !value.trim() || (mandatory && value.trim() === (currentUsername || "").trim())} style={{ ...pri, width: "100%", justifyContent: "center", opacity: busy ? .6 : 1, marginBottom: mandatory ? 10 : 0 }}>
           {busy ? "Bitte warten..." : "Speichern →"}
         </button>
       </form>
