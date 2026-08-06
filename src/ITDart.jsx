@@ -285,7 +285,7 @@ export default function ITDart({onOpenExam,onOpenLegal,wartungsmodus}){
       </div>
       {onOpenExam&&<button onClick={onOpenExam} style={{...pri,width:"100%",justifyContent:"center",marginTop:20}}>🎯 Prüfungsvorbereitung →</button>}
       <div style={{textAlign:"center",marginTop:16}}>
-        <button onClick={()=>changeView("cover")} style={{background:"none",border:"none",color:C.mu,fontSize:12,cursor:"pointer",textDecoration:"underline"}}>ℹ️ Über IT-Dart</button>
+        <button onClick={()=>changeView("cover")} style={{background:"none",border:"none",color:C.mu,fontSize:12,cursor:"pointer",textDecoration:"underline"}}>ℹ️ Bleib am Dart</button>
       </div>
     </div></div>
   );
