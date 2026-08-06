@@ -75,6 +75,11 @@ const authErrorFromUrl = (() => {
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(undefined); // undefined = loading, null = logged out
   const [profile, setProfile] = useState(null);
+  // true, solange fuer den aktuellen Nutzer noch kein profile geladen wurde --
+  // ohne das flasht App.jsx bei einer frisch eingeladenen Sitzung kurz
+  // ResetPasswordScreen auf, bevor needsAgbConsent (haengt an profile) ueberhaupt
+  // bekannt sein kann, und zeigt danach erst AgbConsentScreen (siehe App.jsx).
+  const [profileLoading, setProfileLoading] = useState(false);
   const [recoveryMode, setRecoveryMode] = useState(inviteFromUrl || recoveryFromUrl || invitePasswordPending);
   const [kickedOut, setKickedOut] = useState(false);
   const [authError, setAuthError] = useState(authErrorFromUrl);
@@ -101,8 +106,9 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     const user = session?.user;
-    if (!user) { setProfile(null); return; }
+    if (!user) { setProfile(null); setProfileLoading(false); return; }
     let cancelled = false;
+    setProfileLoading(true);
 
     const fetchProfile = () => {
       supabase.from("profiles").select("is_premium, premium_until, rechentrainer_enabled, rechentrainer_until, rechentrainer_tool_enabled, is_admin, is_trainer, is_junior_admin, email, needs_password_setup, birthdate, parent_consent_confirmed, agb_consent_given, username, username_welcome_seen").eq("id", user.id).single()
@@ -110,6 +116,7 @@ export function AuthProvider({ children }) {
           if (cancelled) return;
           if (error) console.error("Profil konnte nicht geladen werden:", error.message);
           setProfile(data ?? { is_premium: false, premium_until: null, rechentrainer_enabled: false, rechentrainer_until: null, rechentrainer_tool_enabled: true, is_admin: false, is_trainer: false, is_junior_admin: false, needs_password_setup: false, birthdate: null, parent_consent_confirmed: false, agb_consent_given: true, username: null, username_welcome_seen: true });
+          setProfileLoading(false);
         });
     };
 
@@ -226,6 +233,7 @@ export function AuthProvider({ children }) {
     session,
     user: session?.user ?? null,
     loading: session === undefined,
+    profileLoading,
     isPremium: !!profile?.is_premium || hasTimedPremium,
     premiumUntil: profile?.premium_until ?? null,
     isRechentrainerUnlocked: !!profile?.rechentrainer_enabled || hasTimedRechentrainer,

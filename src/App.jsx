@@ -25,7 +25,7 @@ import { AuthProvider, useAuth } from "./lib/AuthContext";
 const WARTUNGSMODUS=true;
 
 function AppShell(){
-  const {recoveryMode,needsPasswordSetup,needsAgbConsent,needsUsernameWelcome,needsBirthdateSetup,pendingParentConsent,kickedOut,dismissKickedOut,authError,dismissAuthError,user,loading}=useAuth();
+  const {recoveryMode,needsPasswordSetup,needsAgbConsent,needsUsernameWelcome,needsBirthdateSetup,pendingParentConsent,kickedOut,dismissKickedOut,authError,dismissAuthError,user,loading,profileLoading}=useAuth();
   // "company" | "app" | "pruefung" | "impressum" | "datenschutz" | "leistungen" | "agb"
   // ?mode=login/register kommt vom "Anmelden / Registrieren"-Button auf der
   // Unternehmensseite selbst (CompanyScreen.jsx) sowie von Einladungslinks —
@@ -118,6 +118,14 @@ function AppShell(){
   // invitePasswordPending/sessionStorage in AuthContext.jsx, das dafuer
   // sorgt, dass ResetPasswordScreen trotz des zwischenzeitlichen Reloads in
   // AgbConsentScreen.jsx danach zuverlaessig noch drankommt.
+  //
+  // Waehrend recoveryMode noch nicht bekannt ist, ob profile schon geladen
+  // ist (session selbst laedt noch, oder profile-Fetch noch unterwegs),
+  // NICHTS rendern -- sonst flasht kurz ResetPasswordScreen auf (needsAgbConsent
+  // haengt an profile und ist bis dahin faelschlich false), bevor der naechste
+  // Render auf AgbConsentScreen umschaltet. Erst wenn wirklich feststeht, ob
+  // AGB noch fehlt, wird endgueltig entschieden (realer Nutzerbericht 2026-08-06).
+  if(recoveryMode&&(loading||(user&&profileLoading)))return null;
   if(user&&needsAgbConsent)return <AgbConsentScreen onOpenLegal={changePage}/>;
   if(recoveryMode)return <ResetPasswordScreen/>;
   if(loading)return null;
