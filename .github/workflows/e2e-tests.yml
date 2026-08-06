@@ -119,6 +119,27 @@ jobs:
           echo "Zusätzliche 20s, bis der API-Stack (PostgREST/Pooler) nachgezogen hat..."
           sleep 20
 
+      # --- To-Do #106: Edge-Function-Secrets werden bei einem per API
+      # angelegten Branch (siehe "Sandbox-Branch anlegen" oben) NICHT
+      # automatisch vom Hauptprojekt vererbt -- laut Supabase-Doku sind
+      # Secrets branch-spezifisch und müssen einzeln gesetzt werden. Das
+      # erklärte den zuvor beobachteten isolatspezifischen 500er
+      # ("Server ist nicht konfiguriert.") bei ai-chat im echten KI-Pfad-Test
+      # (roleA.free.spec.js, dort bisher mit test.fail() als bekannt-kaputt
+      # markiert). Expliziter Push statt der undokumentierten Vererbung, die
+      # sich als unzuverlässig erwiesen hat.
+      - name: Edge-Function-Secrets auf den Branch übertragen
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          branch_ref="${{ steps.create_branch.outputs.branch_ref }}"
+          resp=$(curl -sf -X POST "https://api.supabase.com/v1/projects/${branch_ref}/secrets" \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            -H "Content-Type: application/json" \
+            -d "[{\"name\":\"ANTHROPIC_API_KEY\",\"value\":\"${ANTHROPIC_API_KEY}\"}]")
+          echo "Secret-Push-Antwort: $resp"
+
       - name: Branch-Zugangsdaten ermitteln
         id: branch_keys
         env:
