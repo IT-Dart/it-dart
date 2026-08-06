@@ -61,8 +61,11 @@ export function Impressum({onClose}){
       <Reveal><h2 style={h2}>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
       <p style={p}>Coskun Selim Bulut (Anschrift wie oben)</p></Reveal>
 
+      <Reveal><h2 style={h2}>Umsatzsteuer</h2>
+      <p style={p}>Gemäß § 19 UStG wird keine Umsatzsteuer berechnet (Kleinunternehmerregelung).</p></Reveal>
+
       <Reveal><h2 style={h2}>Streitschlichtung</h2>
-      <p style={p}>Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: <a href="https://ec.europa.eu/consumers/odr/" target="_blank" rel="noreferrer" style={{color:C.cy}}>ec.europa.eu/consumers/odr</a>. Wir sind nicht verpflichtet und nicht bereit, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p></Reveal>
+      <p style={p}>Wir sind nicht verpflichtet und nicht bereit, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p></Reveal>
 
       <Reveal><h2 style={h2}>Copyright</h2>
       <p style={p}>© {new Date().getFullYear()} IT-Dart – Coskun Selim Bulut. Alle Inhalte dieser Plattform (Texte, Code, Gestaltung) sind urheberrechtlich geschützt, soweit nicht anders gekennzeichnet.</p></Reveal>
@@ -147,7 +150,7 @@ export function AGB({onClose}){
       <p style={p}>IT-Dart bietet eine digitale Lernplattform für die Ausbildung zum Fachinformatiker für Systemintegration (FISI) — Lernmodule, Praxisfälle, ein KI-gestützter Lernassistent und eine Prüfungssimulation mit Lernnachweis. Details zum Funktionsumfang und den Konten-/Preisstufen: siehe „Leistungen & Pakete".</p></Reveal>
 
       <Reveal><h2 style={h2}>3. Registrierung und Nutzerkonto</h2>
-      <p style={p}>Der Zugang erfolgt aktuell auf Einladung. Bei der Registrierung sind wahrheitsgemäße Angaben zu machen. Zugangsdaten sind vertraulich zu behandeln und nicht an Dritte weiterzugeben. Für Aktivitäten unter dem eigenen Konto ist die registrierte Person verantwortlich, soweit sie diese zu vertreten hat. Welche Daten dabei erhoben werden, ist in der Datenschutzerklärung (Punkt 2) aufgeführt; erfolgt die Registrierung im Rahmen eines Ausbildungsverhältnisses, gilt zusätzlich der dort in Punkt 8 beschriebene Einblick des einladenden Ausbildungsbetriebs.</p></Reveal>
+      <p style={p}>Der Zugang erfolgt entweder durch eigenständige Registrierung oder durch eine Einladung, häufig im Rahmen eines Ausbildungsverhältnisses über den Ausbildungsbetrieb. Bei der Registrierung sind wahrheitsgemäße Angaben zu machen. Zugangsdaten sind vertraulich zu behandeln und nicht an Dritte weiterzugeben. Für Aktivitäten unter dem eigenen Konto ist die registrierte Person verantwortlich, soweit sie diese zu vertreten hat. Welche Daten dabei erhoben werden, ist in der Datenschutzerklärung (Punkt 2) aufgeführt; erfolgt die Registrierung im Rahmen eines Ausbildungsverhältnisses, gilt zusätzlich der dort in Punkt 8 beschriebene Einblick des einladenden Ausbildungsbetriebs.</p></Reveal>
 
       <Reveal><h2 style={h2}>4. Nutzungsrechte und Pflichten</h2>
       <p style={p}>Die Plattform darf ausschließlich für den persönlichen Lernzweck genutzt werden. Nicht gestattet sind insbesondere: die Weitergabe von Zugangsdaten an Dritte, automatisierte Zugriffe (z. B. Scraping) sowie Versuche, Sicherheitsmechanismen zu umgehen.</p></Reveal>
@@ -171,7 +174,7 @@ export function AGB({onClose}){
       <p style={p}>Diese AGB können bei Weiterentwicklung des Angebots angepasst werden. Es gilt die jeweils aktuelle, hier abrufbare Fassung. Über wesentliche Änderungen informieren wir registrierte Nutzer in geeigneter Form.</p></Reveal>
 
       <Reveal><h2 style={h2}>11. Schlussbestimmungen</h2>
-      <p style={p}>Es gilt deutsches Recht. Die Europäische Kommission stellt eine Plattform zur Online-Streitbeilegung (OS) bereit: <a href="https://ec.europa.eu/consumers/odr/" target="_blank" rel="noreferrer" style={{color:C.cy}}>ec.europa.eu/consumers/odr</a>. Wir sind nicht verpflichtet und nicht bereit, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p></Reveal>
+      <p style={p}>Es gilt deutsches Recht. Wir sind nicht verpflichtet und nicht bereit, an Streitbeilegungsverfahren vor einer Verbraucherschlichtungsstelle teilzunehmen.</p></Reveal>
     </LegalLayout>
   );
 }

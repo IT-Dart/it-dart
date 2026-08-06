@@ -15,7 +15,7 @@ export default function AgbConsentScreen({ onOpenLegal }) {
   const [done, setDone] = useState(false); // kurze Bestaetigung vor dem Reload, statt stillem Sprung -- siehe PasswordSetupScreen.jsx, gleiches Muster.
 
   const confirm = async () => {
-    if (!accepted) { setMsg("Bitte AGB und Datenschutzerklärung akzeptieren."); return; }
+    if (!accepted) { setMsg("Bitte den AGB zustimmen."); return; }
     setBusy(true); setMsg(null);
     const { error } = await supabase.rpc("confirm_agb_consent");
     setBusy(false);
@@ -43,7 +43,7 @@ export default function AgbConsentScreen({ onOpenLegal }) {
       <p style={{ fontSize: 13, color: C.t2, marginBottom: 24, lineHeight: 1.6 }}>Dein Konto wurde per Einladung angelegt. Bitte bestätige einmalig, dass du unsere Nutzungsbedingungen gelesen hast.</p>
       <label style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 20, fontSize: 13, color: C.t2, lineHeight: 1.6, cursor: "pointer" }}>
         <input type="checkbox" checked={accepted} onChange={e => setAccepted(e.target.checked)} style={{ marginTop: 2 }} />
-        <span>Ich habe die <button type="button" onClick={() => onOpenLegal?.("agb")} style={{ background: "none", border: "none", color: C.cy, cursor: "pointer", fontSize: 13, fontFamily: ff, textDecoration: "underline", padding: 0 }}>AGB</button> und die <button type="button" onClick={() => onOpenLegal?.("datenschutz")} style={{ background: "none", border: "none", color: C.cy, cursor: "pointer", fontSize: 13, fontFamily: ff, textDecoration: "underline", padding: 0 }}>Datenschutzerklärung</button> gelesen und stimme ihnen zu.</span>
+        <span>Ich stimme den <button type="button" onClick={() => onOpenLegal?.("agb")} style={{ background: "none", border: "none", color: C.cy, cursor: "pointer", fontSize: 13, fontFamily: ff, textDecoration: "underline", padding: 0 }}>AGB</button> zu und habe die <button type="button" onClick={() => onOpenLegal?.("datenschutz")} style={{ background: "none", border: "none", color: C.cy, cursor: "pointer", fontSize: 13, fontFamily: ff, textDecoration: "underline", padding: 0 }}>Datenschutzerklärung</button> zur Kenntnis genommen.</span>
       </label>
       {msg && <div style={{ background: "#450a0a", border: "0.5px solid #ef4444", borderRadius: 10, padding: "10px 14px", marginBottom: 14 }}>
         <p style={{ fontSize: 13, color: "#fca5a5", margin: 0, lineHeight: 1.5 }}>{msg}</p>
