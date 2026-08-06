@@ -88,6 +88,7 @@ export function Datenschutz({onClose}){
         <li style={li}>Protokoll erzeugter Lernnachweise (Zeitpunkt, Bereich, Ergebnis)</li>
         <li style={li}>Anfragen an den KI-Chat (werden zur Beantwortung an Anthropic übermittelt, siehe Punkt 4)</li>
         <li style={li}>Freiwillige Antworten auf kurze Feedback-Fragebögen (z. B. nach der Prüfungsvorbereitung), falls du diese ausfüllst</li>
+        <li style={li}>Geburtsdatum sowie ggf. die E-Mail-Adresse einer erziehungsberechtigten Person — ausschließlich zur einmaligen Altersprüfung nach Art. 8 DSGVO/§§ 106 ff. BGB, siehe Punkt 9</li>
       </ul></Reveal>
 
       <Reveal><h2 style={h2}>3. Zweck und Rechtsgrundlage</h2>
@@ -127,7 +128,8 @@ export function Datenschutz({onClose}){
       <p style={p}>Zur Aufrechterhaltung deiner Anmeldung wird ein Sitzungs-Token im lokalen Speicher (localStorage) deines Browsers abgelegt. Es werden keine Marketing- oder Tracking-Cookies eingesetzt.</p></Reveal>
 
       <Reveal><h2 style={h2}>9. Minderjährige Nutzer</h2>
-      <p style={p}>Ein Teil unserer Nutzer befindet sich in einer Berufsausbildung und kann minderjährig sein. Die Registrierung erfolgt aktuell ausschließlich auf Einladung, häufig im Rahmen eines Ausbildungsverhältnisses über den Ausbildungsbetrieb (Trainer-Rolle). Trainer sehen dabei ohnehin Status und Lernfortschritt der von ihnen eingeladenen Auszubildenden — dieselbe Übersicht besteht unabhängig vom Alter der Person. Es werden keine über den in Punkt 2 genannten Umfang hinausgehenden Daten erhoben, unabhängig vom Alter der nutzenden Person.</p></Reveal>
+      <p style={p}>Ein Teil unserer Nutzer befindet sich in einer Berufsausbildung und kann minderjährig sein. Die Registrierung erfolgt sowohl direkt durch dich selbst als auch, häufig im Rahmen eines Ausbildungsverhältnisses, über eine Einladung des Ausbildungsbetriebs (Trainer-Rolle). Trainer sehen dabei ohnehin Status und Lernfortschritt der von ihnen eingeladenen Auszubildenden — dieselbe Übersicht besteht unabhängig vom Alter der Person.</p>
+      <p style={p}>Bei der Registrierung fragen wir einmalig dein Geburtsdatum ab: Für Online-Dienste gilt ab 16 Jahren eine eigene Einwilligung (Art. 8 DSGVO) — darunter braucht es zusätzlich die Bestätigung einer erziehungsberechtigten Person per E-Mail. Für die Kontoerstellung selbst gilt außerdem: Minderjährige zwischen 7 und 17 Jahren sind nur beschränkt geschäftsfähig (§§ 106 ff. BGB). Wir fragen dabei ausschließlich das Datum bzw. die E-Mail-Adresse der erziehungsberechtigten Person ab — keine weiteren Angaben, keine Weitergabe an Dritte außer zum Versand der Bestätigungs-Mail (siehe Punkt 4, Resend).</p></Reveal>
 
       <Reveal><h2 style={h2}>10. Änderungen</h2>
       <p style={p}>Diese Datenschutzerklärung kann bei Weiterentwicklung des Angebots angepasst werden. Es gilt die jeweils aktuelle, hier abrufbare Fassung.</p></Reveal>

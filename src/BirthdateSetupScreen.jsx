@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { C, pri, wrap, inner } from "./lib/theme";
 import { useAuth } from "./lib/AuthContext";
 import { authFetch } from "./lib/authFetch";
@@ -18,6 +18,7 @@ export default function BirthdateSetupScreen(){
   const [busy,setBusy]=useState(false);
   const [msg,setMsg]=useState(null);
   const [submitted,setSubmitted]=useState(false);
+  const [done,setDone]=useState(false); // Volljaehrig/16+: kurze Bestaetigung vor dem Reload, statt stillem Sprung -- siehe PasswordSetupScreen.jsx, gleiches Muster.
 
   const submit=async(e)=>{
     e.preventDefault();
@@ -36,12 +37,18 @@ export default function BirthdateSetupScreen(){
       }
       setBusy(false);
       if(d.requiresParentConsent){setSubmitted(true);}
-      else window.location.reload();
+      else setDone(true);
     }catch{
       setBusy(false);
       setMsg({type:"error",text:"Verbindung fehlgeschlagen. Bitte erneut versuchen."});
     }
   };
+
+  useEffect(()=>{
+    if(!done)return;
+    const t=setTimeout(()=>window.location.reload(),1200);
+    return ()=>clearTimeout(t);
+  },[done]);
 
   const resend=async()=>{
     setBusy(true);setMsg(null);
@@ -56,6 +63,14 @@ export default function BirthdateSetupScreen(){
       setMsg({type:"error",text:"Verbindung fehlgeschlagen. Bitte erneut versuchen."});
     }
   };
+
+  if(done)return(
+    <div style={wrap}><div style={{...inner,paddingTop:60,textAlign:"center"}}>
+      <div style={{fontSize:48,marginBottom:12}}>✓</div>
+      <h2 style={{fontSize:20,fontWeight:700,marginBottom:8}}>Danke, gespeichert</h2>
+      <p style={{fontSize:14,color:C.t2}}>Du wirst gleich automatisch weitergeleitet...</p>
+    </div></div>
+  );
 
   if(pendingParentConsent||submitted)return(
     <div style={wrap}><div style={{...inner,paddingTop:60,textAlign:"center"}}>
@@ -77,7 +92,11 @@ export default function BirthdateSetupScreen(){
   return(
     <div style={wrap}><div style={{...inner,paddingTop:60}}>
       <h2 style={{fontSize:22,fontWeight:700,marginBottom:6}}>Geburtsdatum angeben</h2>
-      <p style={{fontSize:13,color:C.t2,marginBottom:24}}>Bitte gib einmalig dein Geburtsdatum an, um fortzufahren.</p>
+      <p style={{fontSize:13,color:C.t2,marginBottom:16}}>Bitte gib einmalig dein Geburtsdatum an, um fortzufahren.</p>
+      <div style={{background:C.s1,border:`0.5px solid ${C.bl}`,borderRadius:12,padding:"12px 14px",marginBottom:20}}>
+        <p style={{fontSize:11,fontWeight:700,color:C.bl,textTransform:"uppercase",letterSpacing:".05em",margin:"0 0 6px"}}>ℹ️ Warum wir das brauchen</p>
+        <p style={{fontSize:12,color:C.t2,margin:0,lineHeight:1.6}}>Für Online-Dienste gilt ab 16 Jahren eine eigene Einwilligung (Art. 8 DSGVO) — darunter braucht es zusätzlich die Bestätigung einer erziehungsberechtigten Person. Für die Kontoerstellung selbst gilt außerdem: Minderjährige zwischen 7 und 17 Jahren sind nur beschränkt geschäftsfähig (§§ 106 ff. BGB). Wir fragen ausschließlich das Datum ab — keine weiteren Angaben, keine Weitergabe an Dritte.</p>
+      </div>
       <form onSubmit={submit}>
         <input type="date" value={birthdate} onChange={e=>setBirthdate(e.target.value)} style={input}/>
         {needsParentEmail&&<input type="email" placeholder="E-Mail einer erziehungsberechtigten Person" value={parentEmail} onChange={e=>setParentEmail(e.target.value)} style={input} autoComplete="email"/>}

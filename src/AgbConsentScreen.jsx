@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { C, pri, wrap, inner, ff } from "./lib/theme";
 import { supabase } from "./lib/supabaseClient";
 
@@ -12,6 +12,7 @@ export default function AgbConsentScreen({ onOpenLegal }) {
   const [accepted, setAccepted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
+  const [done, setDone] = useState(false); // kurze Bestaetigung vor dem Reload, statt stillem Sprung -- siehe PasswordSetupScreen.jsx, gleiches Muster.
 
   const confirm = async () => {
     if (!accepted) { setMsg("Bitte AGB und Datenschutzerklärung akzeptieren."); return; }
@@ -19,8 +20,22 @@ export default function AgbConsentScreen({ onOpenLegal }) {
     const { error } = await supabase.rpc("confirm_agb_consent");
     setBusy(false);
     if (error) { setMsg("Verbindung fehlgeschlagen. Bitte erneut versuchen."); return; }
-    window.location.reload();
+    setDone(true);
   };
+
+  useEffect(() => {
+    if (!done) return;
+    const t = setTimeout(() => window.location.reload(), 1200);
+    return () => clearTimeout(t);
+  }, [done]);
+
+  if (done) return (
+    <div style={wrap}><div style={{ ...inner, paddingTop: 60, textAlign: "center" }}>
+      <div style={{ fontSize: 48, marginBottom: 12 }}>✓</div>
+      <h2 style={{ fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Danke, bestätigt</h2>
+      <p style={{ fontSize: 14, color: C.t2 }}>Du wirst gleich automatisch weitergeleitet...</p>
+    </div></div>
+  );
 
   return (
     <div style={wrap}><div style={{ ...inner, paddingTop: 60 }}>
