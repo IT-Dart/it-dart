@@ -30,9 +30,20 @@ Konsolidierte Übersicht aller Prinzipien, die IT-Dart beim eigenen Einsatz von 
 ## Jugendschutz
 
 - **Themenbindung (`SAFETY_CLAUSE`):** Jeder Modus lehnt sexuelle Inhalte, Drogen/Suchtmittel, Gewalt und andere für eine potenziell von Minderjährigen genutzte Plattform ungeeignete Themen ab, unabhängig von der Formulierung der Anfrage. Zentral in `ai-chat/index.ts` definiert, an alle vier Modi angehängt — neue Modi erben das automatisch, sofern die `SAFETY_CLAUSE`-Anhängung nicht vergessen wird (bei jedem neuen System-Prompt gegenprüfen).
-- **Kein Alter/Geburtsdatum abgefragt** (bewusste Datenminimierung, siehe `COMPLIANCE.md` Jugendschutz-Abschnitt) — die Themenbindung gilt deshalb unabhängig vom tatsächlichen Alter für alle Nutzer gleich, statt auf einer (nicht vorhandenen) Altersangabe aufzubauen.
+- **Themenbindung gilt unabhängig vom Alter für alle Nutzer gleich** — auch nach Aktivierung der Geburtsdatum-Abfrage (`MINOR_CONSENT_ENABLED`, seit 2026-08-06 scharf) baut die `SAFETY_CLAUSE` bewusst nicht auf der Altersangabe auf, sondern gilt themenbezogen für jede Anfrage. Die Geburtsdatum-Abfrage selbst dient DSGVO Art. 8/BGB-Geschäftsfähigkeit und der Anthropic-Altersverifikationspflicht (siehe unten), nicht der Steuerung der KI-Inhalte.
 - **Rate-Limit** (`RATE_LIMIT_PER_HOUR = 20`, serverseitig erzwungen) reduziert Abhängigkeits-/Missbrauchsrisiko, gilt für alle Modi gemeinsam.
 - **Dialog-Modi (Interview/Diagnose) mit Rundenbegrenzung** (`INTERVIEW_MAX_ROUNDS`/`DIAGNOSE_MAX_ROUNDS = 8`), damit kein endloses, unstrukturiertes Gespräch entsteht.
+
+## Anthropic-Nutzungsrichtlinie — eigene Pflichten als Organisation (Stand 2026-08-06)
+
+Neben unseren eigenen DSGVO-/Jugendschutz-Pflichten verlangt Anthropics Usage Policy (`anthropic.com/legal/aup`, verifiziert per WebFetch, nicht aus einer Sekundärquelle übernommen) von Organisationen wie uns zwei zusätzliche, eigenständige Punkte — deren Nichteinhaltung laut Anthropic zur Suspendierung des API-Zugangs führen kann, unabhängig vom deutschen Recht:
+
+- **KI-Offenlegung bei jedem Chat-Start** ("must disclose … at a minimum at the beginning of each chat session"): Branding/Icon allein reicht nicht. Umgesetzt als expliziter Satz `AIDisclosure` in `AIChat.jsx` (KI-Lernassistent, Mock-Interview, Diagnose-Dialog) und als Hinweiszeile in `Pruefung.jsx` (Prüfungsvorbereitung-Auswertung).
+- **Zusätzliche Vorgaben für Organisationen mit Minderjährigen-Nutzerkreis** (Help-Center-Artikel „Responsible use of Anthropic's models: guidelines for organizations serving minors", verlinkt aus der AUP): Altersverifikation, Content-Moderation, Monitoring, Aufklärung, ggf. Kinderschutzrecht-Konformität dokumentieren. Bei uns:
+  - Altersverifikation → `MINOR_CONSENT_ENABLED`-Flow (Geburtsdatum + Eltern-Doppel-Opt-in, seit 2026-08-06 scharf geschaltet).
+  - Content-Moderation → bereits durch `SAFETY_CLAUSE` oben abgedeckt.
+  - Monitoring → Rate-Limit + Rundenbegrenzung (siehe oben), kein dedizierter Melde-Button — als kleinere offene Lücke vermerkt, nicht sicherheitskritisch genug für sofortige Umsetzung.
+- **High-Risk-Use-Case-Prüfung:** Mock-Interview/Prüfungsvorbereitung-Auswertung berühren inhaltlich die Kategorien „Employment"/„Academic testing", lösen aber laut Anthropics eigener Definition nur aus, wenn das Ergebnis eine echte Dritt-Entscheidung beeinflusst — bei uns reine Selbstlern-Übung, siehe AGG-Abschnitt unten. Zur Sicherheit trotzdem mit Übungs-/Unverbindlichkeits-Hinweis versehen (siehe oben).
 
 ## Allgemeines Gleichbehandlungsgesetz (AGG) — Einschätzung
 

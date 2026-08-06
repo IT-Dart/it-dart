@@ -35,6 +35,14 @@ const AI_PANEL_CSS=`
 `;
 const aiPanelStyle={position:"relative",background:"linear-gradient(165deg, rgba(37,99,235,.10), rgba(15,22,35,0) 65%)",border:`1px solid ${C.bl}`,borderRadius:14,padding:"16px",overflow:"hidden"};
 const AIOrb=({icon})=><span className="ai-orb" style={{display:"inline-flex",alignItems:"center",justifyContent:"center",width:26,height:26,borderRadius:"50%",background:"radial-gradient(circle at 35% 30%, #38bdf8, #1d4ed8)",fontSize:13,flexShrink:0}}>{icon}</span>;
+// Anthropic-Nutzungsrichtlinie verlangt fuer jeden konsumentenseitigen Chat
+// eine Offenlegung "interagiert mit KI, nicht mit Mensch" mindestens zu
+// Beginn jeder Sitzung — Branding (Icon/Label) allein reicht dafuer nicht,
+// es braucht einen expliziten Satz.
+const AIDisclosure=({extra})=>(
+  <p style={{fontSize:11,color:C.mu,margin:"0 0 10px",fontStyle:"italic"}}>Du sprichst mit einer KI (Anthropic Claude), keiner echten Person.{extra?` ${extra}`:""}</p>
+);
+
 const AIThinking=({text})=>(
   <div style={{display:"flex",alignItems:"center",gap:10,padding:"6px 2px"}}>
     <div style={{display:"flex",gap:4}}>{[0,1,2].map(i=><span key={i} className="ai-dot" style={{width:6,height:6,borderRadius:"50%",background:C.cy,display:"inline-block"}}/>)}</div>
@@ -95,6 +103,7 @@ const AIChat=({ctx,q1,q2,a1,a2,moduleId,dialogMode})=>{
         <p style={{fontSize:12,fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",color:C.t,margin:0,textShadow:"0 0 12px rgba(56,189,248,.5)"}}>{dialog.label}</p>
         {history.length>0&&<span style={{marginLeft:"auto",fontSize:11,color:C.cy,border:`0.5px solid ${C.bl}`,borderRadius:20,padding:"2px 9px"}}>{Math.min(dialogRounds,INTERVIEW_MAX_ROUNDS)} / {INTERVIEW_MAX_ROUNDS} {dialog.roundNoun}</span>}
       </div>
+      <AIDisclosure extra={dialogMode==="interview"?"Übungssimulation, keine reale Bewertung.":undefined}/>
       {history.length===0?(
         busy?<AIThinking text={dialog.startingText}/>:
         <button onClick={()=>dialogStep(null)} style={{...pri,width:"100%",justifyContent:"center",boxShadow:"0 0 22px rgba(37,99,235,.55)"}}>{dialog.start}</button>
@@ -128,6 +137,7 @@ const AIChat=({ctx,q1,q2,a1,a2,moduleId,dialogMode})=>{
         <p style={{fontSize:12,fontWeight:700,letterSpacing:".08em",textTransform:"uppercase",color:C.t,margin:0,textShadow:"0 0 12px rgba(56,189,248,.5)"}}>KI-Lernassistent</p>
         {askCount>0&&<span style={{marginLeft:"auto",fontSize:11,color:C.cy,border:`0.5px solid ${C.bl}`,borderRadius:20,padding:"2px 9px"}}>{Math.min(askCount,CHAT_MAX_QUESTIONS)} / {CHAT_MAX_QUESTIONS} Fragen</span>}
       </div>
+      <AIDisclosure/>
       {askLimitReached?(
         <p style={{fontSize:12,color:C.mu,margin:0}}>Maximale Anzahl an Fragen für dieses Thema erreicht. Verlasse das Thema und öffne es erneut, um weiter zu fragen.</p>
       ):(<>

@@ -5,4 +5,4 @@
 // Geburtsdatum-Abfrage + Eltern-E-Mail-Bestaetigung fuer unter-16-Jaehrige
 // (BirthdateSetupScreen.jsx, parent-consent Edge Function). Siehe
 // dokumentation/29_Anwalt_Pruefauftrag_Rechtstexte.docx, Punkt 6.
-export const MINOR_CONSENT_ENABLED = false;
+export const MINOR_CONSENT_ENABLED = true;

@@ -371,6 +371,7 @@ export default function Pruefung({onExit}){
 
           {auswertungSummary&&<div style={{textAlign:"left",background:C.s1,border:`0.5px solid ${C.bl}`,borderRadius:12,padding:"14px 16px",marginBottom:24,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
             <p style={{fontSize:11,fontWeight:700,color:C.bl,textTransform:"uppercase",letterSpacing:".05em",margin:"0 0 6px"}}>🧠 KI-Einschätzung</p>
+            <p style={{fontSize:11,color:C.t2,margin:"0 0 8px",fontStyle:"italic"}}>Automatisch erstellt (Anthropic Claude), keine echte Person — eine unverbindliche Lernempfehlung, keine offizielle Bewertung.</p>
             {!auswertung&&!auswertungBusy&&<>
               <p style={{fontSize:12,color:C.t2,margin:"0 0 10px",lineHeight:1.5}}>Basierend auf deinen bisherigen {auswertungSummary.count} Halb-/Vollprüfungen — eine realistische Einschätzung, worauf du dich als Nächstes konzentrieren solltest.</p>
               <button onClick={auswerten} style={{background:C.bl,color:"#fff",border:"none",borderRadius:8,padding:"9px 14px",fontSize:13,fontWeight:500,cursor:"pointer",fontFamily:ff}}>Jetzt auswerten →</button>

@@ -103,6 +103,13 @@ Deno.serve(async (req) => {
         if (!parentEmail || !parentEmail.includes("@")) {
           return json({ error: "Bitte die E-Mail-Adresse eines Erziehungsberechtigten angeben." }, 400, cors);
         }
+        // Offensichtlichster Umgehungsfall: eigene Konto-E-Mail als "Eltern-E-Mail"
+        // eintragen. Verhindert keine absichtliche Faelschung mit einer echten
+        // Zweit-Adresse, schliesst aber die einfachste Luecke ohne zusaetzliche
+        // Infrastruktur (siehe KI-RICHTLINIEN.md, "angemessene Anstrengungen").
+        if (user.email && parentEmail.toLowerCase() === user.email.toLowerCase()) {
+          return json({ error: "Die E-Mail-Adresse eines Erziehungsberechtigten muss sich von deiner eigenen Konto-E-Mail unterscheiden." }, 400, cors);
+        }
         const consentToken = crypto.randomUUID();
         const { error: updErr } = await supabase
           .from("profiles")
