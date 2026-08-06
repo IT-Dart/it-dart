@@ -29,6 +29,8 @@ Module mit **durchgehendem Praxisfall über alle Themen** (`o`, `si`, `sk` — d
 
 Dieser Standard gilt für Modulinhalte (`th`/`pc` in `moduleContent.js`) — nicht für Drill-Werkzeuge wie den Rechentrainer (`RechentrainerScreen.jsx`, 2026-08-06), die strukturell kein Theorie+Praxisfall+Fragen-Schema haben, sondern unbegrenzt wiederholbare, zufällig generierte Übungsaufgaben mit sofortigem Feedback sind (näher an der Prüfungsvorbereitung als an einem Modul-Thema). Die Theorie/Praxisfall-Struktur und die Anti-Langweilig-Regel oben gelten dafür NICHT direkt. Es gilt aber derselbe Grundsatz übertragen: Feedback muss den vollständigen Rechenweg zeigen, nicht nur „richtig"/„falsch" — eine Erklärung ohne nachvollziehbaren Weg ist für ein Rechenwerkzeug dieselbe Art von Qualitätslücke wie eine reine Zustandsbeschreibung ohne Handlung bei einem Praxisfall.
 
+Diese Ausnahme gilt ausschließlich für den Übungsmechanismus selbst (Zufallsaufgabe + Eingabe + Feedback). Erklärende Prosa innerhalb desselben Screens — z. B. eine optionale „Grundlagen"-Einführung vor dem Training — ist kein Drill und folgt stattdessen der regulären Theorie-Struktur oben (Einleitung+Kernpunkt → Beispiel → Schlusssatz), inklusive derselben Terminologie-Konsistenz-Pflicht gegenüber bereits bestehenden Modulinhalten zum selben Thema.
+
 ## Anwendung
 
 Dieser Standard gilt rückwirkend für alle 46 bestehenden Themen (vollständiger Konformitäts-Durchlauf, siehe `todos`) ebenso wie für jedes künftig neu verfasste Thema. Der `didaktik-content-review`-Agent prüft explizit gegen dieses Dokument, nicht gegen eigenes Wissen über "guten Aufbau" — sonst wäre die Prüfung nicht reproduzierbar.
