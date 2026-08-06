@@ -418,7 +418,7 @@ const Scene=({mid,n})=>{
         <text x="240" y="150" textAnchor="middle" fill={C.t2} fontSize="12" fontWeight="600" fontFamily={ff}>Sensor</text>
         {[9,17,25].map((r,i)=>(<path key={i} d={`M ${330-r} ${125-r*0.35} A ${r} ${r} 0 0 1 ${330+r} ${125-r*0.35}`} fill="none" stroke={C.cy} strokeWidth="1.5" opacity={0.9-i*0.25}/>))}
         <rect x="310" y="80" width="90" height="90" rx="8" fill="#0f2744" stroke={C.cy} strokeWidth="1.5"/>
-        <text x="355" y="120" textAnchor="middle" fontSize="24" fontFamily={ff}>📡</text>
+        <text x="355" y="120" textAnchor="middle" fontSize="24" fontFamily={ff}>🌉</text>
         <text x="355" y="150" textAnchor="middle" fill={C.cy} fontSize="12" fontWeight="600" fontFamily={ff}>IoT-Gateway</text>
         <line x1="400" y1="100" x2="470" y2="60" stroke={C.gr} strokeWidth="2"/>
         <rect x="470" y="36" width="165" height="48" rx="8" fill="#14532d" stroke={C.gr} strokeWidth="1.5"/>
