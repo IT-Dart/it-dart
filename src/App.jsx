@@ -48,6 +48,12 @@ function AppShell(){
   const [page,setPage]=useState(()=>{
     const mode=params.get("mode");
     if(LEGAL_MODES.includes(mode))return mode;
+    // Waehrend WARTUNGSMODUS soll Registrierung nicht nur unbeworben, sondern
+    // hart gesperrt sein -- der direkte Link ?mode=register funktionierte
+    // bisher unabhaengig vom Wartungsmodus (realer Fund 2026-08-06). "login"
+    // bleibt bewusst unberuehrt, Bestandskonten muessen sich weiter anmelden
+    // koennen.
+    if(mode==="register"&&WARTUNGSMODUS)return null;
     return params.has("mode")?"app":null;
   });
   // Sanfter Seitenuebergang bei jedem page-Wechsel (To-Do #126) -- geteilter

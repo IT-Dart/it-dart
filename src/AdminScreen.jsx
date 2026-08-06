@@ -78,11 +78,11 @@ export default function AdminScreen({onClose}){
       // Kein Ziel-E-Mail angegeben: statt einer persönlichen Einladung einen
       // allgemeinen Registrierungslink zeigen — dort trägt die Person selbst
       // E-Mail (mit Bestätigung) und Passwort ein.
-      // To-Do #107: "Enable email signups" war projektweit deaktiviert, ist
-      // aber seit einem nicht dokumentierten Zeitpunkt vor 2026-08-06 wieder
-      // aktiv (mehrfach live verifiziert -- Selbstregistrierung funktioniert).
-      // Hinweistext entsprechend korrigiert, Code/Funktion unveraendert.
-      setInviteMsg({type:"info",text:"Allgemeiner Registrierungslink — die Person trägt beim Öffnen selbst ihre E-Mail-Adresse ein und bestätigt sie."});
+      // To-Do #107: "Enable email signups" ist aktiv, der Link funktioniert
+      // technisch -- App.jsx sperrt ?mode=register aber hart, solange
+      // WARTUNGSMODUS an ist (2026-08-06 nachgeruestet, vorher unbeabsichtigt
+      // umgehbar). Hinweistext entsprechend praezisiert.
+      setInviteMsg({type:"info",text:"Allgemeiner Registrierungslink — die Person trägt beim Öffnen selbst ihre E-Mail-Adresse ein und bestätigt sie. Hinweis: Solange der Wartungsmodus aktiv ist, ist dieser Link für anonyme Besucher gesperrt."});
       setInviteLink(`${window.location.origin}/?mode=register`);
       setCopied(false);
       return;
