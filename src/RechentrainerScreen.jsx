@@ -104,7 +104,8 @@ export default function RechentrainerScreen({ onClose }) {
   // Landet bewusst zuerst auf "grundlagen", nicht "training" -- jeder
   // Aufruf des Screens (nicht nur der allererste) soll zunaechst die
   // Einfuehrung zeigen, bevor trainiert wird.
-  const [mode, setMode] = useState("grundlagen"); // "grundlagen" | "training" | "summary"
+  // "grundlagen" | "training" | "summary" | "pruefung-setup" | "pruefung-laufend" | "pruefung-ergebnis"
+  const [mode, setMode] = useState("grundlagen");
   const [grundlagenCat, setGrundlagenCat] = useState("zahlensysteme");
   const [difficulty, setDifficulty] = useState("leicht");
   const [categories, setCategories] = useState(["subnetting"]);
@@ -114,6 +115,17 @@ export default function RechentrainerScreen({ onClose }) {
   const [hintCount, setHintCount] = useState(0);
   const [streak, setStreak] = useState(0);
   const [stats, setStats] = useState({}); // {subnetting:{correct,total}, ...}
+
+  // Pruefungsmodus: eigener, von der freien Uebungsschleife komplett
+  // getrennter Zustand -- feste Laenge, keine Tipps, kein Feedback bis zum
+  // Abschluss. Aufgaben werden wie im Trainingsmodus erst beim Start
+  // generiert (nicht vorab fest verdrahtet), bleiben aber fuer die gesamte
+  // Pruefung unveraendert in examProblems stehen.
+  const [examLength, setExamLength] = useState(10);
+  const [examProblems, setExamProblems] = useState([]);
+  const [examIndex, setExamIndex] = useState(0);
+  const [examAnswer, setExamAnswer] = useState("");
+  const [examResults, setExamResults] = useState([]); // [{problem, userAnswer, correct}]
 
   const toggleCategory = (cat) => {
     setCategories((cs) => {
@@ -142,15 +154,42 @@ export default function RechentrainerScreen({ onClose }) {
   const sessionTotal = Object.values(stats).reduce((a, s) => a + s.total, 0);
   const sessionCorrect = Object.values(stats).reduce((a, s) => a + s.correct, 0);
 
+  const startExam = () => {
+    setExamProblems(Array.from({ length: examLength }, () => generateProblem({ difficulty, categories })));
+    setExamIndex(0); setExamAnswer(""); setExamResults([]);
+    setMode("pruefung-laufend");
+  };
+
+  const submitExamAnswer = (e) => {
+    e.preventDefault();
+    if (!examAnswer.trim()) return;
+    const current = examProblems[examIndex];
+    const correct = checkAnswer(current, examAnswer);
+    const nextResults = [...examResults, { problem: current, userAnswer: examAnswer, correct }];
+    setExamResults(nextResults);
+    setExamAnswer("");
+    if (examIndex + 1 < examProblems.length) setExamIndex((i) => i + 1);
+    else setMode("pruefung-ergebnis");
+  };
+
+  const examCurrent = examProblems[examIndex];
+  const examCorrectCount = examResults.filter((r) => r.correct).length;
+  const examStatsByCategory = examResults.reduce((acc, r) => {
+    const cat = r.problem.category;
+    const prev = acc[cat] || { correct: 0, total: 0 };
+    return { ...acc, [cat]: { correct: prev.correct + (r.correct ? 1 : 0), total: prev.total + 1 } };
+  }, {});
+
   const mailtoHref = `mailto:kontakt@it-dart.de?subject=${encodeURIComponent("Interesse am Rechentrainer")}&body=${encodeURIComponent(`Hallo,\n\nich habe Interesse am Rechentrainer (Subnetting-Übungswerkzeug).\n\nKonto-E-Mail: ${user?.email || ""}`)}`;
 
   return (
     <div style={wrap}><div style={inner}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20, paddingBottom: 16, borderBottom: `0.5px solid ${C.bd}`, flexWrap: "wrap" }}>
         <span style={{ fontSize: 16, fontWeight: 700 }}>🧮 Rechentrainer</span>
-        {isRechentrainerUnlocked && <div style={{ display: "flex", gap: 6, marginLeft: 12 }}>
+        {isRechentrainerUnlocked && <div style={{ display: "flex", gap: 6, marginLeft: 12, flexWrap: "wrap" }}>
           <button onClick={() => setMode("grundlagen")} style={chip(mode === "grundlagen")}>📖 Grundlagen</button>
-          <button onClick={() => setMode("training")} style={chip(mode !== "grundlagen")}>🧮 Training</button>
+          <button onClick={() => setMode("training")} style={chip(mode === "training" || mode === "summary")}>🧮 Training</button>
+          <button onClick={() => setMode("pruefung-setup")} style={chip(mode.startsWith("pruefung"))}>🎓 Prüfung</button>
         </div>}
         <button onClick={onClose} style={{ ...ghost, marginLeft: "auto", fontSize: 13, padding: "6px 12px" }}>← Zurück</button>
       </div>
@@ -208,6 +247,92 @@ export default function RechentrainerScreen({ onClose }) {
             <button onClick={onClose} style={pri}>✓ Übersicht</button>
           </div>
         </div>
+
+      ) : mode === "pruefung-setup" ? (<>
+        <div style={card}>
+          <p style={{ fontSize: 14, fontWeight: 700, color: C.t, marginBottom: 8 }}>🎓 Prüfungsmodus</p>
+          <p style={{ fontSize: 13, color: C.t2, lineHeight: 1.7, marginBottom: 14 }}>Feste Anzahl Aufgaben ohne Tipps und ohne Zwischenfeedback — ob eine Antwort richtig war, siehst du erst am Ende, dafür mit vollständiger Auswertung jeder einzelnen Aufgabe.</p>
+          <p style={{ fontSize: 12, fontWeight: 600, color: C.cy, textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 8 }}>Schwierigkeit</p>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
+            <button onClick={() => setDifficulty("leicht")} style={chip(difficulty === "leicht")}>Leicht</button>
+            <button onClick={() => setDifficulty("schwer")} style={chip(difficulty === "schwer")}>Schwer</button>
+          </div>
+          <p style={{ fontSize: 12, fontWeight: 600, color: C.cy, textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 8 }}>Themen</p>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 14 }}>
+            {Object.keys(CATEGORY_LABELS).map((cat) => (
+              <button key={cat} onClick={() => toggleCategory(cat)} style={chip(categories.includes(cat))}>{CATEGORY_LABELS[cat]}</button>
+            ))}
+          </div>
+          <p style={{ fontSize: 12, fontWeight: 600, color: C.cy, textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 8 }}>Länge</p>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {[10, 15, 20].map((n) => (
+              <button key={n} onClick={() => setExamLength(n)} style={chip(examLength === n)}>{n} Aufgaben</button>
+            ))}
+          </div>
+        </div>
+        <button onClick={startExam} style={{ ...pri, width: "100%", justifyContent: "center" }}>Prüfung starten →</button>
+      </>) : mode === "pruefung-laufend" ? (<>
+        <p style={{ fontSize: 12, color: C.mu, marginBottom: 10 }}>Frage {examIndex + 1} von {examProblems.length}</p>
+        <div style={{ height: 4, background: C.s2, borderRadius: 2, overflow: "hidden", marginBottom: 14 }}>
+          <div style={{ height: "100%", width: `${Math.round((examIndex / examProblems.length) * 100)}%`, background: C.cy, borderRadius: 2, transition: "width .3s" }} />
+        </div>
+        <div style={{ position: "relative", background: "linear-gradient(180deg, rgba(56,189,248,0.07), rgba(26,37,53,0) 55%)", border: `0.5px solid ${C.bd}`, borderRadius: 12, padding: "18px 18px 16px", marginBottom: 12 }}>
+          <CornerBrackets />
+          <p style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".12em", textTransform: "uppercase", color: C.cy, marginBottom: 10 }}>▹ Prüfung · {CATEGORY_LABELS[examCurrent.category]}</p>
+          <p style={{ fontSize: 15, color: C.t, lineHeight: 1.7, marginBottom: 10, fontFamily: fm }}>{examCurrent.question}</p>
+          <form onSubmit={submitExamAnswer}>
+            <input
+              value={examAnswer}
+              onChange={(e) => setExamAnswer(e.target.value)}
+              type="text"
+              placeholder="Antwort"
+              autoFocus
+              style={{ width: "100%", background: C.s2, border: `0.5px solid ${C.bd}`, borderRadius: 10, color: C.t, padding: "11px 14px", fontSize: 14, outline: "none", fontFamily: fm, marginTop: 10, marginBottom: 14, boxSizing: "border-box" }}
+            />
+            <button type="submit" disabled={!examAnswer.trim()} style={{ ...pri, width: "100%", justifyContent: "center", opacity: examAnswer.trim() ? 1 : .6 }}>{examIndex + 1 === examProblems.length ? "Prüfung abschließen →" : "Weiter →"}</button>
+          </form>
+        </div>
+      </>) : mode === "pruefung-ergebnis" ? (
+        <div style={{ textAlign: "center", padding: "10px 0" }}>
+          {(() => {
+            const pct = examResults.length ? Math.round((examCorrectCount / examResults.length) * 100) : 0;
+            return (<>
+              <div style={{ fontSize: 48, marginBottom: 12 }}>{pct >= 80 ? "🎯" : pct >= 60 ? "👍" : "💪"}</div>
+              <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 6 }}>{pct >= 80 ? "Sehr gut!" : pct >= 60 ? "Gut gemacht!" : "Weiter üben!"}</h3>
+              <p style={{ fontSize: 14, color: C.t2, marginBottom: 16 }}>{examCorrectCount} von {examResults.length} richtig — {pct}%</p>
+              <div style={{ height: 8, background: C.s2, borderRadius: 4, overflow: "hidden", marginBottom: 20 }}>
+                <div style={{ height: "100%", width: `${pct}%`, background: pct >= 80 ? C.gr : pct >= 60 ? C.am : "#ef4444", borderRadius: 4 }} />
+              </div>
+            </>);
+          })()}
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 20, textAlign: "left" }}>
+            {Object.entries(examStatsByCategory).map(([cat, s]) => (
+              <div key={cat}>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: C.t2, marginBottom: 3 }}>
+                  <span>{CATEGORY_LABELS[cat] || cat}</span><span>{s.correct}/{s.total}</span>
+                </div>
+                <div style={{ height: 4, background: C.s2, borderRadius: 2, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${Math.round((s.correct / s.total) * 100)}%`, background: C.cy, borderRadius: 2 }} />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 20 }}>
+            <button onClick={() => setMode("pruefung-setup")} style={ghost}>🔄 Neue Prüfung</button>
+            <button onClick={onClose} style={pri}>✓ Übersicht</button>
+          </div>
+          <p style={{ fontSize: 12, fontWeight: 600, color: C.cy, textTransform: "uppercase", letterSpacing: ".04em", marginBottom: 10, textAlign: "left" }}>Auswertung je Aufgabe</p>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, textAlign: "left" }}>
+            {examResults.map((r, i) => (
+              <div key={i} style={{ background: C.s1, border: `0.5px solid ${r.correct ? "#22c55e" : "#ef4444"}`, borderRadius: 10, padding: "10px 14px" }}>
+                <p style={{ fontSize: 12, color: C.mu, margin: "0 0 4px", fontFamily: fm }}>{i + 1}. {r.problem.question}</p>
+                <p style={{ fontSize: 12, margin: "0 0 4px", fontFamily: fm }}><span style={{ color: r.correct ? "#86efac" : "#fca5a5" }}>Deine Antwort: {r.userAnswer}</span>{!r.correct && <span style={{ color: C.t2 }}> · Richtig: {r.problem.correctAnswer}</span>}</p>
+                <p style={{ fontSize: 11, color: C.mu, margin: 0, lineHeight: 1.5, fontFamily: fm }}>{explainProblem(r.problem)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
       ) : (<>
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
           <button onClick={() => { setDifficulty("leicht"); newProblem("leicht", categories); }} style={chip(difficulty === "leicht")}>Leicht</button>
