@@ -230,18 +230,19 @@ export default function RechentrainerScreen({ onClose }) {
     <div style={wrap}><div style={inner}>
       <div style={{ marginBottom: 20, paddingBottom: 16, borderBottom: `0.5px solid ${C.bd}` }}>
         <span style={{ fontSize: 16, fontWeight: 700 }}>🧮 Rechentrainer</span>
-        {/* Tabs und Zurück bewusst als EINE Flex-Reihe (nicht mehr verschachtelt
-            mit dem Titel) -- so bleibt Zurück immer auf derselben Zeile/Höhe wie
-            der letzte Tab, statt bei zu wenig Platz unvorhersehbar woanders zu
-            landen. Auf sehr schmalen Bildschirmen kann diese Reihe selbst noch
-            umbrechen, das ist inhaltsbedingt (5 Elemente) und bleibt dabei aber
-            weiterhin als zusammenhängende Gruppe erkennbar. */}
-        {isRechentrainerUnlocked && <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12, flexWrap: "wrap" }}>
-          <button onClick={() => setMode("grundlagen")} style={chip(mode === "grundlagen")}>📖 Grundlagen</button>
-          <button onClick={() => setMode("training")} style={chip(mode === "training" || mode === "summary")}>🧮 Training</button>
-          <button onClick={() => setMode("pruefung-setup")} style={chip(mode.startsWith("pruefung"))}>🎓 Prüfung</button>
-          {rechentrainerToolEnabled && <button onClick={() => setMode("rechner")} style={chip(mode === "rechner")}>🛠️ Rechner</button>}
-          <button onClick={onClose} style={{ ...ghost, marginLeft: "auto", fontSize: 13, padding: "6px 12px" }}>← Zurück</button>
+        {/* Tabs und Zurück bewusst als EINE Flex-Reihe, die auf schmalen
+            Bildschirmen horizontal scrollt statt umzubrechen (flexShrink:0 +
+            overflowX:auto) -- so bleibt Zurück garantiert auf derselben
+            Zeile/Höhe wie der letzte Tab, egal wie schmal das Gerät ist. Auf
+            dem Laptop, wo alles ohnehin nebeneinander passt, ändert das
+            nichts sichtbar (kein Scrollbalken erscheint, wenn nichts
+            überläuft). */}
+        {isRechentrainerUnlocked && <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 12, flexWrap: "nowrap", overflowX: "auto", WebkitOverflowScrolling: "touch", paddingBottom: 2 }}>
+          <button onClick={() => setMode("grundlagen")} style={{ ...chip(mode === "grundlagen"), flexShrink: 0 }}>📖 Grundlagen</button>
+          <button onClick={() => setMode("training")} style={{ ...chip(mode === "training" || mode === "summary"), flexShrink: 0 }}>🧮 Training</button>
+          <button onClick={() => setMode("pruefung-setup")} style={{ ...chip(mode.startsWith("pruefung")), flexShrink: 0 }}>🎓 Prüfung</button>
+          {rechentrainerToolEnabled && <button onClick={() => setMode("rechner")} style={{ ...chip(mode === "rechner"), flexShrink: 0 }}>🛠️ Rechner</button>}
+          <button onClick={onClose} style={{ ...ghost, marginLeft: "auto", fontSize: 13, padding: "6px 12px", flexShrink: 0 }}>← Zurück</button>
         </div>}
         {!isRechentrainerUnlocked && <button onClick={onClose} style={{ ...ghost, marginTop: 12, fontSize: 13, padding: "6px 12px" }}>← Zurück</button>}
       </div>
