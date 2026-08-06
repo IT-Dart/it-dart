@@ -209,15 +209,25 @@ export function AuthProvider({ children }) {
     // Bug, hat gerade jeden frischen Login sofort wieder rueckgaengig
     // gemacht). Der erste echte Herzschlag darf daher erst greifen, wenn
     // ein etwaiger Bootstrap-Anspruch garantiert abgeschlossen ist.
+    //
+    // IMMER beanspruchen, nicht nur wenn localStorage noch keine sid hat
+    // (Fund 2026-08-07): eine vorhandene sid im selben Browser kann von
+    // einem VORHERIGEN, anderen Konto stammen (z.B. nach Testen mehrerer
+    // Accounts im selben Browser) -- sie war fuer das aktuelle Konto nie
+    // tatsaechlich beansprucht (aktive_session_id blieb null). Die erste
+    // Profil-Aenderung (AGB-Bestaetigung, Geburtsdatum) loeste dann ueber
+    // den Realtime-Kanal unten faelschlich einen Kick-out der gerade erst
+    // begonnenen eigenen Sitzung aus ("Sitzung ist abgelaufen" direkt nach
+    // Einladungslink, reproduziert bei frischem Konto ohne Zweitgeraet).
+    // claim_session ist fuer den bereits korrekt beanspruchten Normalfall
+    // ein No-Op (dieselbe sid wird einfach erneut bestaetigt).
     if (!sid) {
       sid = crypto.randomUUID();
       localStorage.setItem(SESSION_ID_KEY, sid);
-      supabase.rpc("claim_session", { new_session_id: sid }).then(({ error }) => {
-        if (error) console.error("[AuthContext] claim_session (bootstrap) failed:", error.message);
-      }).finally(() => { if (!stopped) intervalId = setInterval(beat, HEARTBEAT_INTERVAL_MS); });
-    } else {
-      intervalId = setInterval(beat, HEARTBEAT_INTERVAL_MS);
     }
+    supabase.rpc("claim_session", { new_session_id: sid }).then(({ error }) => {
+      if (error) console.error("[AuthContext] claim_session failed:", error.message);
+    }).finally(() => { if (!stopped) intervalId = setInterval(beat, HEARTBEAT_INTERVAL_MS); });
     return () => { stopped = true; if (intervalId) clearInterval(intervalId); supabase.removeChannel(channel); };
   }, [session?.user?.id, recoveryMode]);
 
