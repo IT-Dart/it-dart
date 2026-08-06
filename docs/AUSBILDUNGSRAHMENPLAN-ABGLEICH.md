@@ -19,18 +19,18 @@ Beide Quellen sind komplementär: die FIAusbV regelt die **betriebliche** Ausbil
 | 4 | 1. | Schutzbedarfsanalyse im eigenen Arbeitsbereich durchführen | Modul `si`, Thema 1 "Schutzziele" | ✅ Abgedeckt |
 | 5 | 1. | Software zur Verwaltung von Daten anpassen | Modul `db` (SQL/Datenbankdesign) + Modul `sk` (Skripte schreiben) | ✅ Abgedeckt (aufgeteilt auf 2 Module) |
 | 6 | 2. | Serviceanfragen bearbeiten | Modul `pr`, Thema 3 "Ticketsystem & SLA" | ✅ Abgedeckt |
-| 7 | 2. | Cyber-physische Systeme ergänzen (IoT-Integration) | — | ❌ **Nicht abgedeckt** |
+| 7 | 2. | Cyber-physische Systeme ergänzen (IoT-Integration) | Modul `b`, Thema 9 "Cyber-physische Systeme & IoT" | ✅ Abgedeckt |
 | 8 | 2. | Daten systemübergreifend bereitstellen | Modul `db`, Thema 6 "Daten systemübergreifend" (explizit im Untertitel) | ✅ Abgedeckt |
 | 9 | 2. | Netzwerke und Dienste bereitstellen | Modul `o` (vertieft: Subnetting, DHCP/DNS, WLAN) | ✅ Abgedeckt |
 | 10b | 3. | Serverdienste bereitstellen, Administration automatisieren | Modul `b` (Betriebssysteme & Server) + Modul `sk` (PowerShell-Automatisierung) | ✅ Abgedeckt (aufgeteilt auf 2 Module) |
 | 11b | 3. | Betrieb und Sicherheit vernetzter Systeme gewährleisten | Modul `si` (vertiefte Themen) + Modul `b` (RAID/Backup/Virtualisierung) | ✅ Abgedeckt (aufgeteilt auf 2 Module) |
 | 12b | 3. | Kundenspezifische Systemintegration durchführen (Abschlussprojekt) | Modul `pr`, durchgehender Projektfall + AP1/AP2-Erklärung | ✅ Abgedeckt |
 
-**Ergebnis: 11 von 12 Lernfeldern werden durch IT-Dart inhaltlich abgedeckt.** Modul `bw` (Karriere & Bewerbung) ordnet sich keinem Lernfeld zu — das ist kein Mangel, sondern bewusster Mehrwert außerhalb des Pflicht-Curriculums (Bewerbungsprozess ist nicht Teil der Lernfelder).
+**Ergebnis: 12 von 12 Lernfeldern werden durch IT-Dart inhaltlich abgedeckt.** Modul `bw` (Karriere & Bewerbung) ordnet sich keinem Lernfeld zu — das ist kein Mangel, sondern bewusster Mehrwert außerhalb des Pflicht-Curriculums (Bewerbungsprozess ist nicht Teil der Lernfelder).
 
-## Gefundene Lücke
+## Ehemalige Lücke (geschlossen 2026-08-06)
 
-**LF7 "Cyber-physische Systeme ergänzen"** (IoT-Integration, 2. Ausbildungsjahr) wird von keinem der 8 IT-Dart-Module behandelt — weder als eigenes Thema noch als Nebenaspekt in einem bestehenden Modul. Das ist ein echter, bisher unbekannter Abdeckungs-Befund (nicht Teil des ursprünglichen Didaktik-Reviews vom 2026-08-05, da dieses nur die 8 vorhandenen Module gegen ihre eigenen Untertitel-Versprechen prüfte, nicht gegen den externen Rahmenplan). Kein akuter Blocker, aber ein für eine spätere Erweiterung dokumentierter Punkt — siehe To-Do (wird nach diesem Dokument als Ergänzung angelegt).
+**LF7 "Cyber-physische Systeme ergänzen"** (IoT-Integration, 2. Ausbildungsjahr) wurde von keinem der ursprünglich 8 IT-Dart-Module behandelt — ein echter, bisher unbekannter Abdeckungs-Befund (nicht Teil des ursprünglichen Didaktik-Reviews vom 2026-08-05, da dieses nur die 8 vorhandenen Module gegen ihre eigenen Untertitel-Versprechen prüfte, nicht gegen den externen Rahmenplan). Geschlossen durch ein neues Thema 9 "Cyber-physische Systeme & IoT" in Modul `b` (Betriebssysteme & Server) — bewusst kein eigenes 9. Modul, da jedes andere Einzel-Lernfeld ebenfalls als ein Thema in ein bestehendes Modul integriert wurde. Modul `b` gewählt statt `o`/`si`, weil es laut CONTENT-STANDARD.md mit unabhängigen Einzelszenarien pro Thema arbeitet (kein durchgehender Praxisfall-Strang, der künstlich fortgesetzt werden müsste) und inhaltlich als Fortsetzung von Virtualisierung/RAID & Backup passt.
 
 ## Ergänzend: FIAusbV-Fertigkeiten (betriebliche Seite, Auszug)
 
@@ -44,4 +44,4 @@ Diese Liste bestätigt grob dieselbe Gewichtung wie der Lernfeld-Abgleich oben (
 
 ## Nutzungshinweis für den didaktik-content-review-Agenten
 
-Bei einer künftigen Prüfung des dritten Kriteriums ("Abdeckung gegen den IHK-Ausbildungsrahmenplan") gegen **dieses** Dokument prüfen, nicht gegen eigenes Wissen über den Rahmenplan. Die Tabelle oben ist der Stand 2026-08-05 — bei neuen IT-Dart-Modulen/Themen sollte diese Tabelle mit aktualisiert werden, sonst veraltet sie wie jedes andere Referenzdokument auch.
+Bei einer künftigen Prüfung des dritten Kriteriums ("Abdeckung gegen den IHK-Ausbildungsrahmenplan") gegen **dieses** Dokument prüfen, nicht gegen eigenes Wissen über den Rahmenplan. Die Tabelle oben ist der Stand 2026-08-06 — bei neuen IT-Dart-Modulen/Themen sollte diese Tabelle mit aktualisiert werden, sonst veraltet sie wie jedes andere Referenzdokument auch.
