@@ -15,6 +15,25 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const MAX_BODY_BYTES = 20_000;
 
+// Audit-Befund M6 (2026-08-06): Browser melden die volle URL inklusive
+// Query-String, wenn eine CSP-blockierte Ressource auf einer Seite mit
+// Token in der URL geladen wurde (z. B. ?token=... bei parent-consent/
+// magic-link/reset-password) -- landete unveraendert in document_uri UND
+// im rohen "raw"-Objekt. Query-String/Fragment vor dem Speichern immer
+// abschneiden, auch innerhalb von raw.
+const URL_FIELDS = ["documentURL", "document-uri", "blockedURL", "blocked-uri", "sourceFile", "source-file"];
+
+function stripQuery(value: unknown): unknown {
+  if (typeof value !== "string") return value;
+  try {
+    const url = new URL(value);
+    return url.origin + url.pathname;
+  } catch {
+    const idx = value.search(/[?#]/);
+    return idx === -1 ? value : value.slice(0, idx);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Methods": "POST, OPTIONS" } });
@@ -56,16 +75,22 @@ Deno.serve(async (req) => {
     Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
   );
 
-  const rows = items.slice(0, 20).map((r) => ({
-    document_uri: (r["documentURL"] ?? r["document-uri"] ?? null) as string | null,
-    blocked_uri: (r["blockedURL"] ?? r["blocked-uri"] ?? null) as string | null,
-    violated_directive: (r["violatedDirective"] ?? r["violated-directive"] ?? null) as string | null,
-    effective_directive: (r["effectiveDirective"] ?? r["effective-directive"] ?? null) as string | null,
-    source_file: (r["sourceFile"] ?? r["source-file"] ?? null) as string | null,
-    line_number: (r["lineNumber"] ?? r["line-number"] ?? null) as number | null,
-    disposition: (r["disposition"] ?? null) as string | null,
-    raw: r,
-  }));
+  const rows = items.slice(0, 20).map((r) => {
+    const sanitizedRaw: Record<string, unknown> = { ...r };
+    for (const key of URL_FIELDS) {
+      if (key in sanitizedRaw) sanitizedRaw[key] = stripQuery(sanitizedRaw[key]);
+    }
+    return {
+      document_uri: stripQuery(r["documentURL"] ?? r["document-uri"] ?? null) as string | null,
+      blocked_uri: stripQuery(r["blockedURL"] ?? r["blocked-uri"] ?? null) as string | null,
+      violated_directive: (r["violatedDirective"] ?? r["violated-directive"] ?? null) as string | null,
+      effective_directive: (r["effectiveDirective"] ?? r["effective-directive"] ?? null) as string | null,
+      source_file: stripQuery(r["sourceFile"] ?? r["source-file"] ?? null) as string | null,
+      line_number: (r["lineNumber"] ?? r["line-number"] ?? null) as number | null,
+      disposition: (r["disposition"] ?? null) as string | null,
+      raw: sanitizedRaw,
+    };
+  });
 
   await supabase.from("csp_reports").insert(rows);
 
