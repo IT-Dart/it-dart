@@ -1,23 +1,27 @@
 import { useState } from "react";
-import { C, pri, wrap, inner } from "./lib/theme";
+import { C, pri, ghost, wrap, inner } from "./lib/theme";
 
 // Oeffentliche Landing-Page fuer den Bestaetigungslink aus der
 // parent-consent-Mail (?mode=parent-consent&token=...). Die erziehungs-
 // berechtigte Person ist dabei nicht selbst bei IT-Dart angemeldet, daher
 // ein direkter, unauthentifizierter Aufruf der Edge Function statt authFetch.
 //
-// Nutzerhinweis 2026-08-07: war bisher ein reiner Auto-Confirm ohne echten
-// Entscheidungsmoment (loeste beim Laden sofort die Bestaetigung aus, ohne
-// dass die erziehungsberechtigte Person je etwas gesehen/angeklickt hat).
-// Jetzt zwei explizite Checkboxen -- der Klick hier uebernimmt zugleich den
-// AGB-Abschluss im Namen des Kindes (siehe parent-consent/index.ts), das
-// Kind selbst sieht AgbConsentScreen.jsx in diesem Fall nie. Exakter
-// Wortlaut/Altersschwelle noch mit Anwalt 1 abzustimmen -- das hier ist die
-// technische Grundlage, kein Ersatz fuer die Rechtsprüfung.
+// Nutzerhinweis 2026-08-07: war urspruenglich ein reiner Auto-Confirm ohne
+// echten Entscheidungsmoment. Danach auf zwei explizite Checkboxen erweitert
+// -- aber direkter Einstieg mit "bitte bestaetigen Sie zwei Punkte", ohne
+// dass die erziehungsberechtigte Person ueberhaupt weiss, was IT-Dart ist.
+// Jetzt zweistufig: erst eine reine Info-Seite ("Was ist IT-Dart?", Text an
+// CompanyScreen.jsx angelehnt), erst danach die eigentliche Entscheidung.
+// Der Klick auf "Bestaetigen" uebernimmt zugleich den AGB-Abschluss im
+// Namen des Kindes (siehe parent-consent/index.ts), das Kind selbst sieht
+// AgbConsentScreen.jsx in diesem Fall nie. Exakter Wortlaut/Altersschwelle
+// noch mit Anwalt 1 abzustimmen -- das hier ist die technische Grundlage,
+// kein Ersatz fuer die Rechtsprüfung.
 export default function ParentConsentConfirmScreen({token}){
+  const [step,setStep]=useState("intro"); // "intro" | "form"
   const [agreedToAgb,setAgreedToAgb]=useState(false);
   const [agreedToPrivacy,setAgreedToPrivacy]=useState(false);
-  const [state,setState]=useState("form"); // "form" | "busy" | "ok" | "error"
+  const [state,setState]=useState("idle"); // "idle" | "busy" | "ok" | "error"
   const [errorText,setErrorText]=useState("");
 
   const confirm=async()=>{
@@ -53,11 +57,27 @@ export default function ParentConsentConfirmScreen({token}){
     </div></div>
   );
 
+  if(step==="intro")return(
+    <div style={wrap}><div style={{...inner,paddingTop:60}}>
+      <h2 style={{fontSize:22,fontWeight:700,marginBottom:6}}>Was ist IT-Dart?</h2>
+      <p style={{fontSize:13,color:C.t2,marginBottom:14,lineHeight:1.7}}>
+        IT-Dart ist die Marke hinter „Bleib am Dart!" — einer digitalen Lernplattform für die Ausbildung zum Fachinformatiker für Systemintegration (FISI). Auszubildende bereiten sich damit strukturiert auf ihre Prüfung vor: Fachmodule, Übungsaufgaben und ein KI-gestützter Lernassistent.
+      </p>
+      <p style={{fontSize:13,color:C.t2,marginBottom:24,lineHeight:1.7}}>
+        Ein Kind oder eine Ihnen anvertraute Person hat sich mit Ihrer E-Mail-Adresse als Kontakt einer erziehungsberechtigten Person registriert. Weil die Person noch minderjährig ist, brauchen wir vor der Freischaltung Ihre Bestätigung — dazu gehören sowohl der Vertragsabschluss (AGB) als auch die Einwilligung in die Datenverarbeitung (Datenschutzerklärung). Auf der nächsten Seite können Sie beides einsehen und bestätigen.
+      </p>
+      <button onClick={()=>setStep("form")} style={{...pri,width:"100%",justifyContent:"center"}}>
+        Weiter →
+      </button>
+    </div></div>
+  );
+
   return(
     <div style={wrap}><div style={{...inner,paddingTop:60}}>
+      <button onClick={()=>setStep("intro")} style={{...ghost,padding:"6px 12px",fontSize:13,marginBottom:20}}>← Zurück</button>
       <h2 style={{fontSize:22,fontWeight:700,marginBottom:6}}>Bestätigung für IT-Dart</h2>
       <p style={{fontSize:13,color:C.t2,marginBottom:24,lineHeight:1.6}}>
-        Ein Kind oder eine Ihnen anvertraute Person hat sich mit Ihrer E-Mail-Adresse als Kontakt einer erziehungsberechtigten Person bei der Lernplattform <strong style={{color:C.t}}>IT-Dart</strong> registriert. Bitte bestätigen Sie die folgenden zwei Punkte, um die Registrierung freizugeben.
+        Bitte bestätigen Sie die folgenden zwei Punkte, um die Registrierung freizugeben.
       </p>
       <label style={{display:"flex",alignItems:"flex-start",gap:8,marginBottom:14,fontSize:13,color:C.t2,lineHeight:1.6,cursor:"pointer"}}>
         <input type="checkbox" checked={agreedToAgb} onChange={e=>setAgreedToAgb(e.target.checked)} style={{marginTop:2}}/>
