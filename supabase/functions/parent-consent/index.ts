@@ -32,6 +32,12 @@ function corsHeaders(origin: string | null) {
 // fuer eine wirksame Einwilligung eines Minderjaehrigen selbst.
 const MIN_CONSENT_AGE = 16;
 
+// Audit-Befund M3 (2026-08-06): ohne Obergrenze konnte ein Konto beliebig
+// oft eine Bestaetigungs-Mail an eine (ggf. fremde) Eltern-E-Mail-Adresse
+// ausloesen. Gilt fuer submit UND resend gemeinsam (dieselbe Zaehlung).
+const MAX_CONSENT_MAILS_PER_WINDOW = 3;
+const CONSENT_MAIL_WINDOW_HOURS = 24;
+
 function ageFromBirthdate(birthdate: string): number {
   const b = new Date(birthdate + "T00:00:00Z");
   const now = new Date();
@@ -110,6 +116,9 @@ Deno.serve(async (req) => {
         if (user.email && parentEmail.toLowerCase() === user.email.toLowerCase()) {
           return json({ error: "Die E-Mail-Adresse eines Erziehungsberechtigten muss sich von deiner eigenen Konto-E-Mail unterscheiden." }, 400, cors);
         }
+        if (await consentMailLimitReached(supabase, user.id)) {
+          return json({ error: "Zu viele Bestätigungs-Mails in kurzer Zeit angefordert. Bitte versuche es später erneut." }, 429, cors);
+        }
         const consentToken = crypto.randomUUID();
         const { error: updErr } = await supabase
           .from("profiles")
@@ -125,6 +134,7 @@ Deno.serve(async (req) => {
           return json({ error: "Unerwarteter Fehler." }, 500, cors);
         }
         await sendConsentMail(parentEmail, consentToken, redirectTo);
+        await logConsentMailSent(supabase, user.id);
         return json({ ok: true, requiresParentConsent: true }, 200, cors);
       }
 
@@ -151,6 +161,9 @@ Deno.serve(async (req) => {
       if (profile.parent_consent_confirmed) {
         return json({ ok: true, alreadyConfirmed: true }, 200, cors);
       }
+      if (await consentMailLimitReached(supabase, user.id)) {
+        return json({ error: "Zu viele Bestätigungs-Mails in kurzer Zeit angefordert. Bitte versuche es später erneut." }, 429, cors);
+      }
       const consentToken = crypto.randomUUID();
       const { error: updErr } = await supabase
         .from("profiles")
@@ -161,6 +174,7 @@ Deno.serve(async (req) => {
         return json({ error: "Unerwarteter Fehler." }, 500, cors);
       }
       await sendConsentMail(profile.parent_email, consentToken, redirectTo);
+      await logConsentMailSent(supabase, user.id);
       return json({ ok: true }, 200, cors);
     }
 
@@ -170,6 +184,31 @@ Deno.serve(async (req) => {
     return json({ error: "Unerwarteter Fehler." }, 500, cors);
   }
 });
+
+// Audit-Befund M3: Zaehlung ueber die eigene parent_consent_mail_log-Tabelle
+// statt einer profiles-Spalte (siehe Migration
+// 20260807040000_parent_consent_mail_rate_limit.sql fuer die Begruendung).
+async function consentMailLimitReached(
+  supabase: ReturnType<typeof createClient>,
+  userId: string
+): Promise<boolean> {
+  const since = new Date(Date.now() - CONSENT_MAIL_WINDOW_HOURS * 60 * 60 * 1000).toISOString();
+  const { count, error } = await supabase
+    .from("parent_consent_mail_log")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .gte("sent_at", since);
+  if (error) {
+    console.error("[parent-consent] rate-limit lookup failed:", JSON.stringify(error));
+    return false; // fail open -- lieber eine Mail zu viel als den Flow komplett blockieren
+  }
+  return (count ?? 0) >= MAX_CONSENT_MAILS_PER_WINDOW;
+}
+
+async function logConsentMailSent(supabase: ReturnType<typeof createClient>, userId: string) {
+  const { error } = await supabase.from("parent_consent_mail_log").insert({ user_id: userId });
+  if (error) console.error("[parent-consent] rate-limit log insert failed:", JSON.stringify(error));
+}
 
 // Gleicher Grund/Weg wie claim-session/notifyNewSession: Resends HTTP-API
 // statt direkter SMTP-Verbindung, da Edge Functions/Deno Deploy ausgehende
