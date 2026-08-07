@@ -23,6 +23,10 @@ const ROLE_LABELS = {
   // (Registrierung/Reset/Einladung), nicht eine feste Login-Persona, daher
   // taucht sie in testAccounts unten bewusst nicht auf.
   authFlows: "Rolle F – Registrierung/Reset/Magic-Link",
+  // Kein Eintrag in roles.config.js/ROLES -- roleG feuert per Trainee-
+  // Zugangstoken direkt gegen REST/RPC/Edge Functions (M9), keine eigene
+  // UI-Login-Persona, daher ebenfalls nicht in testAccounts unten.
+  authzNegative: "Rolle G – Negativ-Autorisierung (API-Ebene)",
 };
 
 // specs/roleA.free.spec.js -> "free", etc. — ordnet einen Playwright-
@@ -34,6 +38,7 @@ function roleForFile(filePath) {
   if (filePath.includes("roleD")) return "juniorAdmin";
   if (filePath.includes("roleE")) return "admin";
   if (filePath.includes("roleF")) return "authFlows";
+  if (filePath.includes("roleG")) return "authzNegative";
   return null;
 }
 

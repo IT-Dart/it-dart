@@ -18,7 +18,7 @@ on:
         required: true
         default: "full"
         type: choice
-        options: [full, roleA, roleB, roleC, roleD, roleE, roleF]
+        options: [full, roleA, roleB, roleC, roleD, roleE, roleF, roleG]
       run_id:
         description: "ID der e2e_runs-Zeile, gegen die das Ergebnis gemeldet wird"
         required: true
@@ -215,6 +215,9 @@ jobs:
           # Ausgabe maskiert, bleibt es auch hier maskiert.
           BRANCH_URL: ${{ steps.branch_keys.outputs.branch_url }}
           SERVICE_KEY: ${{ steps.branch_keys.outputs.service_key }}
+          # roleG.authz.spec.js (M9): braucht den anon-Key, um sich selbst
+          # per signInWithPassword() als Trainee anzumelden (kein UI-Login).
+          ANON_KEY: ${{ steps.branch_keys.outputs.anon_key }}
         # continue-on-error, damit fehlgeschlagene Tests trotzdem einen
         # Bericht erzeugen und melden, statt den Job stillschweigend rot
         # abbrechen zu lassen, ohne dass das Dashboard je etwas erfährt.
