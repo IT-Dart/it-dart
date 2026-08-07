@@ -3,6 +3,11 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const FREE_MODULE_IDS = ["g", "o"]; // Grundlagen, Netzwerktechnik — matches FREE_MODULE_IDS in ITDart.jsx (Karriere & Bewerbung/Mock-Interview ist Premium)
+// Audit-Befund M1 (2026-08-06): moduleId kam bisher ungeprueft aus dem
+// Request-Body, feste Liste schliesst offensichtlichen Unsinn/Injection in
+// ai_usage.module_id aus. "pruefung-auswertung" ist kein echtes Modul,
+// sondern die feste moduleId aus Pruefung.jsx fuer mode:"auswertung".
+const VALID_MODULE_IDS = new Set(["g", "o", "si", "b", "db", "sk", "pr", "bw", "pruefung-auswertung"]);
 
 // Claude lehnt eindeutig illegale/gefährliche Inhalte bereits durch sein
 // eigenes Modelltraining ab -- das ändert ein System-Prompt nicht. Diese
@@ -59,6 +64,13 @@ const AUSWERTUNG_SYSTEM_PROMPT =
   "konkrete, umsetzbare Empfehlung, worauf sich die Person als Nächstes konzentrieren sollte. Keine übertriebene " +
   "Ermutigung, keine generischen Floskeln. Antworte auf Deutsch, max. 6-8 Sätze." + SAFETY_CLAUSE;
 const RATE_LIMIT_PER_HOUR = 20;
+// Audit-Befund M2 (2026-08-06): ctx/question/history waren unbegrenzt gross
+// -- Input-Tokens (und damit echte Kosten) skalierten beliebig pro Anfrage.
+// Grosszuegig genug fuer echte Lerninhalte/Fragen, aber eine harte Grenze.
+const MAX_CTX_CHARS = 6000;
+const MAX_QUESTION_CHARS = 2000;
+const MAX_HISTORY_TURNS = 20; // deutlich ueber den 8 max. Runden pro Dialogmodus
+const MAX_HISTORY_TURN_CHARS = 4000;
 const INTERVIEW_MAX_ROUNDS = 8; // eine Runde = eine gestellte Interviewfrage
 const DIAGNOSE_MAX_ROUNDS = 8; // eine Runde = ein durchgeführter Prüfschritt
 const MODEL_ID = "claude-haiku-4-5";
@@ -136,24 +148,43 @@ Deno.serve(async (req) => {
     if (!question || typeof question !== "string" || !question.trim()) {
       return json({ error: "Keine Frage übermittelt." }, 400, cors);
     }
-
-    if (!FREE_MODULE_IDS.includes(moduleId)) {
-      const hasTimedPremium = profile?.premium_until && new Date(profile.premium_until) > new Date();
-      const premiumActive = profile?.is_premium || hasTimedPremium;
-      if (!premiumActive) {
-        return json({ error: "Dieser Bereich ist nur mit Premium verfügbar." }, 403, cors);
-      }
+    if (typeof moduleId !== "string" || !VALID_MODULE_IDS.has(moduleId)) {
+      return json({ error: "Ungültiges Modul." }, 400, cors);
     }
-
-    const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
-    if (!anthropicKey) {
-      return json({ error: "Server ist nicht konfiguriert." }, 500, cors);
+    if (question.length > MAX_QUESTION_CHARS) {
+      return json({ error: "Frage ist zu lang." }, 400, cors);
+    }
+    if (typeof ctx === "string" && ctx.length > MAX_CTX_CHARS) {
+      return json({ error: "Kontext ist zu lang." }, 400, cors);
+    }
+    if (history !== undefined && (!Array.isArray(history) || history.length > MAX_HISTORY_TURNS)) {
+      return json({ error: "Verlauf ist zu lang." }, 400, cors);
     }
 
     const isInterview = mode === "interview";
     const isDiagnose = mode === "diagnose";
     const isAuswertung = mode === "auswertung";
     const isDialog = isInterview || isDiagnose; // beide teilen sich Verlauf/Rundenmechanik
+
+    // Audit-Befund M1 (2026-08-06): Premium-Pflicht hing bisher AUSSCHLIESSLICH
+    // an moduleId -- ein Free-Nutzer konnte mit einer freien moduleId (z.B.
+    // "g") aber mode:"interview"/"diagnose"/"auswertung" die Premium-Dialogmodi
+    // komplett umgehen, da fuer die gar keine eigene Premium-Pruefung lief
+    // (nur interview_enabled, das per Default true ist). Dialog-/Auswertung-
+    // Modi sind jetzt IMMER premium-pflichtig, unabhaengig von moduleId; die
+    // normale Frag-nach-Frage bleibt wie bisher nur ausserhalb der Free-Module
+    // premium-pflichtig.
+    const hasTimedPremium = profile?.premium_until && new Date(profile.premium_until) > new Date();
+    const premiumActive = profile?.is_premium || hasTimedPremium;
+    const needsPremium = isDialog || isAuswertung || !FREE_MODULE_IDS.includes(moduleId);
+    if (needsPremium && !premiumActive) {
+      return json({ error: "Dieser Bereich ist nur mit Premium verfügbar." }, 403, cors);
+    }
+
+    const anthropicKey = Deno.env.get("ANTHROPIC_API_KEY");
+    if (!anthropicKey) {
+      return json({ error: "Server ist nicht konfiguriert." }, 500, cors);
+    }
 
     if (isInterview && profile?.interview_enabled === false) {
       return json({ error: "Das Mock-Interview ist für dieses Konto deaktiviert." }, 403, cors);
@@ -183,7 +214,7 @@ Deno.serve(async (req) => {
     if (isDialog && Array.isArray(history)) {
       for (const turn of history) {
         if ((turn?.role === "user" || turn?.role === "assistant") && typeof turn.content === "string") {
-          messages.push({ role: turn.role, content: turn.content });
+          messages.push({ role: turn.role, content: turn.content.slice(0, MAX_HISTORY_TURN_CHARS) });
         }
       }
     }
@@ -228,17 +259,23 @@ Deno.serve(async (req) => {
         (outputTokens / 1_000_000) * PRICE_PER_MILLION_OUTPUT_USD
       : null;
 
-    supabase.from("ai_usage").insert({
+    // Audit-Befund M2 (2026-08-06): war zuvor fire-and-forget (.then mit
+    // leeren Handlern) -- ein Deno-Isolate garantiert nicht, dass ein nicht
+    // awaiteter Task nach der Response noch fertig laeuft (gleiches Muster
+    // wie notifyNewSession in claim-session/index.ts). Schlug der Insert
+    // fehl oder lief nie zu Ende, zaehlte die Anfrage nie -- der stuendliche
+    // Rate-Limit oben griff dann faktisch nicht mehr. Jetzt awaited, Fehler
+    // werden geloggt statt verschluckt, blockieren die Antwort aber weiterhin
+    // nicht.
+    const { error: usageErr } = await supabase.from("ai_usage").insert({
       user_id: user.id,
       model: MODEL_ID,
       module_id: typeof moduleId === "string" ? moduleId : null,
       input_tokens: inputTokens,
       output_tokens: outputTokens,
       cost_usd: costUsd,
-    }).then(
-      () => {},
-      () => {}, // usage logging is best-effort, never blocks the answer
-    );
+    });
+    if (usageErr) console.error("[ai-chat] ai_usage insert failed:", usageErr.message);
 
     return json({ answer }, 200, cors);
   } catch (e) {

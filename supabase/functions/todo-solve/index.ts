@@ -148,7 +148,11 @@ Deno.serve(async (req) => {
         webSearches * PRICE_PER_WEB_SEARCH_USD
       : null;
 
-    supabase.from("ai_usage").insert({
+    // Audit-Befund M2 (2026-08-06, gleiches Muster wie ai-chat/index.ts):
+    // war fire-and-forget mit leeren .then-Handlern -- jetzt awaited, Fehler
+    // werden geloggt statt verschluckt, blockieren die Antwort aber weiterhin
+    // nicht.
+    const { error: usageErr } = await supabase.from("ai_usage").insert({
       user_id: user.id,
       model: MODEL_ID,
       module_id: "admin-todo-solve",
@@ -156,10 +160,8 @@ Deno.serve(async (req) => {
       output_tokens: outputTokens,
       web_search_requests: webSearches,
       cost_usd: costUsd,
-    }).then(
-      () => {},
-      () => {},
-    );
+    });
+    if (usageErr) console.error("[todo-solve] ai_usage insert failed:", usageErr.message);
 
     return json({ answer, sources }, 200, cors);
   } catch (e) {
