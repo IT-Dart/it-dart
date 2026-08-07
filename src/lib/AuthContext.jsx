@@ -111,11 +111,11 @@ export function AuthProvider({ children }) {
     setProfileLoading(true);
 
     const fetchProfile = () => {
-      supabase.from("profiles").select("is_premium, premium_until, rechentrainer_enabled, rechentrainer_until, rechentrainer_tool_enabled, is_admin, is_trainer, is_junior_admin, email, needs_password_setup, birthdate, parent_consent_confirmed, agb_consent_given, username, username_welcome_seen").eq("id", user.id).single()
+      supabase.from("profiles").select("is_premium, premium_until, rechentrainer_enabled, rechentrainer_until, rechentrainer_tool_enabled, is_admin, is_trainer, is_junior_admin, email, needs_password_setup, birthdate, parent_consent_confirmed, agb_consent_given, username, username_welcome_seen, onboarding_intro_seen").eq("id", user.id).single()
         .then(({ data, error }) => {
           if (cancelled) return;
           if (error) console.error("Profil konnte nicht geladen werden:", error.message);
-          setProfile(data ?? { is_premium: false, premium_until: null, rechentrainer_enabled: false, rechentrainer_until: null, rechentrainer_tool_enabled: true, is_admin: false, is_trainer: false, is_junior_admin: false, needs_password_setup: false, birthdate: null, parent_consent_confirmed: false, agb_consent_given: true, username: null, username_welcome_seen: true });
+          setProfile(data ?? { is_premium: false, premium_until: null, rechentrainer_enabled: false, rechentrainer_until: null, rechentrainer_tool_enabled: true, is_admin: false, is_trainer: false, is_junior_admin: false, needs_password_setup: false, birthdate: null, parent_consent_confirmed: false, agb_consent_given: true, username: null, username_welcome_seen: true, onboarding_intro_seen: true });
           setProfileLoading(false);
         });
     };
@@ -265,6 +265,11 @@ export function AuthProvider({ children }) {
     needsPasswordSetup: !!profile?.needs_password_setup,
     needsAgbConsent: !!profile && profile.agb_consent_given === false,
     needsUsernameWelcome: !!profile && profile.username_welcome_seen === false,
+    // Nutzerhinweis 2026-08-07: laeuft VOR jedem anderen Onboarding-Gate --
+    // wer per Einladungslink "Konto aktivieren" klickt, landete bisher ohne
+    // jede Einordnung direkt bei der Geburtsdatum-Abfrage. Siehe
+    // OnboardingIntroScreen.jsx.
+    needsOnboardingIntro: !!profile && profile.onboarding_intro_seen === false,
     username: profile?.username ?? null,
     needsBirthdateSetup: MINOR_CONSENT_ENABLED && !!profile && !profile.birthdate,
     pendingParentConsent: MINOR_CONSENT_ENABLED && !!profile?.birthdate && ageFromBirthdate(profile.birthdate) < MIN_CONSENT_AGE && !profile.parent_consent_confirmed,

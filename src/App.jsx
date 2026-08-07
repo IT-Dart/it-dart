@@ -7,6 +7,7 @@ import PasswordSetupScreen from "./PasswordSetupScreen";
 import AgbConsentScreen from "./AgbConsentScreen";
 import UsernameScreen from "./UsernameScreen";
 import BirthdateSetupScreen from "./BirthdateSetupScreen";
+import OnboardingIntroScreen from "./OnboardingIntroScreen";
 import ParentConsentConfirmScreen from "./ParentConsentConfirmScreen";
 import KickedOutScreen from "./KickedOutScreen";
 import AuthErrorScreen from "./AuthErrorScreen";
@@ -25,7 +26,7 @@ import { AuthProvider, useAuth } from "./lib/AuthContext";
 const WARTUNGSMODUS=true;
 
 function AppShell(){
-  const {recoveryMode,needsPasswordSetup,needsAgbConsent,needsUsernameWelcome,needsBirthdateSetup,pendingParentConsent,kickedOut,dismissKickedOut,authError,dismissAuthError,user,loading,profileLoading}=useAuth();
+  const {recoveryMode,needsPasswordSetup,needsAgbConsent,needsUsernameWelcome,needsBirthdateSetup,pendingParentConsent,needsOnboardingIntro,kickedOut,dismissKickedOut,authError,dismissAuthError,user,loading,profileLoading}=useAuth();
   // "company" | "app" | "pruefung" | "impressum" | "datenschutz" | "leistungen" | "agb"
   // ?mode=login/register kommt vom "Anmelden / Registrieren"-Button auf der
   // Unternehmensseite selbst (CompanyScreen.jsx) sowie von Einladungslinks —
@@ -132,6 +133,10 @@ function AppShell(){
   // Render auf AgbConsentScreen umschaltet. Erst wenn wirklich feststeht, ob
   // AGB noch fehlt, wird endgueltig entschieden (realer Nutzerbericht 2026-08-06).
   if(recoveryMode&&(loading||(user&&profileLoading)))return null;
+  // Nutzerhinweis 2026-08-07: wer per Einladungs-Mail auf "Konto aktivieren"
+  // klickt, landete ohne jede Einordnung direkt bei der Geburtsdatum-Abfrage.
+  // Laeuft deshalb vor JEDEM anderen Onboarding-Gate, siehe OnboardingIntroScreen.jsx.
+  if(user&&needsOnboardingIntro)return <OnboardingIntroScreen/>;
   // Nutzerhinweis 2026-08-07: die AGB-Checkbox lief bisher IMMER durch den
   // Kontoinhaber selbst -- noch BEVOR das Geburtsdatum ueberhaupt bekannt
   // war. Bei einer minderjaehrigen Person ist das vermutlich nichtig

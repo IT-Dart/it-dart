@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { C, pri, ghost, wrap, inner, ff } from "./lib/theme";
+import { C, pri, ff, wrap, inner } from "./lib/theme";
 import { supabase } from "./lib/supabaseClient";
 
 // Zeigt sich nach dem ersten Login eines per Einladungslink registrierten
@@ -9,15 +9,11 @@ import { supabase } from "./lib/supabaseClient";
 // Zustimmungsmechanismus bei Einladungslink-Registrierung"). Derselbe
 // Wortlaut wie die dortige Checkbox, kein neuer Text.
 //
-// Nutzerhinweis 2026-08-07: ein per Einladung angelegtes Konto sieht diesen
-// Screen als allererstes -- ohne je die Unternehmensseite gesehen zu haben
-// (waehrend WARTUNGSMODUS fuer anonyme Besucher gesperrt). Bisher sprang
-// der Screen direkt zu "bitte AGB akzeptieren", ohne zu erklaeren, was
-// IT-Dart ueberhaupt ist. Jetzt zweistufig, gleiches Muster wie
-// ParentConsentConfirmScreen.jsx: erst eine reine Info-Seite, erst danach
-// die Checkbox.
+// Nutzerhinweis 2026-08-07: hatte kurzzeitig eine eigene "Was ist IT-Dart?"-
+// Zwischenseite -- die ist jetzt redundant, seit OnboardingIntroScreen.jsx
+// als eigenes, frueheres Gate in App.jsx genau das bereits fuer JEDES neue
+// Konto uebernimmt (laeuft vor diesem Screen). Deshalb hier wieder einstufig.
 export default function AgbConsentScreen({ onOpenLegal }) {
-  const [step, setStep] = useState("intro"); // "intro" | "form"
   const [accepted, setAccepted] = useState(false);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState(null);
@@ -46,24 +42,8 @@ export default function AgbConsentScreen({ onOpenLegal }) {
     </div></div>
   );
 
-  if (step === "intro") return (
-    <div style={wrap}><div style={{ ...inner, paddingTop: 60 }}>
-      <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 6 }}>Was ist IT-Dart?</h2>
-      <p style={{ fontSize: 13, color: C.t2, marginBottom: 14, lineHeight: 1.7 }}>
-        IT-Dart ist die Marke hinter „Bleib am Dart!" — einer digitalen Lernplattform für die Ausbildung zum Fachinformatiker für Systemintegration (FISI). Fachmodule, Übungsaufgaben und ein KI-gestützter Lernassistent helfen bei der strukturierten Prüfungsvorbereitung.
-      </p>
-      <p style={{ fontSize: 13, color: C.t2, marginBottom: 24, lineHeight: 1.7 }}>
-        Dein Konto wurde per Einladung angelegt. Bevor es weitergeht, bestätige bitte einmalig unsere Nutzungsbedingungen.
-      </p>
-      <button onClick={() => setStep("form")} style={{ ...pri, width: "100%", justifyContent: "center" }}>
-        Weiter →
-      </button>
-    </div></div>
-  );
-
   return (
     <div style={wrap}><div style={{ ...inner, paddingTop: 60 }}>
-      <button onClick={() => setStep("intro")} style={{ ...ghost, padding: "6px 12px", fontSize: 13, marginBottom: 20 }}>← Zurück</button>
       <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 6 }}>Bevor es weitergeht</h2>
       <p style={{ fontSize: 13, color: C.t2, marginBottom: 24, lineHeight: 1.6 }}>Dein Konto wurde per Einladung angelegt. Bitte bestätige einmalig, dass du unsere Nutzungsbedingungen gelesen hast.</p>
       <label style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 20, fontSize: 13, color: C.t2, lineHeight: 1.6, cursor: "pointer" }}>
