@@ -25,7 +25,7 @@ export default function OnboardingIntroScreen(){
     <div style={wrap}><div style={{...inner,paddingTop:60}}>
       <h2 style={{fontSize:22,fontWeight:700,marginBottom:6}}>Willkommen bei IT-Dart</h2>
       <p style={{fontSize:13,color:C.t2,marginBottom:20,lineHeight:1.7}}>
-        IT-Dart ist die Marke hinter „Bleib am Dart!" — einer digitalen Lernplattform für die Ausbildung zum Fachinformatiker für Systemintegration (FISI). Fachmodule, Übungsaufgaben und ein Rechentrainer helfen bei der strukturierten Prüfungsvorbereitung.
+        IT-Dart ist die Marke hinter „Bleib am Dart!" — einer digitalen Lernplattform für die Ausbildung zum Fachinformatiker für Systemintegration (FISI). Fachmodule, Übungsaufgaben und ein Rechentrainer helfen bei der strukturierten Prüfungsvorbereitung. Die Inhalte sind am Rahmenlehrplan für den Ausbildungsberuf ausgerichtet — andere IT-Interessierte sind aber ausdrücklich nicht ausgeschlossen.
       </p>
       <div style={{background:C.s1,border:`0.5px solid ${C.bl}`,borderRadius:12,padding:"14px 16px",marginBottom:14}}>
         <p style={{fontSize:11,fontWeight:700,color:C.bl,textTransform:"uppercase",letterSpacing:".05em",margin:"0 0 6px"}}>🤖 KI-Einsatz</p>
