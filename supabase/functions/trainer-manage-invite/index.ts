@@ -113,9 +113,11 @@ Deno.serve(async (req) => {
     const { data: inviteData, error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(target.email, { redirectTo });
     if (inviteErr) {
       console.error("[trainer-manage-invite] resend failed:", JSON.stringify(inviteErr));
+      // Audit-Befund N8 (2026-08-06): wie invite-user -- Details bleiben im
+      // Server-Log, kein rohes Fehlerobjekt mehr im Response-Body.
       const msg = inviteErr.message && inviteErr.message !== "{}"
         ? inviteErr.message
-        : `Erneutes Senden fehlgeschlagen (Status ${inviteErr.status ?? "unbekannt"}, Code ${inviteErr.code ?? "unbekannt"}). Details: ${JSON.stringify(inviteErr)}`;
+        : `Erneutes Senden fehlgeschlagen (Status ${inviteErr.status ?? "unbekannt"}, Code ${inviteErr.code ?? "unbekannt"}).`;
       return json({ error: msg }, 400, cors);
     }
 

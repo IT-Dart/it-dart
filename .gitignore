@@ -32,6 +32,10 @@ supabase/.branches
 
 .vercel
 .env*
+# Audit-Befund S4 (2026-08-06): .env* oben schluckte auch die reine
+# Platzhalter-Vorlage -- fuer eine Neuaufsetzung nach dem Notfallplan fehlte
+# sie dadurch im Repo. Enthaelt keine echten Werte, nur Beispieltexte.
+!.env.example
 
 # Claude Code local settings can contain command history with secrets
 .claude/settings.local.json

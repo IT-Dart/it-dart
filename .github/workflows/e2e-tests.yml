@@ -134,11 +134,18 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           branch_ref="${{ steps.create_branch.outputs.branch_ref }}"
-          resp=$(curl -sf -X POST "https://api.supabase.com/v1/projects/${branch_ref}/secrets" \
+          # Audit-Befund N9 (2026-08-06): "echo $resp" gab die volle API-Antwort
+          # ins Log -- aktuell enthaelt sie keinen Schluesselwert, aber das ist
+          # eine Annahme ueber fremdes API-Verhalten. Nur noch der HTTP-Status.
+          http_code=$(curl -s -o /dev/null -w "%{http_code}" -X POST "https://api.supabase.com/v1/projects/${branch_ref}/secrets" \
             -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
             -H "Content-Type: application/json" \
             -d "[{\"name\":\"ANTHROPIC_API_KEY\",\"value\":\"${ANTHROPIC_API_KEY}\"}]")
-          echo "Secret-Push-Antwort: $resp"
+          echo "Secret-Push-Status: $http_code"
+          if [ "$http_code" -lt 200 ] || [ "$http_code" -ge 300 ]; then
+            echo "::error::Secret-Push fehlgeschlagen (Status $http_code)."
+            exit 1
+          fi
 
       - name: Branch-Zugangsdaten ermitteln
         id: branch_keys

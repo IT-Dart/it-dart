@@ -49,7 +49,11 @@ Deno.serve(async (req) => {
       return json({ error: "Dieses Konto ist gegen Löschung geschützt und kann nicht über die App entfernt werden." }, 403, cors);
     }
 
-    const { error: delErr } = await supabase.auth.admin.deleteUser(user.id);
+    // Audit-Befund N4 (2026-08-06): false ist zwar in supabase-js v2 der
+    // Default, aber diese Stelle war die einzige der drei Löschstellen ohne
+    // den expliziten Parameter -- Konsistenz mit admin-delete-user/
+    // trainer-manage-invite und der dokumentierten Stolperfalle in CLAUDE.md.
+    const { error: delErr } = await supabase.auth.admin.deleteUser(user.id, false);
     if (delErr) return json({ error: delErr.message }, 500, cors);
 
     return json({ ok: true }, 200, cors);

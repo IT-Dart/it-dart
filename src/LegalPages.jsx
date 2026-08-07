@@ -106,6 +106,7 @@ export function Datenschutz({onClose}){
         <li style={li}><strong style={{color:C.t}}>Resend</strong> (USA) — Versand von Registrierungsbestätigungs-, Passwort-Reset- und Einladungs-E-Mails (verarbeitet dabei deine E-Mail-Adresse sowie den Zeitpunkt des Versands)</li>
       </ul>
       <p style={p}>Bei Übermittlung in die USA erfolgt dies auf Grundlage von Standardvertragsklauseln der jeweiligen Anbieter.</p>
+      <p style={p}>Diese E-Mails laden ein Logo-Bild von unserer eigenen Domain (it-dart.de) nach. Beim Öffnen der E-Mail ruft dein E-Mail-Programm dieses Bild automatisch ab — dabei werden technisch bedingt deine IP-Adresse und der Öffnungszeitpunkt an unseren Hosting-Anbieter (Vercel, siehe oben) übermittelt, wie bei jedem normalen Webseitenaufruf. Wir werten das nicht gezielt zu Tracking-Zwecken aus.</p>
       <p style={p}>Ergänzend zur Vollständigkeit, ohne aktive Rolle bei der Bereitstellung des Lernangebots selbst: <strong style={{color:C.t}}>STRATO</strong> (Deutschland) verwaltet die Domain it-dart.de und das allgemeine Kontakt-Postfach kontakt@it-dart.de; <strong style={{color:C.t}}>GitHub Inc.</strong> (USA) speichert ein tägliches, GPG-verschlüsseltes Datenbank-Backup zu Notfallwiederherstellungszwecken — der Inhalt ist für GitHub selbst nicht lesbar.</p></Reveal>
 
       <Reveal><h2 style={h2}>5. Speicherdauer</h2>

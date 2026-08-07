@@ -64,6 +64,47 @@ function normalizeUrl(input: string): URL | null {
   }
 }
 
+// Audit-Befund N5 (2026-08-06): "redirect: follow" ließ eine externe Seite
+// per 3xx auf eine gesperrte Adresse (z. B. 127.0.0.1/169.254.169.254)
+// umleiten und damit die SSRF-Sperrliste in normalizeUrl() umgehen. Jeder
+// Redirect-Hop wird jetzt einzeln manuell verfolgt und sein Ziel erneut
+// durch normalizeUrl() geprüft, bevor ihm gefolgt wird.
+const MAX_REDIRECTS = 5;
+
+async function fetchFollowingSafeRedirects(
+  target: URL,
+  init: { headers: Record<string, string>; timeoutMs: number }
+): Promise<{ res: Response; finalUrl: string; redirected: boolean }> {
+  let current = target;
+  let redirected = false;
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    const controller = new AbortController();
+    const t = setTimeout(() => controller.abort(), init.timeoutMs);
+    let res: Response;
+    try {
+      res = await fetch(current.toString(), {
+        method: "GET",
+        redirect: "manual",
+        headers: init.headers,
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(t);
+    }
+    if (res.status >= 300 && res.status < 400) {
+      const location = res.headers.get("location");
+      if (!location) return { res, finalUrl: current.toString(), redirected };
+      const next = normalizeUrl(new URL(location, current).toString());
+      if (!next) throw new Error("Weiterleitung führt auf eine gesperrte oder ungültige Zieladresse.");
+      current = next;
+      redirected = true;
+      continue;
+    }
+    return { res, finalUrl: current.toString(), redirected };
+  }
+  throw new Error(`Zu viele Weiterleitungen (Limit ${MAX_REDIRECTS}).`);
+}
+
 async function readCapped(res: Response, maxBytes: number): Promise<string> {
   const reader = res.body?.getReader();
   if (!reader) return await res.text();
@@ -104,15 +145,12 @@ function getAttr(tagHtml: string | null, attr: string): string | null {
 
 async function fetchAux(origin: string, path: string): Promise<{ present: boolean; status: number | null }> {
   try {
-    const controller = new AbortController();
-    const t = setTimeout(() => controller.abort(), AUX_FETCH_TIMEOUT_MS);
-    const res = await fetch(new URL(path, origin), {
-      method: "GET",
+    const target = normalizeUrl(new URL(path, origin).toString());
+    if (!target) return { present: false, status: null };
+    const { res } = await fetchFollowingSafeRedirects(target, {
       headers: { "User-Agent": USER_AGENT },
-      redirect: "follow",
-      signal: controller.signal,
+      timeoutMs: AUX_FETCH_TIMEOUT_MS,
     });
-    clearTimeout(t);
     return { present: res.ok, status: res.status };
   } catch {
     return { present: false, status: null };
@@ -243,16 +281,16 @@ Deno.serve(async (req) => {
 
     const startedAt = Date.now();
     let res: Response;
+    let finalUrl: string;
+    let wasRedirected: boolean;
     try {
-      const controller = new AbortController();
-      const t = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-      res = await fetch(target.toString(), {
-        method: "GET",
-        redirect: "follow",
+      const r = await fetchFollowingSafeRedirects(target, {
         headers: { "User-Agent": USER_AGENT, "Accept": "text/html,*/*" },
-        signal: controller.signal,
+        timeoutMs: FETCH_TIMEOUT_MS,
       });
-      clearTimeout(t);
+      res = r.res;
+      finalUrl = r.finalUrl;
+      wasRedirected = r.redirected;
     } catch (e) {
       const { data: row } = await supabase.from("website_checks").insert({
         url: target.toString(),
@@ -265,7 +303,6 @@ Deno.serve(async (req) => {
     const responseTimeMs = Date.now() - startedAt;
 
     const html = await readCapped(res, MAX_BODY_BYTES);
-    const finalUrl = res.url || target.toString();
     const a = analyzeHtml(html, finalUrl);
 
     // --- Technik / Verfügbarkeit ---
@@ -295,7 +332,7 @@ Deno.serve(async (req) => {
     // Ohne verlässliche Erkennungsmethode über Standard-fetch lieber keine
     // Prüfung als eine strukturell falsche.
 
-    if (res.redirected) push("Technik", "Weiterleitungen", "OK", "Seite leitet weiter, Endziel wurde erreicht.");
+    if (wasRedirected) push("Technik", "Weiterleitungen", "OK", "Seite leitet weiter, Endziel wurde erreicht.");
 
     // --- Sicherheit ---
     const isHttps = finalUrl.startsWith("https://");
@@ -392,7 +429,7 @@ Deno.serve(async (req) => {
 
     const report = {
       report_version: 1,
-      target: { input_url: target.toString(), final_url: finalUrl, redirected: res.redirected, status_code: res.status },
+      target: { input_url: target.toString(), final_url: finalUrl, redirected: wasRedirected, status_code: res.status },
       http: {
         response_time_ms: responseTimeMs,
         content_type: res.headers.get("content-type"),
