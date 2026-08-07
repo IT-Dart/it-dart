@@ -45,6 +45,13 @@ export default function OnboardingIntroScreen(){
       <button onClick={weiter} disabled={busy} style={{...pri,width:"100%",justifyContent:"center",opacity:busy?.6:1}}>
         {busy?"Bitte warten...":"Weiter →"}
       </button>
+      <p style={{fontSize:11,color:C.mu,textAlign:"center",marginTop:16}}>
+        <a href="/?mode=impressum" target="_blank" rel="noopener" style={{color:C.mu,textDecoration:"underline"}}>Impressum</a>
+        {" · "}
+        <a href="/?mode=datenschutz" target="_blank" rel="noopener" style={{color:C.mu,textDecoration:"underline"}}>Datenschutz</a>
+        {" · "}
+        <a href="/?mode=agb" target="_blank" rel="noopener" style={{color:C.mu,textDecoration:"underline"}}>AGB</a>
+      </p>
     </div></div>
   );
 }

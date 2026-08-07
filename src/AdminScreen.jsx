@@ -217,7 +217,11 @@ export default function AdminScreen({onClose}){
   };
   const toggleTrainer=async(r)=>{
     if(r.is_trainer)await unassignAllTrainees(r.id);
-    await updateUser(r.id,{is_trainer:!r.is_trainer});
+    // Nutzerhinweis 2026-08-07: "der Trainer ist immer Premium" -- beim
+    // Vergeben von Trainer-Rechten wird das Konto automatisch dauerhaft
+    // freigeschaltet (nicht beim Entziehen, das bleibt eine bewusste
+    // separate Entscheidung ueber den bestehenden "Zugang entziehen"-Button).
+    await updateUser(r.id,r.is_trainer?{is_trainer:false}:{is_trainer:true,is_premium:true});
     loadTrainerList();
   };
   const toggleJuniorAdmin=(r)=>updateUser(r.id,{is_junior_admin:!r.is_junior_admin});

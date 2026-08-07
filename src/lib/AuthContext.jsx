@@ -254,6 +254,12 @@ export function AuthProvider({ children }) {
     user: session?.user ?? null,
     loading: session === undefined,
     profileLoading,
+    // Nutzerhinweis 2026-08-07: rohes profile zusaetzlich zu den abgeleiteten
+    // needsX-Flags exponiert -- App.jsx braucht es fuer eine robustere
+    // Flash-Sperre (siehe dortiger Kommentar), die needsX-Flags allein sind
+    // dafuer ungeeignet: sie werten bei profile===null alle auf false aus,
+    // was die Sperre in genau dem kritischen Uebergangs-Rendering umgeht.
+    profile,
     isPremium: !!profile?.is_premium || hasTimedPremium,
     premiumUntil: profile?.premium_until ?? null,
     isRechentrainerUnlocked: !!profile?.rechentrainer_enabled || hasTimedRechentrainer,

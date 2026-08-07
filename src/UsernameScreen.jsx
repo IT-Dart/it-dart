@@ -57,7 +57,7 @@ export default function UsernameScreen({ mandatory = false, onClose }) {
             starten, obwohl sich nichts geaendert hat (realer Nutzerfund
             2026-08-07). */}
         <button type="submit" disabled={busy || !value.trim() || (mandatory && value.trim() === (currentUsername || "").trim())} style={{ ...pri, width: "100%", justifyContent: "center", opacity: busy ? .6 : 1, marginBottom: mandatory ? 10 : 0 }}>
-          {busy ? "Bitte warten..." : "Speichern →"}
+          {busy ? "Bitte warten..." : "Ändern & Speichern →"}
         </button>
       </form>
       {mandatory && <button onClick={acceptGenerated} disabled={busy} style={{ background: "none", border: "none", color: C.cy, cursor: "pointer", fontSize: 13, textDecoration: "underline", width: "100%", textAlign: "center" }}>

@@ -26,7 +26,7 @@ import { AuthProvider, useAuth } from "./lib/AuthContext";
 const WARTUNGSMODUS=true;
 
 function AppShell(){
-  const {recoveryMode,needsPasswordSetup,needsAgbConsent,needsUsernameWelcome,needsBirthdateSetup,pendingParentConsent,needsOnboardingIntro,kickedOut,dismissKickedOut,authError,dismissAuthError,user,loading,profileLoading}=useAuth();
+  const {recoveryMode,needsPasswordSetup,needsAgbConsent,needsUsernameWelcome,needsBirthdateSetup,pendingParentConsent,needsOnboardingIntro,kickedOut,dismissKickedOut,authError,dismissAuthError,user,loading,profile}=useAuth();
   // "company" | "app" | "pruefung" | "impressum" | "datenschutz" | "leistungen" | "agb"
   // ?mode=login/register kommt vom "Anmelden / Registrieren"-Button auf der
   // Unternehmensseite selbst (CompanyScreen.jsx) sowie von Einladungslinks —
@@ -126,13 +126,24 @@ function AppShell(){
   // sorgt, dass ResetPasswordScreen trotz des zwischenzeitlichen Reloads in
   // AgbConsentScreen.jsx danach zuverlaessig noch drankommt.
   //
-  // Waehrend recoveryMode noch nicht bekannt ist, ob profile schon geladen
-  // ist (session selbst laedt noch, oder profile-Fetch noch unterwegs),
-  // NICHTS rendern -- sonst flasht kurz ResetPasswordScreen auf (needsAgbConsent
-  // haengt an profile und ist bis dahin faelschlich false), bevor der naechste
-  // Render auf AgbConsentScreen umschaltet. Erst wenn wirklich feststeht, ob
-  // AGB noch fehlt, wird endgueltig entschieden (realer Nutzerbericht 2026-08-06).
-  if(recoveryMode&&(loading||(user&&profileLoading)))return null;
+  // Nutzerhinweis 2026-08-07 (echter Fund, betraf JEDEN Seitenaufruf/Reload,
+  // nicht nur recoveryMode): die alte Sperre unten galt nur "recoveryMode &&
+  // (loading || (user && profileLoading))" -- das uebersieht ein echtes
+  // React-Zeitfenster: sobald session von undefined auf die echte Session
+  // wechselt, wird `loading` in DEMSELBEN Render bereits false, aber der
+  // ANDERE Effect, der `profileLoading` auf true setzt (haengt an
+  // session?.user?.id), hat zu diesem Zeitpunkt noch nicht gefeuert --
+  // `profileLoading` ist in genau diesem einen Render-Durchlauf noch
+  // faelschlich false, `profile` selbst ist noch null. In diesem Fenster
+  // werten ALLE needsX-Flags (haengen an `!!profile`) auf false aus, die
+  // Pruefung faellt durch bis zu page==="company"/WartungScreen -- das war
+  // der sichtbare "Bleib am Dart"-Blitz beim Klicken auf "Weiter"/bei jedem
+  // Reload. Fix: statt auf die (zeitlich unzuverlaessigen) Lade-Flags zu
+  // vertrauen, direkt auf `profile` selbst pruefen -- das ist erst dann
+  // nicht mehr null, wenn der Fetch wirklich abgeschlossen ist, unabhaengig
+  // von Render-Timing. Gilt jetzt unbedingt (nicht mehr nur recoveryMode).
+  if(loading)return null;
+  if(user&&!profile)return null;
   // Nutzerhinweis 2026-08-07: wer per Einladungs-Mail auf "Konto aktivieren"
   // klickt, landete ohne jede Einordnung direkt bei der Geburtsdatum-Abfrage.
   // Laeuft deshalb vor JEDEM anderen Onboarding-Gate, siehe OnboardingIntroScreen.jsx.
@@ -151,7 +162,6 @@ function AppShell(){
   if(user&&(needsBirthdateSetup||pendingParentConsent))return <BirthdateSetupScreen/>;
   if(user&&needsAgbConsent)return <AgbConsentScreen onOpenLegal={changePage}/>;
   if(recoveryMode)return <ResetPasswordScreen/>;
-  if(loading)return null;
   if(kickedOut)return <KickedOutScreen onDismiss={()=>{dismissKickedOut();changePage("company");}}/>;
   if(user&&needsPasswordSetup)return <PasswordSetupScreen/>;
   if(user&&needsUsernameWelcome)return <UsernameScreen mandatory/>;

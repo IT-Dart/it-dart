@@ -152,16 +152,32 @@ export default function TrainerScreen({onClose,onOpenUser,onOpenLegal}){
     if(error){setErr(describeError(error));return;}
     setTrainees(ts=>ts.map(x=>x.id===t.id?{...x,rechentrainer_tool_enabled:next}:x));
   };
+  // Nutzerhinweis 2026-08-07: Trainer duerfen Premium fuer ihre eigenen
+  // Trainees vergeben, aber nur bis zu ihrem eigenen trainee_limit
+  // gleichzeitig freigeschalteter Trainees -- serverseitig in
+  // set_trainee_premium() erzwungen, hier zusaetzlich clientseitig
+  // gespiegelt (premiumAtCapacity unten), damit der Button gar nicht erst
+  // zu einer Fehlermeldung fuehrt.
+  const togglePremium=async(t)=>{
+    const next=!(t.is_premium??false);
+    setActionBusy(t.id);
+    const {error}=await supabase.rpc("set_trainee_premium",{target_id:t.id,enabled:next});
+    setActionBusy(null);
+    if(error){setErr(describeError(error));return;}
+    setTrainees(ts=>ts.map(x=>x.id===t.id?{...x,is_premium:next,premium_until:null}:x));
+  };
 
   const pending=trainees?.filter(t=>!t.confirmed_at)||[];
   const active=trainees?.filter(t=>t.confirmed_at)||[];
   const atCapacity=trainees!==null&&limit!==null&&trainees.length>=limit;
+  const premiumCount=active.filter(t=>t.is_premium).length;
+  const premiumAtCapacity=limit!==null&&premiumCount>=limit;
 
   return(
     <div style={wrap}><div style={inner}>
       <div style={{display:"flex",alignItems:"center",gap:12,marginBottom:24,paddingBottom:16,borderBottom:`0.5px solid ${C.bd}`}}>
         <span style={{fontSize:16,fontWeight:700}}>🎓 Trainer-Ansicht</span>
-        {trainees!==null&&limit!==null&&<span style={{fontSize:12,color:C.mu}}>Testende: {trainees.length} / {limit}</span>}
+        {trainees!==null&&limit!==null&&<span style={{fontSize:12,color:C.mu}}>Testende: {trainees.length} / {limit} · ⭐ Premium: {premiumCount} / {limit}</span>}
         {onOpenLegal&&<button onClick={()=>onOpenLegal("trainer-vereinbarung")} style={{marginLeft:"auto",background:"none",border:"none",color:C.mu,cursor:"pointer",fontSize:11,textDecoration:"underline",padding:0,fontFamily:ff}}>Trainer-Vereinbarung</button>}
         <button onClick={onClose} style={{...ghost,marginLeft:onOpenLegal?8:"auto",fontSize:13,padding:"6px 12px"}}>← Zurück</button>
       </div>
@@ -232,6 +248,9 @@ export default function TrainerScreen({onClose,onOpenUser,onOpenLegal}){
               <p style={{fontSize:11,color:C.mu,margin:"0 0 4px"}}>{t.attempts>0?`${t.moduleCount} Modul${t.moduleCount===1?"":"e"} · Ø ${t.avgPct}% · zuletzt aktiv ${fmtRelative(t.lastActive)}`:t.lastActive?`Noch keine Testergebnisse · zuletzt aktiv ${fmtRelative(t.lastActive)}`:"Noch keine Aktivität"}</p>
               <p style={{fontSize:11,color:C.mu,margin:"0 0 8px"}}>Registriert am {fmtDate(t.created_at)} · {t.is_premium?"⭐ Premium (dauerhaft)":fmtUntil(t.premium_until)?`⭐ Premium bis ${fmtUntil(t.premium_until)}`:"Free"}</p>
               <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
+                <button disabled={actionBusy===t.id||(!t.is_premium&&premiumAtCapacity)} title={!t.is_premium&&premiumAtCapacity?`Premium-Kontingent voll (${premiumCount}/${limit}).`:undefined} onClick={()=>togglePremium(t)} style={{...ghost,fontSize:11,padding:"5px 10px",opacity:(actionBusy===t.id||(!t.is_premium&&premiumAtCapacity))?.4:1,cursor:(!t.is_premium&&premiumAtCapacity)?"not-allowed":"pointer"}}>
+                  {t.is_premium?"⭐ Premium sperren":"⭐ Premium freischalten"}
+                </button>
                 <button disabled={actionBusy===t.id} onClick={()=>toggleAi(t)} style={{...ghost,fontSize:11,padding:"5px 10px",opacity:actionBusy===t.id?.6:1}}>
                   {(t.ai_enabled??true)?"🤖 KI sperren":"🤖 KI freischalten"}
                 </button>
