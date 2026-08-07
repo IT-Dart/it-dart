@@ -19,6 +19,12 @@ const KNOWN_TRANSLATIONS = [
   // PasswordSetupScreen.jsx (die einzigen Aufrufer von updatePassword())
   // kann das nur bedeuten: der Link ist zu alt oder bereits verbraucht.
   [/auth session missing/i, "Dieser Link ist abgelaufen oder wurde bereits verwendet. Bitte fordere einen neuen Link an."],
+  // To-Do #107: Supabase Auth hat "Enable email signups" projektweit
+  // deaktiviert -- signUp() liefert dadurch immer diesen Fehler. Bisher kam
+  // er unübersetzt beim Nutzer an (Zusatzbefund in #107, unabhängig von der
+  // größeren Entscheidung, ob Signups aktiviert oder der Fallback-Link in
+  // AdminScreen.jsx entfernt werden soll).
+  [/signups not allowed for this instance/i, "Die Registrierung ist aktuell nur über eine Einladung möglich — bitte wende dich an deinen Trainer oder Administrator."],
 ];
 
 function translate(message) {

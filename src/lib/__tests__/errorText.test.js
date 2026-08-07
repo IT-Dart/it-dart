@@ -15,6 +15,14 @@ describe("describeError", () => {
     );
   });
 
+  // To-Do #107 Zusatzbefund: Signups sind projektweit deaktiviert, signUp()
+  // liefert dadurch immer diese Meldung -- kam bisher unübersetzt an.
+  it("übersetzt 'Signups not allowed for this instance' verständlich", () => {
+    expect(describeError({ message: "Signups not allowed for this instance" })).toBe(
+      "Die Registrierung ist aktuell nur über eine Einladung möglich — bitte wende dich an deinen Trainer oder Administrator."
+    );
+  });
+
   it("gibt die Rohmeldung zurück, wenn keine Übersetzung bekannt ist", () => {
     expect(describeError({ message: "Some totally unknown error" })).toBe("Some totally unknown error");
   });
