@@ -524,3 +524,123 @@ export async function generateLernnachweis({ user, kind, title, score, total, to
     logLernnachweis({ user, kind, title, score, total, topics, startedAt, finishedAt });
   }
 }
+
+/**
+ * PDF-Export der aggregierten KI-Auswertung (Pruefung.jsx, "Jetzt
+ * auswerten") -- Nutzerhinweis 2026-08-08: bewusst eine eigene, einfachere
+ * Vorlage statt generateLernnachweis() zu erweitern. Ein einzelner
+ * Lernnachweis ist die Momentaufnahme EINES Durchlaufs (score/total, ein
+ * Dartwurf-Bild), die Auswertung ist ein aggregierter Bericht über viele
+ * Durchlaeufe hinweg -- inhaltlich ein anderes Dokument, auch wenn es
+ * dieselbe Marke/Farbpalette traegt (COL, drawMark).
+ *
+ * @param {{ user: object, count: number, topics: {name:string,correct:number,total:number,trend:number|null}[], recommendation: string }} p
+ */
+export function generateAuswertungPdf({ user, count, topics, recommendation }) {
+  return import("jspdf").then(({ jsPDF }) => {
+    const now = new Date();
+    const dateStr = `${now.toLocaleDateString("de-DE", { day: "2-digit", month: "long", year: "numeric" })}, ${now.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" })} Uhr`;
+
+    const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+    const W = 297, H = 210;
+
+    doc.setFillColor(...COL.bg);
+    doc.rect(0, 0, W, H, "F");
+    doc.setFillColor(...COL.blue);
+    doc.rect(0, 0, 4, H, "F");
+    doc.setFillColor(...COL.cyan);
+    doc.rect(4, 0, 1, H, "F");
+
+    drawMark(doc, 26, 26, 9);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(13);
+    doc.setTextColor(...COL.text);
+    doc.text("IT-Dart", 40, 23);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...COL.cyan);
+    doc.text("Bleib am Dart!", 40, 29);
+
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(28);
+    doc.setTextColor(...COL.text);
+    doc.text("Lernstand-Auswertung", 20, 55);
+
+    doc.setDrawColor(...COL.border);
+    doc.setLineWidth(0.4);
+    doc.line(20, 62, W - 20, 62);
+
+    const leftX = 20;
+    let y = 76;
+    const row = (label, value) => {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(8);
+      doc.setTextColor(...COL.text2);
+      doc.text(label.toUpperCase(), leftX, y);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(11);
+      doc.setTextColor(...COL.text);
+      doc.text(String(value), leftX, y + 5);
+      y += 11;
+    };
+    row("Name / Konto", user?.email || "Unbekannt");
+    row("Datum", dateStr);
+    row("Grundlage", `${count} Durchläufe (Module & Prüfungssimulationen)`);
+    y += 3;
+
+    // Themen-/Trendliste -- gleiche Balken-Optik wie THEMENSTATISTIK im
+    // regulaeren Lernnachweis, ergaenzt um den Trendpfeil je Thema.
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...COL.text2);
+    doc.text("THEMENÜBERSICHT", leftX, y);
+    y += 6;
+    const colW = 115;
+    topics.forEach((t) => {
+      const tPct = t.total > 0 ? t.correct / t.total : 0;
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(...COL.text);
+      doc.text(t.name, leftX, y);
+      const trendTxt = t.trend != null && t.trend !== 0 ? (t.trend > 0 ? `↑ +${t.trend}` : `↓ ${t.trend}`) : "";
+      doc.setTextColor(...COL.text2);
+      doc.text(`${Math.round(tPct * 100)}% ${trendTxt}`, leftX + colW, y, { align: "right" });
+      doc.setFillColor(...COL.s2);
+      doc.roundedRect(leftX, y + 2, colW, 2.2, 1, 1, "F");
+      doc.setFillColor(tPct >= 0.8 ? COL.green[0] : COL.cyan[0], tPct >= 0.8 ? COL.green[1] : COL.cyan[1], tPct >= 0.8 ? COL.green[2] : COL.cyan[2]);
+      doc.roundedRect(leftX, y + 2, Math.max(2, colW * tPct), 2.2, 1, 1, "F");
+      y += 10;
+    });
+
+    // KI-Empfehlung, rechte Spalte -- Pflicht-Disclaimer wandert MIT ins PDF,
+    // nicht nur im UI sichtbar, da das Dokument auch ausgedruckt oder ohne
+    // die App-Oberflaeche z.B. an einen Ausbilder weitergegeben werden kann.
+    const rightX = 150, rightW = W - 20 - rightX;
+    let ry = 76;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...COL.text2);
+    doc.text("KI-EMPFEHLUNG", rightX, ry);
+    ry += 6;
+    doc.setDrawColor(...COL.border);
+    doc.setFillColor(...COL.s1);
+    const boxH = H - 30 - ry;
+    doc.roundedRect(rightX, ry, rightW, boxH, 3, 3, "FD");
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.setTextColor(...COL.text);
+    const lines = doc.splitTextToSize(recommendation || "—", rightW - 10);
+    doc.text(lines, rightX + 5, ry + 8);
+
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(...COL.mu);
+    const disclaimerLines = doc.splitTextToSize(
+      "Automatisch erstellt (Anthropic Claude), keine echte Person — unverbindliche Lernempfehlung, keine offizielle Bewertung und keine Prognose für die IHK-Prüfung.",
+      W - 40
+    );
+    doc.text(disclaimerLines, leftX, H - 9 - (disclaimerLines.length - 1) * 3.5);
+
+    doc.save(`IT-Dart-Auswertung-${now.toISOString().slice(0, 10)}.pdf`);
+  });
+}

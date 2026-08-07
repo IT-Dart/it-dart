@@ -62,7 +62,16 @@ const AUSWERTUNG_SYSTEM_PROMPT =
   "erfinde keine zusätzlichen Fakten über die Person. Gib eine realistische, kritische Einschätzung: benenne die " +
   "schwächste(n) Kategorie(n) klar beim Namen, sei ehrlich auch wenn das Ergebnis schwach ist, und gib eine " +
   "konkrete, umsetzbare Empfehlung, worauf sich die Person als Nächstes konzentrieren sollte. Keine übertriebene " +
-  "Ermutigung, keine generischen Floskeln. Antworte auf Deutsch, max. 6-8 Sätze." + SAFETY_CLAUSE;
+  "Ermutigung, keine generischen Floskeln. " +
+  // Nutzerhinweis 2026-08-08: die Übungsquote auf IT-Dart ist NICHT 1:1 auf
+  // die echte IHK-Prüfung übertragbar (anderer Fragenpool, andere Gewichtung/
+  // Bewertungslogik). Explizites Verbot statt nur eine Hoffnung, dass die KI
+  // von selbst vorsichtig genug formuliert -- ein falsches "du bestehst
+  // wahrscheinlich" hätte reale Konsequenzen für die Person.
+  "Gib niemals eine Einschätzung, Prognose oder Wahrscheinlichkeit ab, ob die Person die echte IHK-Prüfung bestehen " +
+  "würde, und nenne keine Prozentzahl oder Schwelle dafür -- die Übungsquote auf IT-Dart ist nicht mit der " +
+  "tatsächlichen Prüfungsbewertung gleichzusetzen (anderer Fragenpool, andere Gewichtung). Bleib bei einer reinen " +
+  "Einschätzung des Übungsstands auf dieser Plattform. Antworte auf Deutsch, max. 6-8 Sätze." + SAFETY_CLAUSE;
 const RATE_LIMIT_PER_HOUR = 20;
 // Audit-Befund M2 (2026-08-06): ctx/question/history waren unbegrenzt gross
 // -- Input-Tokens (und damit echte Kosten) skalierten beliebig pro Anfrage.

@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { useAuth } from "./lib/AuthContext";
 import { supabase } from "./lib/supabaseClient";
 import { authFetch } from "./lib/authFetch";
-import { generateLernnachweis, logLernnachweis } from "./lib/lernnachweis";
+import { generateLernnachweis, logLernnachweis, generateAuswertungPdf } from "./lib/lernnachweis";
 import { tagestippFuerHeute } from "./lib/tagestipps";
 import FeedbackUmfrage from "./FeedbackUmfrage";
 import { describeError } from "./lib/errorText";
@@ -202,6 +202,7 @@ export default function Pruefung({onExit}){
   const [auswertung,setAuswertung]=useState(null);
   const [auswertungBusy,setAuswertungBusy]=useState(false);
   const [auswertungErr,setAuswertungErr]=useState(null);
+  const [auswertungPdfBusy,setAuswertungPdfBusy]=useState(false);
 
   useEffect(()=>{if(modus!=="done")setFeedbackDone(false);},[modus]);
 
@@ -255,7 +256,12 @@ export default function Pruefung({onExit}){
     try{
       const res=await authFetch("ai-chat",{
         ctx:`Bisherige Lernergebnisse über ${auswertungSummary.count} Durchläufe (Modul-Quizzes und Prüfungssimulationen), pro Thema zusammengerechnet -- "trend" ist die Veränderung in Prozentpunkten zwischen der früheren und der späteren Hälfte der Durchläufe (positiv = Verbesserung, negativ = Verschlechterung, null = noch nicht berechenbar): ${JSON.stringify(auswertungSummary.topics)}`,
-        question:"Wie sollte ich mich als Nächstes auf die Prüfung vorbereiten?",
+        // Nutzerhinweis 2026-08-08: bewusst nach einer knappen, priorisierten
+        // Liste statt freiem Fliesstext gefragt -- direkt umsetzbar statt nur
+        // zu lesen. Keine Bestehensprognose/Prozentangabe zur echten
+        // IHK-Pruefung anfordern (siehe Nutzer-Einwand: unsere Quote ist
+        // nicht 1:1 auf die echte Pruefung uebertragbar).
+        question:"Nenne konkret die 3 Themen mit dem größten Übungsbedarf, jeweils als ein kurzer Punkt mit Themenname und einer knappen, konkreten Handlungsempfehlung. Keine Einschätzung oder Prognose, ob ich die IHK-Prüfung bestehen würde.",
         moduleId:"pruefung-auswertung",
         mode:"auswertung",
       });
@@ -266,6 +272,15 @@ export default function Pruefung({onExit}){
       setAuswertungErr(describeError(e));
     }finally{
       setAuswertungBusy(false);
+    }
+  };
+
+  const auswertungPdf=async()=>{
+    setAuswertungPdfBusy(true);
+    try{
+      await generateAuswertungPdf({user,count:auswertungSummary.count,topics:auswertungSummary.topics,recommendation:auswertung});
+    }finally{
+      setAuswertungPdfBusy(false);
     }
   };
 
@@ -421,7 +436,10 @@ export default function Pruefung({onExit}){
               <button onClick={auswerten} style={{background:C.bl,color:"#fff",border:"none",borderRadius:8,padding:"9px 14px",fontSize:13,fontWeight:500,cursor:"pointer",fontFamily:ff}}>Jetzt auswerten →</button>
             </>}
             {auswertungBusy&&<p style={{fontSize:13,color:C.t2,margin:0}}>Wird ausgewertet …</p>}
-            {auswertung&&<p style={{fontSize:13,color:C.t,margin:0,lineHeight:1.6}}>{auswertung}</p>}
+            {auswertung&&<>
+              <p style={{fontSize:13,color:C.t,margin:"0 0 10px",lineHeight:1.6}}>{auswertung}</p>
+              <button onClick={auswertungPdf} disabled={auswertungPdfBusy} style={{background:"transparent",color:C.bl,border:`1px solid ${C.bl}`,borderRadius:8,padding:"8px 14px",fontSize:12,fontWeight:500,cursor:auswertungPdfBusy?"default":"pointer",fontFamily:ff,opacity:auswertungPdfBusy?0.6:1}}>{auswertungPdfBusy?"Wird erstellt …":"📄 Als PDF herunterladen"}</button>
+            </>}
             {auswertungErr&&<p style={{fontSize:12,color:C.co,margin:"8px 0 0"}}>{auswertungErr}</p>}
           </div>}
 
