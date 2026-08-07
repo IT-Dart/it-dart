@@ -248,18 +248,52 @@ async function sendConsentMail(toEmail: string, token: string, redirectTo: strin
   }
 }
 
+// Gleicher Markenlook wie die 5 Supabase-Auth-Vorlagen unter
+// supabase/email-templates/ (dunkles Kartendesign, Logo-Header, Fusszeile
+// mit Rechtstext-Links) -- diese Mail hier laeuft nicht ueber das Supabase-
+// Dashboard, sondern wird direkt hier im Code erzeugt, deployt also normal
+// per git push + Function-Deploy, kein manuelles Dashboard-Einfuegen noetig.
 function consentEmailHtml(link: string): string {
-  return `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#111">
-    <h2 style="margin:0 0 12px">Bestätigung für IT-Dart</h2>
-    <p>ein Kind oder eine Ihnen anvertraute Person hat sich mit Ihrer E-Mail-Adresse als Kontakt einer
-    erziehungsberechtigten Person bei der Lernplattform <strong>IT-Dart</strong> (it-dart.de) registriert.</p>
-    <p>Wenn Sie mit dieser Registrierung einverstanden sind, bestätigen Sie das bitte über den folgenden Button:</p>
-    <p style="text-align:center;margin:24px 0">
-      <a href="${link}" style="background:#0891b2;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:bold">Registrierung bestätigen</a>
-    </p>
-    <p style="font-size:13px;color:#666">Wenn Ihnen diese Registrierung nicht bekannt vorkommt, können Sie diese E-Mail ignorieren — ohne Ihre Bestätigung bleibt der Zugang eingeschränkt.</p>
-    <p style="font-size:13px;color:#666">— IT-Dart, it-dart.de</p>
-  </div>`;
+  return `<div style="background:#0f1623;padding:32px 16px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;">
+  <table role="presentation" width="100%" style="max-width:480px;margin:0 auto;border-collapse:collapse;">
+    <tr>
+      <td style="background:#1a2535;border:1px solid #2d3f5a;border-radius:14px;padding:36px 32px;">
+        <table role="presentation" align="center" style="margin:0 auto;">
+          <tr>
+            <td style="width:40px;"><img src="https://www.it-dart.de/email-logo.png" width="40" height="40" alt="" style="display:block;border-radius:50%;"></td>
+            <td style="padding-left:12px;padding-right:12px;">
+              <div style="font-size:18px;font-weight:700;color:#f1f5f9;line-height:1.3;">IT-Dart</div>
+              <div style="font-size:11px;font-weight:500;color:#38bdf8;line-height:1.3;">Bleib am Dart!</div>
+            </td>
+            <td style="width:40px;"><img src="https://www.it-dart.de/email-logo.png" width="40" height="40" alt="" style="display:block;border-radius:50%;"></td>
+          </tr>
+        </table>
+        <h1 style="font-size:20px;color:#f1f5f9;margin:28px 0 10px;">Bestätigung für IT-Dart</h1>
+        <p style="font-size:14px;color:#94a3b8;line-height:1.7;margin:0 0 26px;">
+          ein Kind oder eine Ihnen anvertraute Person hat sich mit Ihrer E-Mail-Adresse als Kontakt einer erziehungsberechtigten Person bei der Lernplattform <strong style="color:#f1f5f9;">IT-Dart</strong> (it-dart.de) registriert. Wenn Sie mit dieser Registrierung einverstanden sind, bestätigen Sie das bitte über den folgenden Button.
+        </p>
+        <table role="presentation" width="100%">
+          <tr>
+            <td align="center" style="padding:4px 0 24px;">
+              <a href="${link}" style="background:#2563eb;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:13px 28px;border-radius:10px;display:inline-block;">Registrierung bestätigen →</a>
+            </td>
+          </tr>
+        </table>
+        <p style="font-size:11px;color:#64748b;line-height:1.6;margin:0;border-top:1px solid #2d3f5a;padding-top:16px;">
+          Wenn Ihnen diese Registrierung nicht bekannt vorkommt, können Sie diese E-Mail ignorieren — ohne Ihre Bestätigung bleibt der Zugang eingeschränkt.
+        </p>
+      </td>
+    </tr>
+    <tr><td style="text-align:center;padding-top:18px;font-size:11px;color:#475569;">IT-Dart · Coskun Selim Bulut</td></tr>
+    <tr><td style="text-align:center;padding-top:6px;font-size:11px;color:#475569;">
+      <a href="https://www.it-dart.de/?mode=impressum" style="color:#64748b;text-decoration:underline;">Impressum</a>
+      &nbsp;·&nbsp;
+      <a href="https://www.it-dart.de/?mode=datenschutz" style="color:#64748b;text-decoration:underline;">Datenschutz</a>
+      &nbsp;·&nbsp;
+      <a href="https://www.it-dart.de/?mode=agb" style="color:#64748b;text-decoration:underline;">AGB</a>
+    </td></tr>
+  </table>
+</div>`;
 }
 
 function json(body: unknown, status = 200, cors: Record<string, string>) {
