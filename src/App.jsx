@@ -132,13 +132,24 @@ function AppShell(){
   // Render auf AgbConsentScreen umschaltet. Erst wenn wirklich feststeht, ob
   // AGB noch fehlt, wird endgueltig entschieden (realer Nutzerbericht 2026-08-06).
   if(recoveryMode&&(loading||(user&&profileLoading)))return null;
+  // Nutzerhinweis 2026-08-07: die AGB-Checkbox lief bisher IMMER durch den
+  // Kontoinhaber selbst -- noch BEVOR das Geburtsdatum ueberhaupt bekannt
+  // war. Bei einer minderjaehrigen Person ist das vermutlich nichtig
+  // (§§ 106 ff. BGB) -- ein Kind kann keinen wirksamen Vertrag schliessen,
+  // nur weil das System seine Volljaehrigkeit noch nicht geprueft hat.
+  // Deshalb jetzt VOR der AGB-Pruefung: Alter feststellen, und bei einer
+  // noch ausstehenden Eltern-Bestaetigung bleibt AgbConsentScreen fuer das
+  // Kind komplett unerreichbar -- der Eltern-Klick in
+  // ParentConsentConfirmScreen.jsx uebernimmt den AGB-Abschluss dann direkt
+  // mit (setzt agb_consent_given serverseitig, siehe parent-consent/
+  // index.ts), needsAgbConsent ist zu dem Zeitpunkt bereits false.
+  if(user&&(needsBirthdateSetup||pendingParentConsent))return <BirthdateSetupScreen/>;
   if(user&&needsAgbConsent)return <AgbConsentScreen onOpenLegal={changePage}/>;
   if(recoveryMode)return <ResetPasswordScreen/>;
   if(loading)return null;
   if(kickedOut)return <KickedOutScreen onDismiss={()=>{dismissKickedOut();changePage("company");}}/>;
   if(user&&needsPasswordSetup)return <PasswordSetupScreen/>;
   if(user&&needsUsernameWelcome)return <UsernameScreen mandatory/>;
-  if(user&&(needsBirthdateSetup||pendingParentConsent))return <BirthdateSetupScreen/>;
   // Vercel liefert dank vercel.json-Rewrite für jeden unbekannten Pfad diese
   // SPA aus, statt selbst ein 404 zu werfen — die App entscheidet also hier,
   // ob der aufgerufene Pfad überhaupt bekannt ist (die App kennt sonst nur "/",

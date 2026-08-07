@@ -67,6 +67,19 @@ Deno.serve(async (req) => {
     if (action === "confirm") {
       const token = typeof body.token === "string" ? body.token : null;
       if (!token) return json({ error: "Kein Bestätigungs-Code angegeben." }, 400, cors);
+      // Nutzerhinweis 2026-08-07: die AGB-Checkbox lief bisher IMMER durch
+      // den Kontoinhaber selbst, noch bevor das Geburtsdatum ueberhaupt
+      // bekannt war -- bei einer minderjaehrigen Person vermutlich nichtig
+      // (§§ 106 ff. BGB). Ab jetzt uebernimmt GENAU DIESER Eltern-Klick
+      // zugleich den AGB-Abschluss im Namen des Kindes -- das Kind selbst
+      // durchlaeuft AgbConsentScreen.jsx in diesem Fall gar nicht mehr
+      // (neue Gate-Reihenfolge in App.jsx). Exakte Altersschwelle/Wortlaut
+      // noch mit Anwalt 1 abzustimmen (verwandte Frage: To-Do #128,
+      // 16/17-Jaehrige + kostenpflichtiges Premium) -- das hier ist die
+      // technische Grundlage dafuer, kein Ersatz fuer die Rechtsprüfung.
+      if (body.agreedToAgb !== true || body.agreedToPrivacy !== true) {
+        return json({ error: "Bitte bestätigen Sie beide Punkte (AGB und Datenschutzerklärung)." }, 400, cors);
+      }
       const { data: row, error: findErr } = await supabase
         .from("profiles")
         .select("id")
@@ -80,7 +93,12 @@ Deno.serve(async (req) => {
       if (!row) return json({ error: "Dieser Bestätigungslink ist ungültig oder wurde bereits verwendet." }, 400, cors);
       const { error: updErr } = await supabase
         .from("profiles")
-        .update({ parent_consent_confirmed: true, parent_consent_token: null })
+        .update({
+          parent_consent_confirmed: true,
+          parent_consent_token: null,
+          agb_consent_given: true,
+          agb_consent_at: new Date().toISOString(),
+        })
         .eq("id", row.id);
       if (updErr) {
         console.error("[parent-consent] confirm update failed:", JSON.stringify(updErr));
