@@ -88,7 +88,16 @@ Deno.serve(async (req) => {
     // Ein Trainer, der zusätzlich Junior-Admin ist, lädt über die eigene
     // Trainer-Ansicht trotzdem als Trainer ein. Die Absicht kommt vom
     // Client, die Berechtigung dafür bleibt serverseitig geprüft.
-    const asTrainer = !!requestedAsTrainer && !!profile.is_trainer;
+    // Audit-Befund M4 (2026-08-06): Ein Konto, das AUSSCHLIESSLICH is_trainer
+    // ist (keine Admin-/Junior-Admin-Rechte), konnte sein Kontingent
+    // umgehen, indem es einfach asTrainer:false mitschickte -- die Prüfung
+    // unten lief dann gar nicht, die Einladung trotzdem durch (nur ohne
+    // automatische Zuordnung). Für so ein Konto gilt die Trainer-Zuordnung
+    // + Kontingentprüfung jetzt immer, unabhängig vom Client-Flag. Admins/
+    // Junior-Admins, die zusätzlich Trainer sind, behalten die client-
+    // gesteuerte Wahl (siehe Kommentar oben).
+    const isPureTrainer = !!profile.is_trainer && !profile.is_admin && !profile.is_junior_admin;
+    const asTrainer = isPureTrainer || (!!requestedAsTrainer && !!profile.is_trainer);
 
     // Check for an existing account first — gives a clear message instead
     // of relying on Supabase's (sometimes empty) error for this case.
@@ -113,8 +122,9 @@ Deno.serve(async (req) => {
     }
 
     // Primary path: let Supabase create the user AND email them the invite
-    // (via the configured SMTP). This used to fail because of the broken
-    // notify-signup trigger, now fixed.
+    // (via the configured SMTP). Failed early on because of a since-removed
+    // notify-signup webhook on profiles (Migration
+    // 20260806030000_remove_notify_signup_webhook.sql).
     const { data: inviteData, error: inviteErr } = await supabase.auth.admin.inviteUserByEmail(email, { redirectTo });
     if (inviteErr) {
       console.error("[invite-user] inviteUserByEmail failed:", JSON.stringify(inviteErr));
