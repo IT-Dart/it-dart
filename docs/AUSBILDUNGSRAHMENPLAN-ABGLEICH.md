@@ -1,6 +1,8 @@
 # Ausbildungsrahmenplan-Abgleich: IT-Dart vs. offizieller FISI-Rahmenplan
 
-Erstellt 2026-08-05 als Voraussetzung für ein drittes Prüfkriterium im `didaktik-content-review`-Subagenten ("Abdeckung gegen den IHK-Ausbildungsrahmenplan"). Ohne dieses Dokument wäre eine Abdeckungsprüfung nur die eigene, nicht verifizierbare Erinnerung des Agenten an den Rahmenplan — mit diesem Dokument prüft er gegen eine feste, projektinterne Referenz.
+Erstellt 2026-08-05 als Voraussetzung für ein drittes Prüfkriterium im `didaktik-content-review`-Subagenten ("Abdeckung gegen Rahmenlehrplan (KMK) und FIAusbV"). Ohne dieses Dokument wäre eine Abdeckungsprüfung nur die eigene, nicht verifizierbare Erinnerung des Agenten an den Rahmenplan — mit diesem Dokument prüft er gegen eine feste, projektinterne Referenz.
+
+**Begriffsklärung (korrigiert 2026-08-08):** Weder der Rahmenlehrplan noch die FIAusbV sind IHK-Dokumente. Der Rahmenlehrplan (12 Lernfelder, schulische Seite) wird von der Kultusministerkonferenz (KMK) herausgegeben, bundeseinheitlich für alle 16 Länder — keine Bundesland-spezifische Fassung. Die FIAusbV (betriebliche Seite) ist eine Bundesverordnung. Die IHK führt auf Basis dieser beiden Dokumente lediglich die Abschlussprüfung durch, ist aber nicht deren Urheberin. Frühere Formulierungen in diesem Dokument, die von einem "IHK-Ausbildungsrahmenplan" sprachen, waren entsprechend ungenau und wurden korrigiert.
 
 ## Quellen (öffentlich, amtlich)
 
@@ -44,4 +46,4 @@ Diese Liste bestätigt grob dieselbe Gewichtung wie der Lernfeld-Abgleich oben (
 
 ## Nutzungshinweis für den didaktik-content-review-Agenten
 
-Bei einer künftigen Prüfung des dritten Kriteriums ("Abdeckung gegen den IHK-Ausbildungsrahmenplan") gegen **dieses** Dokument prüfen, nicht gegen eigenes Wissen über den Rahmenplan. Die Tabelle oben ist der Stand 2026-08-06 — bei neuen IT-Dart-Modulen/Themen sollte diese Tabelle mit aktualisiert werden, sonst veraltet sie wie jedes andere Referenzdokument auch.
+Bei einer künftigen Prüfung des dritten Kriteriums ("Abdeckung gegen Rahmenlehrplan (KMK) und FIAusbV") gegen **dieses** Dokument prüfen, nicht gegen eigenes Wissen über den Rahmenplan. Die Tabelle oben ist der Stand 2026-08-06 — bei neuen IT-Dart-Modulen/Themen sollte diese Tabelle mit aktualisiert werden, sonst veraltet sie wie jedes andere Referenzdokument auch.
