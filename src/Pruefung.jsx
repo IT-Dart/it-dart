@@ -205,21 +205,47 @@ export default function Pruefung({onExit}){
 
   useEffect(()=>{if(modus!=="done")setFeedbackDone(false);},[modus]);
 
+  // Nutzerhinweis 2026-08-08: Erweiterung der KI-Auswertung um zwei Punkte --
+  // (1) bezieht jetzt auch normale Modul-Quizzes ein (kind:"modul"), nicht
+  // mehr nur simulierte Halb-/Vollpruefungen. total>20 bleibt NUR fuer
+  // kind:"pruefung" relevant (schliesst kurze 10-Fragen-Warmups aus) --
+  // Modul-Quizzes haben von Natur aus keine feste Mindestlaenge und zaehlen
+  // immer vollstaendig. (2) berechnet zusaetzlich einen groben Zeittrend je
+  // Thema: die Durchlaeufe werden chronologisch in eine fruehere und eine
+  // spaetere Haelfte geteilt, pro Haelfte getrennt aufsummiert -- der
+  // Unterschied in Prozentpunkten zeigt, ob sich ein Thema verbessert oder
+  // verschlechtert hat. Bewusst einfache Zweiteilung statt echter
+  // Zeitreihenanalyse, reicht fuer eine grobe, verstaendliche Tendenz.
   useEffect(()=>{
     if(!user||!isPremium){setAuswertungSummary(null);return;}
     let cancelled=false;
-    supabase.from("lernnachweise").select("topics,total").eq("user_id",user.id).eq("kind","pruefung").gt("total",20)
+    supabase.from("lernnachweise").select("topics,total,kind,created_at").eq("user_id",user.id).in("kind",["pruefung","modul"])
       .then(({data})=>{
         if(cancelled||!data?.length)return;
-        const stats={};
-        data.forEach(row=>{
-          (row.topics||[]).forEach(t=>{
-            stats[t.name]=stats[t.name]||{name:t.name,correct:0,total:0};
-            stats[t.name].correct+=t.correct||0;
-            stats[t.name].total+=t.total||0;
+        const rows=data.filter(r=>r.kind==="modul"||r.total>20).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at));
+        if(!rows.length){setAuswertungSummary(null);return;}
+        const aggregate=(rs)=>{
+          const stats={};
+          rs.forEach(row=>{
+            (row.topics||[]).forEach(t=>{
+              stats[t.name]=stats[t.name]||{name:t.name,correct:0,total:0};
+              stats[t.name].correct+=t.correct||0;
+              stats[t.name].total+=t.total||0;
+            });
           });
+          return stats;
+        };
+        const overallStats=aggregate(rows);
+        const canTrend=rows.length>=2;
+        const mid=Math.ceil(rows.length/2);
+        const earlyStats=canTrend?aggregate(rows.slice(0,mid)):{};
+        const recentStats=canTrend?aggregate(rows.slice(mid)):{};
+        const pct=(s,name)=>s[name]&&s[name].total>0?Math.round(100*s[name].correct/s[name].total):null;
+        const topics=Object.values(overallStats).map(t=>{
+          const earlyPct=pct(earlyStats,t.name),recentPct=pct(recentStats,t.name);
+          return {...t,trend:(earlyPct!=null&&recentPct!=null)?recentPct-earlyPct:null};
         });
-        setAuswertungSummary({count:data.length,topics:Object.values(stats)});
+        setAuswertungSummary({count:rows.length,topics});
       });
     return ()=>{cancelled=true;};
   },[user?.id,isPremium]);
@@ -228,7 +254,7 @@ export default function Pruefung({onExit}){
     setAuswertungBusy(true);setAuswertungErr(null);
     try{
       const res=await authFetch("ai-chat",{
-        ctx:`Bisherige Prüfungsvorbereitung-Ergebnisse über ${auswertungSummary.count} Durchläufe (Halb-/Vollprüfung), pro Kategorie zusammengerechnet: ${JSON.stringify(auswertungSummary.topics)}`,
+        ctx:`Bisherige Lernergebnisse über ${auswertungSummary.count} Durchläufe (Modul-Quizzes und Prüfungssimulationen), pro Thema zusammengerechnet -- "trend" ist die Veränderung in Prozentpunkten zwischen der früheren und der späteren Hälfte der Durchläufe (positiv = Verbesserung, negativ = Verschlechterung, null = noch nicht berechenbar): ${JSON.stringify(auswertungSummary.topics)}`,
         question:"Wie sollte ich mich als Nächstes auf die Prüfung vorbereiten?",
         moduleId:"pruefung-auswertung",
         mode:"auswertung",
@@ -372,8 +398,26 @@ export default function Pruefung({onExit}){
           {auswertungSummary&&<div style={{textAlign:"left",background:C.s1,border:`0.5px solid ${C.bl}`,borderRadius:12,padding:"14px 16px",marginBottom:24,boxShadow:"0 1px 3px rgba(0,0,0,0.04)"}}>
             <p style={{fontSize:11,fontWeight:700,color:C.bl,textTransform:"uppercase",letterSpacing:".05em",margin:"0 0 6px"}}>🧠 KI-Einschätzung</p>
             <p style={{fontSize:11,color:C.t2,margin:"0 0 8px",fontStyle:"italic"}}>Automatisch erstellt (Anthropic Claude), keine echte Person — eine unverbindliche Lernempfehlung, keine offizielle Bewertung.</p>
+            {/* Nutzerhinweis 2026-08-08: die reine Themen-/Trend-Uebersicht ist
+                kostenlos immer sichtbar (reiner DB-Read, kein KI-Aufruf) --
+                erst der Freitext-Kommentar unten kostet einen echten
+                Anthropic-Aufruf und bleibt hinter dem Button. */}
+            <div style={{display:"flex",flexDirection:"column",gap:4,marginBottom:10}}>
+              {auswertungSummary.topics.slice().sort((a,b)=>(a.total?a.correct/a.total:0)-(b.total?b.correct/b.total:0)).map(t=>{
+                const p=t.total>0?Math.round(100*t.correct/t.total):0;
+                return (
+                  <div key={t.name} style={{display:"flex",justifyContent:"space-between",alignItems:"center",fontSize:12,color:C.t2}}>
+                    <span>{t.name}</span>
+                    <span style={{display:"flex",alignItems:"center",gap:6}}>
+                      <span style={{fontWeight:600,color:p<50?"#fca5a5":C.t}}>{p}%</span>
+                      {t.trend!=null&&t.trend!==0&&<span style={{color:t.trend>0?"#86efac":"#fca5a5",fontSize:11}}>{t.trend>0?`↑ +${t.trend}`:`↓ ${t.trend}`}</span>}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
             {!auswertung&&!auswertungBusy&&<>
-              <p style={{fontSize:12,color:C.t2,margin:"0 0 10px",lineHeight:1.5}}>Basierend auf deinen bisherigen {auswertungSummary.count} Halb-/Vollprüfungen — eine realistische Einschätzung, worauf du dich als Nächstes konzentrieren solltest.</p>
+              <p style={{fontSize:12,color:C.t2,margin:"0 0 10px",lineHeight:1.5}}>Basierend auf deinen bisherigen {auswertungSummary.count} Durchläufen (Module & Prüfungssimulationen) — eine realistische Einschätzung, worauf du dich als Nächstes konzentrieren solltest.</p>
               <button onClick={auswerten} style={{background:C.bl,color:"#fff",border:"none",borderRadius:8,padding:"9px 14px",fontSize:13,fontWeight:500,cursor:"pointer",fontFamily:ff}}>Jetzt auswerten →</button>
             </>}
             {auswertungBusy&&<p style={{fontSize:13,color:C.t2,margin:0}}>Wird ausgewertet …</p>}
